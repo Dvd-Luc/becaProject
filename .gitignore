@@ -1,0 +1,15 @@
+# .gitignore
+
+# Environment
+.becavenv
+
+#Audio Files
+*.mp3 
+*.MP3
+*.wav
+*.flac
+
+# Images
+*.jpg
+*.jpeg
+*.png
