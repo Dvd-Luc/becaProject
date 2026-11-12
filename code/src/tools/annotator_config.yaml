@@ -1,0 +1,35 @@
+# Annotator configuration
+
+audio_dir: data/xc_gallinago_gallinago        # recordings to annotate (the batch folder works well)
+labels_dir: data/annotation_labels         # Audacity-format label files are written here
+
+# Optional metadata (enables ordering by quality, --type filter, quality in status)
+metadata_csv: data/xc_gallinago_gallinago/metadata.csv     # leave empty ("") to work without a CSV
+file_col: file-name
+q_col: q
+type_col: type
+status_file: data/annotation_labels/annotation_status.csv
+
+group_cols: [rec]        # balance across these CSV columns; e.g. [rec, loc]. [] = off
+
+# Label names: used verbatim as the label text, so they become the class folder
+# names later. At most 10; they get the keys 1-9 and 0 in this order.
+categories:
+  - Drumming
+  - Song
+  - Call
+  - Other
+
+# Spectrogram
+n_fft: 1024          # window size; larger = better frequency resolution
+hop_length: 256      # smaller = finer time resolution (and more memory)
+f_min: 0             # displayed frequency range, Hz
+f_max: 10000
+db_range: 70         # dynamic range shown (also adjustable with [ and ])
+cmap: magma
+
+# Viewer
+view_seconds: 20     # width of the window shown when a file is opened
+normalize_playback: true
+
+# backend: TkAgg     # uncomment to force a matplotlib backend (TkAgg, QtAgg...)
