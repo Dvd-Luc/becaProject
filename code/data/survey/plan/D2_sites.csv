@@ -1,0 +1,16 @@
+site,drive,n_files,first_date,last_date,split
+BECA_Coualle Basse,D2,12,2026-03-18,2026-03-23,heldout
+BECA_Les Chastelets,D2,20,2026-03-24,2026-04-02,train
+BECA_Plaine Jacquot,D2,34,2026-04-20,2026-05-06,train
+BECA_SMMICRO_007_63_La Godivelle,D2,192,2026-03-20,2026-06-23,train
+BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne,D2,194,2026-03-20,2026-06-24,train
+BECA_SMMICRO_010_63_Picherande,D2,218,2026-03-20,2026-07-06,train
+BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues,D2,199,2026-03-20,2026-06-27,train
+BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie,D2,194,2026-03-20,2026-06-24,train
+BECA_SMMICRO_034_43_Chaudeyrolles,D2,178,2026-03-26,2026-07-07,train
+BECA_SMMICRO_035_43_Champclause,D2,234,2026-03-26,2026-07-20,heldout
+BECA_SMMICRO_036_43_Siaugues-Sainte-Marie,D2,278,2026-03-26,2026-08-08,heldout
+BECA_SMMICRO_037_43_Landos,D2,269,2026-03-31,2026-08-12,train
+BECA_SMMICRO_038_43_Costaros,D2,194,2026-03-26,2026-06-30,heldout
+BECA_SMMICRO_039_43_Saint-Jean-Lachalm,D2,194,2026-03-26,2026-06-30,train
+BECA_SMMICRO_040_43_Les Vastres,D2,234,2026-03-26,2026-07-20,train
