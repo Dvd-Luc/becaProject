@@ -79,6 +79,8 @@ class Config:
 
 def load_config(path):
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    if "annotator" in raw:                        # unified project.yaml
+        raw = {**raw.get("viewer", {}), **raw["annotator"]}
     unknown = set(raw) - {f.name for f in fields(Config)}
     if unknown:
         raise SystemExit(f"unknown keys in {path}: {sorted(unknown)}")
@@ -605,7 +607,7 @@ class Annotator:
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("--config", default="annotator_config.yaml")
+    ap.add_argument("--config", default="config/project.yaml")
     ap.add_argument("--all", action="store_true", help="include already labelled recordings")
     ap.add_argument("--type", help="only recordings whose CSV 'type' contains this text")
     ap.add_argument("--n", type=int, help="only the next N recordings to annotate")

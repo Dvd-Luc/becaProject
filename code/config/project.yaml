@@ -1,0 +1,96 @@
+classes: [Drumming, Song, Call]          # everything else is Noise
+label_map: {Other: Noise}
+
+# ---------- Xeno-canto data ----------
+xc:
+  audio_dir: data/xc_gallinago_gallinago
+  metadata_csv: data/xc_gallinago_gallinago/metadata.csv
+  file_col: file-name
+  rec_col: rec
+  q_col: q
+  type_col: type
+  labels_dir: data/annotation_labels
+  clips_dir: outputs/clips
+
+# ---------- shared by annotator.py and the reviewer ----------
+viewer:
+  n_fft: 1024
+  hop_length: 256
+  f_min: 0
+  f_max: 10000
+  view_seconds: 20
+  db_range: 70
+  cmap: magma
+  normalize_playback: true
+  # backend: TkAgg
+
+# ---------- xc annotation (annotator.py) ----------
+annotator:
+  audio_dir: data/xc_gallinago_gallinago
+  labels_dir: data/annotation_labels
+  metadata_csv: data/xc_gallinago_gallinago/metadata.csv
+  file_col: file-name
+  q_col: q
+  type_col: type
+  status_file: data/annotation_labels/annotation_status.csv
+  group_cols: [rec]
+  categories: [Drumming, Song, Call, Other]
+
+# ---------- learning curve (settings you used) ----------
+learning_curve:
+  folds: 5
+  fold_seed: 42
+  fractions: [0.25, 0.5, 0.75, 1.0]
+  subset_seeds: [0, 1, 2]
+  drop_labels: [Other]
+  work_dir: outputs/lc
+  models_dir: models/lc
+  results_dir: results/lc
+
+# ---------- field recordings (80 sites) ----------
+survey:
+  drives:                                 # name: default mount point (may all be the same
+                                          # path when plugged one at a time; --root overrides)
+    D1: /mnt/d
+    D2: /mnt/d
+    D3: /mnt/d
+    D4: /mnt/d
+  audio_globs:                            # relative to a drive root; site = first folder
+    - "*/*.wav"                           # campaign A
+    - "*/Data/*.wav"                      # campaign B
+  filename_pattern: '_(\d{8})_(\d{6})\.wav$'   # date, time
+  sampling:
+    seed: 123
+    periods: 3                            # thirds of each site's date range
+    clip_minutes: 20
+    file: random                          # random | pre | post (the day's 2 files)
+  split:                                  # applied within each drive, frozen in plan/<drive>_sites.csv
+    seed: 7
+    fractions: {train: 0.75, heldout: 0.25}   # any names, e.g. {train: .6, val: .2, test: .2}
+  dir: data/survey                        # sites.csv, manifest.csv, clips/, judgments.csv
+
+detection:
+  model: models/final/gallinago_v0.tflite   # BirdNET custom classifier
+  dir: data/survey/detections             # raw/ (BirdNET output), events.csv, clip_summary.csv
+  raw_min_conf: 0.1                       # BirdNET keeps windows >= this, so min_conf can be
+                                          # changed later without re-running the model
+  min_conf: 0.5
+  overlap: 0.0
+  merge_gap_s: 3.0
+  max_events_per_clip: null               # optional cap, to test later
+
+review:
+  dir: data/survey/review                 # <queue>_queue.csv (frozen), <queue>_judgments.csv
+  seed: 11
+  context_s: 10                           # seconds shown on each side of the item
+  events_per_class: 100                   # train queue: events per predicted class...
+  conf_bins: [0.35, 0.5, 0.7, 1.0]        # ...spread evenly over these max_conf bins
+  background_per_clip: 1                  # train queue: random 3 s windows away from events
+  test_bins: [0.0, 0.1, 0.35, 0.5, 0.7, 1.0]   # test queue: v0 best-score bins (heldout)
+  test_per_bin: 80
+
+generations:
+  dir: generations
+  train_seed: 1                           # BirdNET RANDOM_SEED for gen >= 1
+  max_windows_per_item: 3                 # 3 s windows taken from one reviewed event
+  eval_thresholds: [0.35, 0.5, 0.7]       # evaluate.py precision / recall points
