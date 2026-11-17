@@ -39,8 +39,17 @@ def scan(s, drive, root):
     """List the recordings of one drive.
 
     Globs survey.audio_globs under root, takes the site from the first folder and the
-    date/time from survey.filename_pattern. Returns [{site, drive, rel, dt}];
-    files that do not match the pattern are reported and skipped.
+    date/time from survey.filename_pattern. Files that do not match the pattern are
+    reported and skipped.
+
+    Args:
+        s (dict): The survey config section.
+        drive (str): Drive name, a key of survey.drives.
+        root (Path): Mount point of the drive.
+
+    Returns:
+        list[dict]: One dict per recording: site (str), drive (str), rel (str, path
+            relative to root), dt (datetime of the recording start).
     """
     pat = re.compile(s["filename_pattern"])
     rows, seen, bad = [], set(), []
@@ -65,7 +74,19 @@ def scan(s, drive, root):
 
 
 def split_sites(sites, sp, drive):
-    """Shuffle this drive's sites and cut them by cumulative rounded fractions."""
+    """Shuffle this drive's sites and cut them by cumulative rounded fractions.
+
+    Args:
+        sites (list[str]): Site names on this drive.
+        sp (dict): survey.split config: seed (int), fractions (dict[str, float]).
+        drive (str): Drive name, part of the shuffle seed.
+
+    Returns:
+        dict[str, str]: Site name -> split name (e.g. "train", "heldout").
+
+    Raises:
+        SystemExit: If the fractions do not sum to 1.
+    """
     fr = sp["fractions"]
     if abs(sum(fr.values()) - 1) > 1e-6:
         raise SystemExit(f"survey.split.fractions must sum to 1, got {fr}")
@@ -85,9 +106,18 @@ def plan(s, rows, drive, root):
     """Split this drive's sites and choose one clip per site and period.
 
     Each site's date range is cut into survey.sampling.periods equal parts; in each part
-    a random day, one of its files and a random clip_minutes offset are drawn
-    (seeded by site and period, so the choice is reproducible).
-    Returns (site rows, manifest rows) in SITE_HEADER / MANIFEST_HEADER order.
+    a random day, one of its files and a random clip_minutes offset are drawn (seeded by
+    site and period, so the choice is reproducible).
+
+    Args:
+        s (dict): The survey config section.
+        rows (list[dict]): Recordings returned by scan().
+        drive (str): Drive name.
+        root (Path): Mount point of the drive (to read file durations).
+
+    Returns:
+        tuple[list[list], list[list]]: (site rows in SITE_HEADER order,
+            manifest rows in MANIFEST_HEADER order).
     """
     by_site = defaultdict(list)
     for r in rows:
@@ -128,13 +158,26 @@ def plan(s, rows, drive, root):
 
 
 def read_rows(path):
-    """Rows of a CSV file as lists, header skipped."""
+    """Rows of a CSV file as lists, header skipped.
+
+    Args:
+        path (Path): CSV file.
+
+    Returns:
+        list[list[str]]: Data rows.
+    """
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.reader(f))[1:]
 
 
 def write_rows(path, header, rows):
-    """Write a CSV file with a header row, creating parent folders."""
+    """Write a CSV file with a header row, creating parent folders.
+
+    Args:
+        path (Path): Output CSV file.
+        header (list[str]): Column names.
+        rows (list[list]): Rows, in header order.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -143,7 +186,14 @@ def write_rows(path, header, rows):
 
 
 def check_duplicates(s, plan_dir, drive, sites):
-    """Warn if some of these sites are already planned on another drive."""
+    """Warn if some of these sites are already planned on another drive.
+
+    Args:
+        s (dict): The survey config section.
+        plan_dir (Path): Folder of the frozen per-drive plans.
+        drive (str): The drive being planned.
+        sites (list[str]): Its site names.
+    """
     for other in s["drives"]:
         p = plan_dir / f"{other}_sites.csv"
         if other == drive or not p.exists():
@@ -155,10 +205,16 @@ def check_duplicates(s, plan_dir, drive, sites):
 
 
 def cut(manifest, root):
-    """Cut the manifest's clips from the drive that are not on disk yet.
+    """Cut the manifest's clips that are not on disk yet.
 
-    Returns the number of clips present after the run; missing source files are
-    reported (wrong drive plugged in, or wrong --root).
+    Missing source files are reported (wrong drive plugged in, or wrong --root).
+
+    Args:
+        manifest (list[list[str]]): Manifest rows (MANIFEST_HEADER order).
+        root (Path): Mount point of the drive.
+
+    Returns:
+        int: Number of clips present after the run.
     """
     done = missing = 0
     for cid, site, split, k, drive, rel, off, length, clip in manifest:
@@ -185,7 +241,13 @@ def cut(manifest, root):
 
 
 def merge(s, plan_dir, out):
-    """Rebuild sites.csv and manifest.csv from all frozen per-drive plans and print a summary."""
+    """Rebuild sites.csv and manifest.csv from all frozen per-drive plans; print a summary.
+
+    Args:
+        s (dict): The survey config section.
+        plan_dir (Path): Folder of the frozen per-drive plans.
+        out (Path): survey.dir, where sites.csv and manifest.csv are written.
+    """
     sites, manifest, drives_done = [], [], []
     for d in s["drives"]:
         sp, mp = plan_dir / f"{d}_sites.csv", plan_dir / f"{d}_manifest.csv"

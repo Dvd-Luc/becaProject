@@ -8,5 +8,12 @@ from pathlib import Path
 import yaml
 
 def load(path="config/project.yaml"):
-    """Read a YAML config file and return it as a dict (one key per section)."""
+    """Read a YAML config file.
+
+    Args:
+        path (str | Path): Config file, relative to the working directory (code/).
+
+    Returns:
+        dict: The whole config, one key per section (survey, detection, review, ...).
+    """
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))

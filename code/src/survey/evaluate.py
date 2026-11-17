@@ -41,13 +41,25 @@ COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]  # f
 
 
 def read_dicts(path):
-    """Rows of a CSV file as dicts."""
+    """Rows of a CSV file as dicts.
+
+    Args:
+        path (str | Path): CSV file with a header row.
+
+    Returns:
+        list[dict[str, str]]: One dict per row, keyed by column name.
+    """
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def cut_windows(items, wdir):
-    """Cut each judged test window once to wdir/<item_id>.wav (existing files are kept)."""
+    """Cut each judged test window once to wdir/<item_id>.wav (existing files are kept).
+
+    Args:
+        items (list[dict]): Test queue rows.
+        wdir (Path): <review.dir>/test_windows.
+    """
     wdir.mkdir(parents=True, exist_ok=True)
     n = 0
     for it in items:
@@ -64,7 +76,21 @@ def cut_windows(items, wdir):
 
 
 def score(model, wdir, sdir, items, threads):
-    """{item_id: {label: score}} for one model; runs BirdNET if results are missing."""
+    """Scores of one model on the test windows; runs BirdNET if results are missing.
+
+    Args:
+        model (Path): The generation's model.tflite.
+        wdir (Path): Folder of the cut test windows.
+        sdir (Path): The generation's test_scores/ folder.
+        items (list[dict]): Test queue rows to score.
+        threads (int | None): BirdNET CPU threads (None: BirdNET's default).
+
+    Returns:
+        dict[str, dict[str, float]]: item_id -> {label: score}; labels below 0.01 absent.
+
+    Raises:
+        SystemExit: If BirdNET produced no result for an item.
+    """
     todo = [it for it in items if not (sdir / f"{it['item_id']}.BirdNET.results.csv").exists()]
     if todo:
         cmd = [sys.executable, "-m", "birdnet_analyzer.analyze", str(wdir), "-o", str(sdir),
@@ -88,7 +114,18 @@ def score(model, wdir, sdir, items, threads):
 
 
 def ap_pr(y, s, w, thresholds):
-    """Weighted average precision, and (precision, recall) per threshold."""
+    """Weighted average precision, and precision / recall per threshold.
+
+    Args:
+        y (numpy.ndarray): 1.0 for positive windows, 0.0 otherwise.
+        s (numpy.ndarray): Model scores.
+        w (numpy.ndarray): Window weights (stratum population / judged windows).
+        thresholds (list[float]): Score thresholds.
+
+    Returns:
+        tuple[float, list[tuple[float, float]]]: (AP, [(precision, recall)] per
+            threshold); NaN where undefined (no positives, nothing above a threshold).
+    """
     pos = (w * y).sum()
     if pos == 0:
         return np.nan, [(np.nan, np.nan)] * len(thresholds)
@@ -105,7 +142,16 @@ def ap_pr(y, s, w, thresholds):
 
 
 def pr_curve(y, s, w):
-    """Weighted (recall, precision) arrays along the ranking by score, for plotting."""
+    """Weighted recall and precision along the ranking by score, for plotting.
+
+    Args:
+        y (numpy.ndarray): 1.0 for positive windows, 0.0 otherwise.
+        s (numpy.ndarray): Model scores.
+        w (numpy.ndarray): Window weights.
+
+    Returns:
+        tuple[numpy.ndarray, numpy.ndarray]: (recall, precision), one value per window.
+    """
     o = np.argsort(-s, kind="stable")
     tp, fp = np.cumsum((w * y)[o]), np.cumsum((w * (1 - y))[o])
     return tp / max((w * y).sum(), 1e-12), tp / np.maximum(tp + fp, 1e-12)
@@ -169,6 +215,16 @@ def main():
              for _ in range(a.boot)]
 
     def metrics(y, s, ww):
+        """All metrics of one resample, flattened in the order of `names`.
+
+        Args:
+            y (numpy.ndarray): Positives.
+            s (numpy.ndarray): Scores.
+            ww (numpy.ndarray): Weights.
+
+        Returns:
+            list[float]: [AP, precision@t1, recall@t1, precision@t2, ...].
+        """
         apv, pr = ap_pr(y, s, ww, thresholds)
         return [apv] + [x for p in pr for x in p]
 

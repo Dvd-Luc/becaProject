@@ -39,7 +39,14 @@ AUDIO_EXT = {".wav", ".flac", ".ogg", ".mp3"}
 
 # ---------- helpers ----------
 def read_labels(path):
-    """Parse an Audacity label export -> list of (start, end, label)."""
+    """Parse an Audacity label export.
+
+    Args:
+        path (str | Path): Label file.
+
+    Returns:
+        list[tuple[float, float, str]]: (start s, end s, label).
+    """
     labels = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("\\"):  # skip freq-range lines
@@ -54,19 +61,47 @@ def read_labels(path):
 
 
 def overlap(a0, a1, b0, b1):
-    """Length of the overlap between [a0, a1] and [b0, b1] (0 if disjoint)."""
+    """Length of the overlap of two intervals.
+
+    Args:
+        a0 (float): Start of the first interval.
+        a1 (float): End of the first interval.
+        b0 (float): Start of the second interval.
+        b1 (float): End of the second interval.
+
+    Returns:
+        float: Overlap in seconds, 0 if disjoint.
+    """
     return max(0.0, min(a1, b1) - max(a0, b0))
 
 
 def clamp_start(start, rec_len):
-    """Shift a window so it lies inside [0, rec_len]. None if file < 3 s."""
+    """Shift a window so it lies inside the recording.
+
+    Args:
+        start (float): Wanted window start, seconds.
+        rec_len (float): Recording length, seconds.
+
+    Returns:
+        float | None: Clamped start, None if the recording is shorter than 3 s.
+    """
     if rec_len < WIN:
         return None
     return min(max(start, 0.0), rec_len - WIN)
 
 
 def has_conflict(w0, idx, labels, tol):
-    """True if the window contains a call of a different type (> tol seconds)."""
+    """True if the window contains a call of a different type.
+
+    Args:
+        w0 (float): Window start, seconds.
+        idx (int): Index of the call the window is made for.
+        labels (list[tuple[float, float, str]]): All labels of the recording.
+        tol (float): Overlap tolerated with another call type, seconds.
+
+    Returns:
+        bool: Whether the window must be rejected.
+    """
     _, _, lab = labels[idx]
     for j, (o0, o1, olab) in enumerate(labels):
         if j != idx and olab != lab and overlap(w0, w0 + WIN, o0, o1) > tol:
@@ -75,13 +110,32 @@ def has_conflict(w0, idx, labels, tol):
 
 
 def safe(name):
-    """Make a label usable as a folder name."""
+    """Make a label usable as a folder name.
+
+    Args:
+        name (str): Label text.
+
+    Returns:
+        str: The name with unsafe characters replaced by "_".
+    """
     return re.sub(r"[^\w\-. ,]", "_", name).strip()
 
 
 # ---------- window generators ----------
 def short_window(idx, labels, rec_len, rng, tol, tries=20):
-    """Call <= 3 s: random position, whole call inside the window."""
+    """Window for a call <= 3 s: random position, whole call inside.
+
+    Args:
+        idx (int): Index of the call in labels.
+        labels (list[tuple[float, float, str]]): All labels of the recording.
+        rec_len (float): Recording length, seconds.
+        rng (random.Random): Generator.
+        tol (float): Overlap tolerated with another call type, seconds.
+        tries (int): Random positions tried before giving up.
+
+    Returns:
+        list[float]: [window start], or [] if no valid position was found.
+    """
     s, e, _ = labels[idx]
     for _ in range(tries):
         delta = rng.uniform(0, WIN - (e - s))      # padding placed BEFORE the call
@@ -97,7 +151,20 @@ def short_window(idx, labels, rec_len, rng, tol, tries=20):
 
 
 def long_windows(idx, labels, rec_len, rng, tau, max_overlap, tol):
-    """Call > 3 s: chain of windows, each overlapping the call by >= tau."""
+    """Windows for a call > 3 s: a chain, each overlapping the call by >= tau.
+
+    Args:
+        idx (int): Index of the call in labels.
+        labels (list[tuple[float, float, str]]): All labels of the recording.
+        rec_len (float): Recording length, seconds.
+        rng (random.Random): Generator.
+        tau (float): Minimum part of the call in each window, seconds.
+        max_overlap (float): Maximum overlap between consecutive windows, seconds.
+        tol (float): Overlap tolerated with another call type, seconds.
+
+    Returns:
+        list[float]: Window starts.
+    """
     s, e, _ = labels[idx]
     delta = rng.uniform(tau, WIN)                  # overlap of the first window
     if rng.random() < 0.5:                         # start from the beginning
@@ -119,9 +186,22 @@ def long_windows(idx, labels, rec_len, rng, tau, max_overlap, tol):
 
 
 def noise_windows(labels, rec_len, n, rng, margin, max_tries=200):
-    """Up to n random windows, `margin` seconds away from every label and not
-    overlapping each other. Returns fewer (possibly none) when the recording has
-    too little free time, e.g. a short file or one full of calls."""
+    """Up to n random windows away from every label and not overlapping each other.
+
+    Returns fewer (possibly none) when the recording has too little free time, e.g. a
+    short file or one full of calls.
+
+    Args:
+        labels (list[tuple[float, float, str]]): All labels of the recording.
+        rec_len (float): Recording length, seconds.
+        n (int): Maximum number of windows.
+        rng (random.Random): Generator.
+        margin (float): Minimum distance to any label, seconds.
+        max_tries (int): Random draws per wanted window.
+
+    Returns:
+        list[float]: Window starts.
+    """
     out = []
     if rec_len < WIN:
         return out
@@ -138,7 +218,17 @@ def noise_windows(labels, rec_len, n, rng, margin, max_tries=200):
 
 # ---------- I/O ----------
 def save_clip(audio_path, sr, w0, folder):
-    """Write the 3 s window starting at w0 to folder/<recording>_<start>s.wav."""
+    """Write the 3 s window starting at w0 to folder/<recording>_<start>s.wav.
+
+    Args:
+        audio_path (Path): Source recording.
+        sr (int): Its sample rate.
+        w0 (float): Window start, seconds.
+        folder (Path): Class folder (created if needed).
+
+    Returns:
+        Path: The clip written.
+    """
     data, _ = sf.read(audio_path, start=int(round(w0 * sr)),
                       frames=int(round(WIN * sr)))
     folder.mkdir(parents=True, exist_ok=True)
@@ -150,14 +240,33 @@ def save_clip(audio_path, sr, w0, folder):
 def process(audio_path, label_path, args, rng, writer):
     """Cut the call windows of one recording and draw its noise windows.
 
-    Call clips are written at once; noise windows are returned as [(audio_path, start)]
-    so --noise-total can subsample them over all recordings.
+    Call clips are written at once; noise windows are only returned so that
+    --noise-total can subsample them over all recordings.
+
+    Args:
+        audio_path (Path): Recording.
+        label_path (Path): Its Audacity label file.
+        args (argparse.Namespace): CLI options (out_dir, runs, class_runs, tau, ...).
+        rng (random.Random): Generator.
+        writer (csv.writer): metadata.csv writer.
+
+    Returns:
+        list[tuple[Path, float]]: (recording, window start) of the noise windows.
     """
     info = sf.info(audio_path)
     sr, rec_len = info.samplerate, info.frames / info.samplerate
     labels = read_labels(label_path)
 
     def emit(w0, label, src0, src1, kind):
+        """Save one call clip and write its metadata row.
+
+        Args:
+            w0 (float): Window start, seconds.
+            label (str): Class name.
+            src0 (float): Call start, seconds.
+            src1 (float): Call end, seconds.
+            kind (str): "short" or "long".
+        """
         folder = Path(args.out_dir) / safe(label)
         clip = save_clip(audio_path, sr, w0, folder)
         writer.writerow([audio_path.name, label, f"{w0:.3f}", f"{w0 + WIN:.3f}",

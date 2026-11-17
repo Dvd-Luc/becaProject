@@ -24,7 +24,18 @@ FIELDS = ["id", "gen", "sp", "en", "type", "sex", "stage", "q", "length",
 
 
 def get_json(params, retries=3):
-    """GET the API with these parameters and return the JSON, retrying with back-off."""
+    """GET the Xeno-canto API and return the JSON, retrying with back-off.
+
+    Args:
+        params (dict): Query parameters (query, key, page, per_page).
+        retries (int): Attempts before giving up.
+
+    Returns:
+        dict: The decoded JSON response.
+
+    Raises:
+        RuntimeError: If every attempt fails.
+    """
     for attempt in range(retries):
         try:
             r = requests.get(API_URL, params=params, timeout=60)
@@ -37,7 +48,17 @@ def get_json(params, retries=3):
 
 
 def fetch_metadata(quality):
-    """Return all recording records for one quality rating."""
+    """All recording records for one quality rating.
+
+    Args:
+        quality (str): Xeno-canto quality, "A" to "E".
+
+    Returns:
+        list[dict]: Recording records as returned by the API.
+
+    Raises:
+        RuntimeError: If the API answers with an error.
+    """
     query = f'gen:gallinago sp:gallinago q:{quality}'
     recordings, page = [], 1
     while True:
@@ -55,9 +76,15 @@ def fetch_metadata(quality):
 
 
 def download(rec):
-    """Download one recording into OUT_DIR -> 'ok', 'skipped' (already there) or 'failed'.
+    """Download one recording into OUT_DIR.
 
     Writes to a .part file first, so an interrupted download is never taken as complete.
+
+    Args:
+        rec (dict): API record (id, file, file-name).
+
+    Returns:
+        str: "ok", "skipped" (already there) or "failed".
     """
     name = rec.get("file-name") or f"XC{rec['id']}.mp3"
     path = os.path.join(OUT_DIR, name)
@@ -82,7 +109,11 @@ def download(rec):
 
 
 def main():
-    """Fetch the metadata of all quality A/B recordings, save metadata.csv, download the audio."""
+    """Fetch the metadata of all quality A/B recordings, save metadata.csv, download the audio.
+
+    Raises:
+        SystemExit: If XC_API_KEY is not set.
+    """
     if not API_KEY:
         raise SystemExit("XC_API_KEY is not set: export XC_API_KEY=... (from your xeno-canto account page)")
     os.makedirs(OUT_DIR, exist_ok=True)

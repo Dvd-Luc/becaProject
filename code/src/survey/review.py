@@ -58,13 +58,26 @@ NOISE, UNSURE = "Noise", "Unsure"
 
 # ---------------------------------------------------------------- IO
 def read_dicts(path):
-    """Rows of a CSV file as dicts."""
+    """Rows of a CSV file as dicts.
+
+    Args:
+        path (str | Path): CSV file with a header row.
+
+    Returns:
+        list[dict[str, str]]: One dict per row, keyed by column name.
+    """
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def write_dicts(path, header, rows):
-    """Write dicts to a CSV file with the given header, creating parent folders."""
+    """Write dicts to a CSV file with the given header, creating parent folders.
+
+    Args:
+        path (Path): Output CSV file.
+        header (list[str]): Column names, in order.
+        rows (list[dict]): Rows keyed by column name.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=header)
@@ -73,7 +86,12 @@ def write_dicts(path, header, rows):
 
 
 def append_judgment(path, row):
-    """Append one judgment row to the judgments CSV (header written on first use)."""
+    """Append one judgment to the judgments CSV (header written on first use).
+
+    Args:
+        path (Path): <review.dir>/<queue>_judgments.csv.
+        row (dict): Judgment keyed by JUDGE_HEADER.
+    """
     new = not path.exists()
     with open(path, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=JUDGE_HEADER)
@@ -83,12 +101,27 @@ def append_judgment(path, row):
 
 
 def load_judgments(path):
-    """{item_id: verdict}, last judgment wins."""
+    """Read the verdicts given so far.
+
+    Args:
+        path (Path): Judgments CSV (may not exist yet).
+
+    Returns:
+        dict[str, str]: item_id -> verdict; the last judgment of an item wins.
+    """
     return {r["item_id"]: r["verdict"] for r in read_dicts(path)} if path.exists() else {}
 
 
 def classes_from(cfg):
-    """Classes in annotator key order, checked against the model's labels."""
+    """Classes in annotator key order, checked against the model's labels.
+
+    Args:
+        cfg (dict): The whole project config.
+
+    Returns:
+        list[str]: Class names; key 1 is the first. Falls back to the model's label
+            order when annotator.categories does not cover the model labels.
+    """
     model = Path(cfg["detection"]["model"])
     labels = [l.strip() for l in model.with_name(model.stem + "_Labels.txt")
               .read_text(encoding="utf-8").splitlines() if l.strip()]
@@ -102,7 +135,19 @@ def classes_from(cfg):
 
 # ---------------------------------------------------------------- queues
 def window_row(kind, m, start, stratum, predicted="", max_conf=""):
-    """Queue row for one 3 s window (background or test item) of a manifest clip."""
+    """Queue row for one 3 s window (background or test item) of a manifest clip.
+
+    Args:
+        kind (str): "background" or "test".
+        m (dict): Manifest row of the clip.
+        start (float): Window start in seconds.
+        stratum (str): Stratum name stored in the queue.
+        predicted (str): Expected class ("Noise" for background, "" for test).
+        max_conf (str): v0 best score, formatted ("" if not relevant).
+
+    Returns:
+        dict[str, str]: Row keyed by QUEUE_HEADER.
+    """
     return {"item_id": f"{kind}_{m['clip_id']}_{start:.0f}", "kind": kind,
             "clip_id": m["clip_id"], "site": m["site"], "split": m["split"],
             "period": m["period"], "clip_path": m["clip_path"],
@@ -111,7 +156,16 @@ def window_row(kind, m, start, stratum, predicted="", max_conf=""):
 
 
 def analysed_clips(manifest, raw_dir, split):
-    """Manifest clips of one split that have a raw BirdNET result."""
+    """Manifest clips of one split that have a raw BirdNET result.
+
+    Args:
+        manifest (list[dict]): Manifest rows.
+        raw_dir (Path): detection.dir/raw.
+        split (str): "train" or "heldout".
+
+    Returns:
+        list[dict]: The matching manifest rows.
+    """
     return [m for m in manifest if m["split"] == split
             and (raw_dir / f"{m['clip_id']}.BirdNET.results.csv").exists()]
 
@@ -122,7 +176,14 @@ def build_train(cfg, manifest, rng):
     Events (train sites) are drawn per predicted class, evenly over review.conf_bins,
     topped up from other bins when one is short. Background = review.background_per_clip
     random grid windows per analysed clip, at least context_s away from any event.
-    Returns (rows, None).
+
+    Args:
+        cfg (dict): The whole project config.
+        manifest (list[dict]): Manifest rows.
+        rng (random.Random): Seeded generator.
+
+    Returns:
+        tuple[list[dict], None]: (queue rows keyed by QUEUE_HEADER, no strata).
     """
     r, d = cfg["review"], cfg["detection"]
     by_clip = {m["clip_id"]: m for m in manifest}
@@ -130,6 +191,14 @@ def build_train(cfg, manifest, rng):
     bins = r["conf_bins"]
     nb = len(bins) - 1
     def bin_of(c):
+        """Index of the conf_bins bin containing c (the last bin includes its upper edge).
+
+        Args:
+            c (float): An event's max_conf.
+
+        Returns:
+            int | None: Bin index, None if c is outside the bins.
+        """
         for i in range(nb):
             if bins[i] <= c < bins[i + 1] or (i == nb - 1 and c == bins[-1]):
                 return i
@@ -177,7 +246,16 @@ def build_test(cfg, manifest, rng):
 
     Every 3 s grid window gets v0's best score over all classes (0 if absent from raw/),
     is put in a review.test_bins stratum, and review.test_per_bin windows are drawn per
-    stratum. Returns (rows, strata) where strata hold each bin's population.
+    stratum.
+
+    Args:
+        cfg (dict): The whole project config.
+        manifest (list[dict]): Manifest rows.
+        rng (random.Random): Seeded generator.
+
+    Returns:
+        tuple[list[dict], list[dict]]: (queue rows keyed by QUEUE_HEADER,
+            strata rows with stratum, population, sampled).
     """
     r, d = cfg["review"], cfg["detection"]
     raw_dir = Path(d["dir"]) / "raw"
@@ -204,7 +282,16 @@ def build_test(cfg, manifest, rng):
 
 
 def get_queue(cfg, queue, out):
-    """Return the frozen queue, building and saving it (shuffled) on first use."""
+    """Return the frozen queue, building and saving it (shuffled) on first use.
+
+    Args:
+        cfg (dict): The whole project config.
+        queue (str): "train" or "test".
+        out (Path): Review folder.
+
+    Returns:
+        list[dict]: Queue rows keyed by QUEUE_HEADER.
+    """
     path = out / f"{queue}_queue.csv"
     if path.exists():
         return read_dicts(path)
@@ -220,7 +307,13 @@ def get_queue(cfg, queue, out):
 
 
 def describe(queue, rows, judged):
-    """Print the queue size, items per stratum and the verdicts so far."""
+    """Print the queue size, items per stratum and the verdicts so far.
+
+    Args:
+        queue (str): Queue name.
+        rows (list[dict]): Queue rows.
+        judged (dict[str, str]): item_id -> verdict.
+    """
     print(f"{queue} queue: {len(rows)} items, {sum(r['item_id'] in judged for r in rows)} judged")
     for s, n in sorted(Counter(r["stratum"] for r in rows).items()):
         print(f"    {s:28s} {n}")
@@ -230,9 +323,30 @@ def describe(queue, rows, judged):
 
 # ---------------------------------------------------------------- GUI
 class Reviewer:
-    """Matplotlib window to judge queue items one by one (keys in the module docstring)."""
+    """Matplotlib window to judge queue items one by one (keys in the module docstring).
+
+    Attributes:
+        items (list[dict]): Queue rows of this session.
+        i (int): Index of the item shown.
+        judged (dict[str, str]): item_id -> verdict, updated at each key press.
+        classes (list[str]): Classes bound to keys 1, 2, 3, ...
+        blind (bool): True for the test queue (prediction hidden, y/Enter disabled).
+        x (numpy.ndarray): Mono samples of the item with its context.
+        sr (int): Sample rate.
+        t0 (float): Clip time of the first sample of x, in seconds.
+        span (tuple[float, float]): Item start and end, in clip seconds.
+    """
     def __init__(self, cfg, queue, items, judged, jpath, classes):
-        """Set up the figure, key bindings and show the first item."""
+        """Set up the figure and key bindings, then show the first item.
+
+        Args:
+            cfg (dict): The whole project config (viewer and review sections are used).
+            queue (str): "train" or "test".
+            items (list[dict]): Queue rows to judge this session.
+            judged (dict[str, str]): Verdicts so far (item_id -> verdict).
+            jpath (Path): Judgments CSV to append to.
+            classes (list[str]): Classes bound to keys 1, 2, 3, ...
+        """
         import matplotlib.pyplot as plt
         self.plt = plt
         for k in [k for k in plt.rcParams if k.startswith("keymap.")]:
@@ -254,13 +368,20 @@ class Reviewer:
         self.show(0)
 
     def item(self):
-        """The queue row currently shown."""
+        """The queue row currently shown.
+
+        Returns:
+            dict: Queue row keyed by QUEUE_HEADER.
+        """
         return self.items[self.i]
 
     def show(self, i):
         """Load item i with review.context_s around it and draw its spectrogram.
 
         Only that segment is read from the clip. The prediction is hidden for the test queue.
+
+        Args:
+            i (int): Index in self.items.
         """
         self._stop()
         self.i = i
@@ -299,7 +420,11 @@ class Reviewer:
         self.fig.canvas.draw_idle()
 
     def judge(self, verdict):
-        """Save a verdict for the current item and move to the next one."""
+        """Save a verdict for the current item and move to the next one.
+
+        Args:
+            verdict (str): A class name, "Noise" or "Unsure".
+        """
         it = self.item()
         append_judgment(self.jpath, {
             "item_id": it["item_id"], "clip_id": it["clip_id"], "start_s": it["start_s"],
@@ -316,11 +441,20 @@ class Reviewer:
             self._msg(f"saved: {verdict}. Session done ({len(self.items)} items), q to quit")
 
     def _msg(self, t):
+        """Show a message under the spectrogram.
+
+        Args:
+            t (str): Message text ("" clears it).
+        """
         self.msg.set_text(t)
         self.fig.canvas.draw_idle()
 
     def play(self, context):
-        """Play the item (or the whole context) with a moving playhead; again to stop."""
+        """Play the item, or the item with its context, with a moving playhead; again to stop.
+
+        Args:
+            context (bool): Play the whole loaded segment instead of the item only.
+        """
         if self._playing:
             return self._stop()
         s, e = (self.t0, self.t0 + len(self.x) / self.sr) if context else self.span
@@ -341,6 +475,7 @@ class Reviewer:
         self._timer.start()
 
     def _tick(self):
+        """Timer callback: move the playhead, stop at the end of the segment."""
         s, length, t = self._p
         el = time.time() - t
         if el >= length:
@@ -365,7 +500,11 @@ class Reviewer:
             self.playhead.set_visible(False)
 
     def _on_key(self, ev):
-        """Dispatch a key press: verdicts, playback, back, quit."""
+        """Dispatch a key press: verdicts, playback, back, quit.
+
+        Args:
+            ev (matplotlib.backend_bases.KeyEvent): The key event.
+        """
         k = ev.key
         if k is None:
             return

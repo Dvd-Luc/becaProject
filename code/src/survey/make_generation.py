@@ -59,13 +59,26 @@ TRAIN_WRAPPER = ("import sys, birdnet_analyzer.config as c; c.RANDOM_SEED = int(
 
 
 def read_dicts(path):
-    """Rows of a CSV file as dicts."""
+    """Rows of a CSV file as dicts.
+
+    Args:
+        path (str | Path): CSV file with a header row.
+
+    Returns:
+        list[dict[str, str]]: One dict per row, keyed by column name.
+    """
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def write_dicts(path, header, rows):
-    """Write dicts to a CSV file with the given header, creating parent folders."""
+    """Write dicts to a CSV file with the given header, creating parent folders.
+
+    Args:
+        path (Path): Output CSV file.
+        header (list[str]): Column names, in order.
+        rows (list[dict]): Rows keyed by column name.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=header)
@@ -74,14 +87,30 @@ def write_dicts(path, header, rows):
 
 
 def model_files(model):
-    """model.tflite -> its BirdNET side files (Labels, Params, sample counts)."""
+    """A BirdNET model file and its side files.
+
+    Args:
+        model (str | Path): The .tflite file.
+
+    Returns:
+        list[Path]: [model, <stem>_Labels.txt, <stem>_Params.csv,
+            <name>_sample_counts.csv], whether they exist or not.
+    """
     m = Path(model)
     return [m, m.with_name(m.stem + "_Labels.txt"), m.with_name(m.stem + "_Params.csv"),
             m.with_name(m.name + "_sample_counts.csv")]
 
 
 def link_gen0(model, gdir):
-    """gen_0/model* -> relative symlinks to the existing v0 files."""
+    """Make gen_0/ point to the existing v0 files with relative symlinks.
+
+    Args:
+        model (str | Path): detection.model (the v0 .tflite).
+        gdir (Path): generations.dir.
+
+    Returns:
+        Path: gdir/gen_0/model.tflite.
+    """
     g0 = gdir / "gen_0"
     g0.mkdir(parents=True, exist_ok=True)
     for src, name in zip(model_files(model), ["model.tflite", "model_Labels.txt",
@@ -93,7 +122,14 @@ def link_gen0(model, gdir):
 
 
 def train_args(model):
-    """birdnet_analyzer.train options that reproduce the model's _Params.csv settings."""
+    """birdnet_analyzer.train options that reproduce a model's training settings.
+
+    Args:
+        model (str | Path): The .tflite whose _Params.csv is read.
+
+    Returns:
+        list[str]: CLI options (empty, with a note, if _Params.csv is missing).
+    """
     p = model_files(model)[2]
     if not p.exists():
         print(f"note: {p} not found, BirdNET defaults used")
@@ -110,7 +146,16 @@ def train_args(model):
 
 
 def raw_scores(raw_dir, clip_id, label):
-    """{window index: score of label} from detect.py's raw BirdNET results."""
+    """Scores of one label in detect.py's raw results for one clip.
+
+    Args:
+        raw_dir (Path): detection.dir/raw.
+        clip_id (str): Manifest clip id.
+        label (str): Class name.
+
+    Returns:
+        dict[int, float]: 3 s window index -> confidence (windows below raw_min_conf absent).
+    """
     p = raw_dir / f"{clip_id}.BirdNET.results.csv"
     out = {}
     if p.exists():
@@ -123,8 +168,16 @@ def raw_scores(raw_dir, clip_id, label):
 def windows_of(item, raw_dir, max_n):
     """Start times of the 3 s grid windows to cut for one judged item.
 
-    Events longer than max_n windows keep the max_n windows v0 scored highest for
-    the predicted class, so the gap windows bridged by merge_gap_s are dropped.
+    Events longer than max_n windows keep the max_n windows v0 scored highest for the
+    predicted class, so the gap windows bridged by merge_gap_s are dropped.
+
+    Args:
+        item (dict): Train queue row (kind, clip_id, start_s, end_s, predicted).
+        raw_dir (Path): detection.dir/raw.
+        max_n (int): Maximum windows kept from one event.
+
+    Returns:
+        list[float]: Window start times in seconds, sorted.
     """
     s, e = float(item["start_s"]), float(item["end_s"])
     ks = list(range(round(s / WIN), max(round(s / WIN) + 1, round(e / WIN))))
@@ -135,7 +188,12 @@ def windows_of(item, raw_dir, max_n):
 
 
 def link(src, dst):
-    """Hard-link src to dst, or copy it when linking is impossible (other filesystem)."""
+    """Hard-link src to dst, or copy it when linking is impossible (other filesystem).
+
+    Args:
+        src (Path): Existing file.
+        dst (Path): New path.
+    """
     try:
         os.link(src, dst)
     except OSError:                                    # other filesystem

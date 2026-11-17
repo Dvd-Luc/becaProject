@@ -21,6 +21,9 @@ def main():
     """CLI entry point: for each fraction x subset seed, make the folds and train every fold.
 
     Folds whose fold_stats.csv exists and models whose .tflite exists are skipped.
+
+    Raises:
+        subprocess.CalledProcessError: If make_folds.py or BirdNET training fails.
     """
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)

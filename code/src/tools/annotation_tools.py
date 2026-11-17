@@ -35,13 +35,27 @@ MANIFEST = ".queue_manifest.txt"   # names of the files placed in the batch fold
 
 
 def load_rows(path):
-    """Rows of a CSV file as dicts."""
+    """Rows of a CSV file as dicts.
+
+    Args:
+        path (str | Path): CSV file with a header row.
+
+    Returns:
+        list[dict[str, str]]: One dict per row, keyed by column name.
+    """
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def read_label_names(path):
-    """Label texts in an Audacity export (ignores frequency-range lines)."""
+    """Label texts in an Audacity export (ignores frequency-range lines).
+
+    Args:
+        path (str | Path): Label file.
+
+    Returns:
+        list[str]: Label names, in file order.
+    """
     names = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("\\"):
@@ -54,7 +68,11 @@ def read_label_names(path):
 
 # ---------- split ----------
 def cmd_split(a):
-    """`split`: place each recording in <out-dir>/<quality>/ (copy, move or symlink)."""
+    """`split`: place each recording in <out-dir>/<quality>/ (copy, move or symlink).
+
+    Args:
+        a (argparse.Namespace): csv, file_col, q_col, audio_dir, out_dir, mode.
+    """
     rows = load_rows(a.csv)
     counts, missing = Counter(), []
     for r in rows:
@@ -82,7 +100,14 @@ def cmd_split(a):
 
 # ---------- status ----------
 def build_status(a):
-    """One status row per CSV recording: todo / done / no_calls, with its label names."""
+    """One status row per CSV recording: todo / done / no_calls, with its label names.
+
+    Args:
+        a (argparse.Namespace): csv, file_col, q_col, type_col, labels_dir.
+
+    Returns:
+        list[dict]: Rows with recording, q, type, status, n_labels, label_names.
+    """
     rows = load_rows(a.csv)
     out = []
     for r in rows:
@@ -102,7 +127,11 @@ def build_status(a):
 
 
 def cmd_status(a):
-    """`status`: write the status CSV and print progress and label counts per class."""
+    """`status`: write the status CSV and print progress and label counts per class.
+
+    Args:
+        a (argparse.Namespace): Status options (status_file, allowed, ...).
+    """
     out = build_status(a)
     with open(a.status_file, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(out[0]))
@@ -132,6 +161,12 @@ def cmd_next(a):
 
     With --queue-dir, the batch folder is emptied of the files it placed earlier
     (tracked in .queue_manifest.txt) and refilled with copies of the next batch.
+
+    Args:
+        a (argparse.Namespace): Next options (n, type, queue_dir, audio_dir, ...).
+
+    Raises:
+        SystemExit: If --queue-dir is given without --audio-dir.
     """
     todo = [o for o in build_status(a) if o["status"] == "todo"]
     if a.type:

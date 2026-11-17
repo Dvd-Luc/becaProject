@@ -47,13 +47,26 @@ PARAM_KEYS = ["model", "overlap", "raw_min_conf"]
 
 
 def read_dicts(path):
-    """Rows of a CSV file as dicts."""
+    """Rows of a CSV file as dicts.
+
+    Args:
+        path (str | Path): CSV file with a header row.
+
+    Returns:
+        list[dict[str, str]]: One dict per row, keyed by column name.
+    """
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def write_rows(path, header, rows):
-    """Write a CSV file with a header row, creating parent folders."""
+    """Write a CSV file with a header row, creating parent folders.
+
+    Args:
+        path (Path): Output CSV file.
+        header (list[str]): Column names.
+        rows (list[list]): Rows, in header order.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -62,12 +75,29 @@ def write_rows(path, header, rows):
 
 
 def raw_path(raw_dir, cid):
-    """Path of BirdNET's raw result file for one clip."""
+    """Path of BirdNET's raw result file for one clip.
+
+    Args:
+        raw_dir (Path): detection.dir/raw.
+        cid (str): Clip id (manifest clip_id).
+
+    Returns:
+        Path: raw_dir/<cid>.BirdNET.results.csv.
+    """
     return raw_dir / f"{cid}.BirdNET.results.csv"
 
 
 def check_params(raw_dir, params, force):
-    """Raw results are only valid for the model/overlap/raw_min_conf they were made with."""
+    """Make sure the raw results were made with the current settings, then record them.
+
+    Args:
+        raw_dir (Path): detection.dir/raw.
+        params (dict[str, str]): model, overlap and raw_min_conf of this run.
+        force (bool): If the settings changed, delete the raw results instead of stopping.
+
+    Raises:
+        SystemExit: If the settings changed and force is False.
+    """
     p = raw_dir / "run_params.csv"
     if p.exists():
         old = read_dicts(p)[0]
@@ -83,7 +113,17 @@ def check_params(raw_dir, params, force):
 
 
 def run_birdnet(todo, raw_dir, d, threads):
-    """Analyse the clips through a folder of links, so only manifest clips are seen."""
+    """Analyse the clips through a folder of links, so only manifest clips are seen.
+
+    Args:
+        todo (list[dict]): Manifest rows of the clips to analyse.
+        raw_dir (Path): Output folder for BirdNET's CSVs.
+        d (dict): The detection config section (model, raw_min_conf, overlap).
+        threads (int | None): BirdNET CPU threads (None: BirdNET's default).
+
+    Raises:
+        subprocess.CalledProcessError: If BirdNET fails.
+    """
     with tempfile.TemporaryDirectory(prefix="detect_") as tmp:
         for r in todo:
             (Path(tmp) / f"{r['clip_id']}.wav").symlink_to(Path(r["clip_path"]).resolve())
@@ -98,7 +138,15 @@ def run_birdnet(todo, raw_dir, d, threads):
 
 
 def merge_windows(windows, gap):
-    """windows: [(start, end, conf)] of one clip and label -> events."""
+    """Merge the windows of one clip and label into events.
+
+    Args:
+        windows (list[tuple[float, float, float]]): (start s, end s, confidence).
+        gap (float): Maximum gap in seconds between two windows of one event.
+
+    Returns:
+        list[dict]: Events with start (float), end (float) and confs (list[float]).
+    """
     events = []
     for s, e, c in sorted(windows):
         if events and s - events[-1]["end"] <= gap:
@@ -113,9 +161,18 @@ def merge_windows(windows, gap):
 def post(clips, raw_dir, d, labels):
     """Turn raw BirdNET windows into events and per-clip summaries.
 
-    Keeps windows >= detection.min_conf, merges them per clip and label when the gap
-    is <= merge_gap_s, optionally caps the events per clip (highest confidence kept).
-    Returns (event rows, summary rows); every clip x label gets a summary row, zeros included.
+    Keeps windows >= detection.min_conf, merges them per clip and label when the gap is
+    <= merge_gap_s, optionally caps the events per clip (highest confidence kept).
+
+    Args:
+        clips (list[dict]): Manifest rows of the analysed clips.
+        raw_dir (Path): detection.dir/raw.
+        d (dict): The detection config section (min_conf, merge_gap_s, max_events_per_clip).
+        labels (list[str]): Model classes; each gets a summary row per clip.
+
+    Returns:
+        tuple[list[list], list[list]]: (event rows in EVENT_HEADER order,
+            summary rows in SUMMARY_HEADER order, zeros included).
     """
     min_conf, gap, cap = d["min_conf"], d["merge_gap_s"], d.get("max_events_per_clip")
     events_out, summary_out = [], []

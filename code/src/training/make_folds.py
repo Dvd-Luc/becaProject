@@ -34,7 +34,13 @@ MIN_VAL, MIN_TRAIN = 10, 30      # warn below these clip counts per class
 
 
 def place(src, dst, mode):
-    """Put src at dst by hard link, symlink or copy (hard link falls back to copy)."""
+    """Put src at dst; does nothing if dst exists.
+
+    Args:
+        src (str | Path): Existing clip.
+        dst (Path): Destination (parent folders are created).
+        mode (str): "hardlink" (falls back to copy), "symlink" or "copy".
+    """
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         return
@@ -51,7 +57,16 @@ def place(src, dst, mode):
 
 
 def assign_groups(groups, k, rng):
-    """Greedy balanced assignment of groups to k folds, class by class."""
+    """Greedy balanced assignment of groups to k folds, class by class.
+
+    Args:
+        groups (dict[str, Counter]): Recordist -> clips per class.
+        k (int): Number of folds.
+        rng (random.Random): Breaks ties in the processing order.
+
+    Returns:
+        dict[str, int]: Recordist -> fold index; no fold is left empty.
+    """
     totals = Counter()
     for c in groups.values():
         totals.update(c)
@@ -61,6 +76,14 @@ def assign_groups(groups, k, rng):
     fold_of = {}
     for g in order:
         def cost(f):        # change in squared distance to the ideal share 1/k of each class
+            """Change in squared distance to the ideal share 1/k of each class if g goes to fold f.
+
+            Args:
+                f (int): Candidate fold.
+
+            Returns:
+                float: The cost (lower is better).
+            """
             return sum(((load[f][c] + groups[g][c]) / totals[c] - 1 / k) ** 2
                        - (load[f][c] / totals[c] - 1 / k) ** 2 for c in totals)
         best = min(range(k), key=cost)

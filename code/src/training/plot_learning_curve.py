@@ -24,7 +24,14 @@ import matplotlib.pyplot as plt
 
 
 def num(x):
-    """float(x), or None if x is not a number."""
+    """Parse a number.
+
+    Args:
+        x (Any): Value to convert.
+
+    Returns:
+        float | None: float(x), or None if x is not a number.
+    """
     try:
         return float(x)
     except (TypeError, ValueError):
@@ -32,7 +39,14 @@ def num(x):
 
 
 def read_stats(path):
-    """fold -> (train clips, train recordists) from fold_stats.csv."""
+    """Training size per fold, from fold_stats.csv.
+
+    Args:
+        path (Path): fold_stats.csv written by make_folds.py.
+
+    Returns:
+        dict[int, tuple[int, int]]: Fold -> (training clips, training recordists).
+    """
     out = {}
     with open(path, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
