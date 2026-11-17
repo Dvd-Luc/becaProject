@@ -3,7 +3,7 @@ from Xeno-canto (API v3) and save a metadata CSV alongside the audio.
 
 Usage:
     export XC_API_KEY="your_key"      # from your xeno-canto account page
-    python download_xc_snipe.py
+    python src/tools/recording_fetch_xc.py      # run from code/
 """
 import csv
 import os
@@ -14,7 +14,7 @@ import requests
 API_URL = "https://xeno-canto.org/api/3/recordings"
 API_KEY = os.environ["XC_API_KEY"]
 QUALITIES = ["A", "B"]
-OUT_DIR = "./code/data/xc_gallinago_gallinago"
+OUT_DIR = "data/xc_gallinago_gallinago"
 PER_PAGE = 500          # API maximum
 PAUSE = 1.0             # seconds between requests, be polite to the server
 
