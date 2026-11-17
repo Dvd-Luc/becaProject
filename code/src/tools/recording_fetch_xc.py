@@ -12,7 +12,7 @@ import time
 import requests
 
 API_URL = "https://xeno-canto.org/api/3/recordings"
-API_KEY = os.environ["XC_API_KEY"]
+API_KEY = os.environ.get("XC_API_KEY")   # checked in main(), so importing never fails
 QUALITIES = ["A", "B"]
 OUT_DIR = "data/xc_gallinago_gallinago"
 PER_PAGE = 500          # API maximum
@@ -83,6 +83,8 @@ def download(rec):
 
 def main():
     """Fetch the metadata of all quality A/B recordings, save metadata.csv, download the audio."""
+    if not API_KEY:
+        raise SystemExit("XC_API_KEY is not set: export XC_API_KEY=... (from your xeno-canto account page)")
     os.makedirs(OUT_DIR, exist_ok=True)
     all_recs = []
     for q in QUALITIES:
