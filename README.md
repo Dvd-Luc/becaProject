@@ -1,0 +1,389 @@
+# becaProject: Common Snipe detection with BirdNET
+
+Detecting **Common Snipe** (*Gallinago gallinago*, "bécassine") vocalisations in
+passive acoustic recordings with a custom **BirdNET** classifier. The model has three
+classes: **Drumming**, **Song** and **Call**.
+
+The pipeline has two halves:
+
+1. **Training on Xeno-canto (XC)**: download recordings → annotate them by hand → cut
+   3 s training clips → train and evaluate BirdNET with cross-validation grouped by
+   recordist (plus a learning curve).
+2. **Survey**: apply the model to 20 min clips sampled from field recordings at ~80
+   sites → review its detections → train the next model *generation* on the reviewed
+   material → compare generations on a fixed, blind test set.
+
+Everything is plain Python scripts: no package, no build step. Each script's docstring
+holds its full usage (`python <script> --help`, or the documentation site below).
+
+---
+
+## Contents
+
+- [Setup](#setup)
+- [Repository layout](#repository-layout)
+- [Configuration](#configuration)
+- [Part 1: training on Xeno-canto](#part-1-training-on-xeno-canto)
+- [Part 2: the survey](#part-2-the-survey)
+- [Script reference](#script-reference)
+- [Documentation site](#documentation-site)
+- [Good to know](#good-to-know)
+
+---
+
+## Setup
+
+```bash
+cd becaProject
+source .becavenv/bin/activate      # Python 3.12 virtualenv
+cd code                            # every command below is run from code/
+```
+
+The virtualenv contains `birdnet_analyzer` 2.4 (called as `python -m
+birdnet_analyzer.train` / `.analyze`, with TensorFlow), `numpy`, `soundfile`,
+`matplotlib`, `pyyaml`, `requests`, `sounddevice` (audio playback in the GUIs) and
+`pdoc` (documentation).
+
+To create it from scratch:
+
+```bash
+python3 -m venv .becavenv && source .becavenv/bin/activate
+pip install birdnet-analyzer==2.4.* numpy soundfile matplotlib pyyaml requests sounddevice pdoc
+```
+
+Downloading from Xeno-canto needs an API key from your xeno-canto account page:
+
+```bash
+export XC_API_KEY="your_key"
+```
+
+**What is not in git:** audio (`*.wav`, `*.mp3`, `*.flac`), images, models
+(`*.tflite`), training logs and `__pycache__`. Only code, configuration, label files
+and CSV results are versioned. **Back up the `.tflite` models yourself**, in particular
+`models/final/` and `generations/`.
+
+---
+
+## Repository layout
+
+```
+code/
+├── config/project.yaml          unified configuration, one section per stage
+├── src/
+│   ├── common/config.py         YAML loader
+│   ├── tools/                   fetching, annotation, confusion matrices
+│   ├── training/                training clips, folds, learning curve
+│   └── survey/                  sampling, detection, review, generations, evaluation
+├── data/
+│   ├── xc_gallinago_gallinago/  XC audio + metadata.csv
+│   ├── annotation_labels/       one Audacity label file per XC recording
+│   └── survey/                  sites.csv, manifest.csv, plan/, clips/, detections/, review/
+├── outputs/                     clips/, folds/, lc/ (training material)
+├── models/                      final/ (v0 model), lc/ (learning-curve models + metrics)
+├── generations/                 gen_0 (= v0), gen_1, ... (created by make_generation.py)
+└── results/                     lc/ (learning curve), survey/ (generation comparison)
+```
+
+---
+
+## Configuration
+
+`code/config/project.yaml` holds one section per stage:
+
+| Section | Used by | Content |
+|---|---|---|
+| `classes`, `label_map` | reference | the three classes; `Other` is mapped to Noise |
+| `xc` | reference | XC data paths and CSV columns |
+| `viewer` | `annotator.py`, `review.py` | spectrogram settings (FFT, frequency range, colours) |
+| `annotator` | `annotator.py` | folders, metadata CSV, categories (keys 1–9) |
+| `learning_curve` | reference | the values used for the learning curve |
+| `survey` | `sample_clips.py`, `detect.py` | drives, file patterns, sampling, train/heldout split |
+| `detection` | `detect.py`, `review.py`, `make_generation.py`, `evaluate.py` | model, thresholds, event merging |
+| `review` | `review.py`, `make_generation.py`, `evaluate.py` | review queues |
+| `generations` | `make_generation.py`, `evaluate.py`, `detect.py --gen` | training seed, evaluation thresholds |
+
+The training scripts (Part 1) don't read the YAML: they take everything as
+command-line options. Paths in the YAML are relative to `code/`, which is why every
+script must be run from there.
+
+> `annotator.py` rejects unknown keys in `viewer` / `annotator`: a key added there must
+> also be added to its `Config` dataclass.
+
+---
+
+## Part 1: training on Xeno-canto
+
+### 1. Fetch the recordings
+
+```bash
+python src/tools/recording_fetch_xc.py
+```
+
+Downloads every quality A and B *Gallinago gallinago* recording into
+`data/xc_gallinago_gallinago/`, with `metadata.csv` (XC fields: `file-name`, `rec` =
+recordist, `q` = quality, `type`, ...). Files already downloaded are skipped.
+
+### 2. Annotate
+
+Label time regions in **Audacity label format**: one file per recording,
+`data/annotation_labels/<recording stem>.txt`, one `start<TAB>end<TAB>label` line per
+call. Labels must be `Drumming`, `Song` or `Call` (or `Other`): the label text becomes
+the class folder name later on. **An empty file means "listened, no calls".**
+
+With the built-in spectrogram annotator:
+
+```bash
+python src/tools/annotator.py                  # recordings still to do, best quality first
+python src/tools/annotator.py --type drum --n 25
+python src/tools/annotator.py --list           # preview the queue
+python src/tools/annotator.py --status         # progress summary
+python src/tools/annotator.py --max-per-group 5   # cap per recordist (group_cols)
+```
+
+Main keys: drag to select, `1`–`9` to label, right-click a label to edit it, `Space`
+to play, `s` to save and go to the next recording, `x` for "no calls", `b` to go back.
+Unsaved work is autosaved to `<stem>.partial` and restored next time.
+
+Annotating in Audacity instead works too. `annotation_tools.py` tracks progress:
+
+```bash
+python src/tools/annotation_tools.py status --csv data/xc_gallinago_gallinago/metadata.csv \
+    --labels-dir data/annotation_labels --allowed Drumming Song Call Other
+python src/tools/annotation_tools.py next --csv data/xc_gallinago_gallinago/metadata.csv \
+    --labels-dir data/annotation_labels --n 10 --type drum
+```
+
+To summarise the annotations (labels per class, durations, recordists, concentration
+in one file):
+
+```bash
+python src/training/label_stats.py --labels-dir data/annotation_labels \
+    --xc-csv data/xc_gallinago_gallinago/metadata.csv
+```
+
+### 3. Cut 3 s training clips
+
+```bash
+python src/training/make_training_clips.py --audio-dir data/xc_gallinago_gallinago \
+    --labels-dir data/annotation_labels --out-dir outputs/clips
+```
+
+→ `outputs/clips/<label>/*.wav` (3 s windows), `outputs/clips/Noise/` and
+`outputs/clips/metadata.csv`.
+
+- A call shorter than 3 s gets one window containing the whole call, at a random position.
+- A longer call gets a chain of windows, each covering at least `--tau` s of it.
+- Windows containing another call type are rejected.
+- Noise windows are drawn away from every label (`--noise-per-file`, `--noise-total`).
+
+Add `--clips-csv outputs/clips/metadata.csv` to `label_stats.py` to see the clips per class.
+
+### 4. Cross-validation (5 folds, grouped by recordist)
+
+```bash
+python src/training/make_folds.py --clips-csv outputs/clips/metadata.csv \
+    --xc-csv data/xc_gallinago_gallinago/metadata.csv --out-dir outputs/folds \
+    --folds 5 --drop-labels Other
+bash src/training/birdnet_training.sh       # one model per fold → models/fold_K.tflite
+bash src/training/model_analysis.sh         # predictions on each fold's val set → models/preds/
+python src/tools/confusion_matrix.py outputs/folds models/preds results/confusion_matrices.csv
+```
+
+All clips of one recordist stay on the same side of each split, so validation measures
+generalisation to *unseen sources*. `--seed` fixes the fold assignment. The clips are
+hard-linked, so no disk space is duplicated.
+
+### 5. Learning curve
+
+```bash
+python src/training/run_learning_curve.py --clips-csv outputs/clips/metadata.csv \
+    --xc-csv data/xc_gallinago_gallinago/metadata.csv --drop-labels Other
+python src/training/plot_learning_curve.py --models-dir models/lc --work-dir outputs/lc \
+    --out-dir results/lc
+```
+
+Trains one model per (training fraction × subset seed × fold): by default fractions
+0.25/0.5/0.75/1.0, subset seeds 0/1/2, 5 folds. Layout:
+`outputs/lc/frac_X/seed_S/fold_K/` and `models/lc/frac_X/seed_S/fold_K.tflite`. The
+run can be resumed: existing folds and models are skipped. The plot step writes
+`learning_curve_long.csv`, `learning_curve_summary.csv` and one PNG per metric, and
+prints the paired gap between the two largest fractions.
+
+The final model used for the survey is `models/final/gallinago_v0.tflite` (generation 0).
+
+---
+
+## Part 2: the survey
+
+The survey loop: **sample → detect → review → train the next generation → evaluate →
+detect again with the better model.**
+
+### 6. Sample clips (one drive at a time)
+
+The field recordings are on several drives that can't be plugged in together. Plug in
+one drive and run it under its name (a key of `survey.drives`):
+
+```bash
+python src/survey/sample_clips.py --drive D1 --dry-run   # show this drive's plan
+python src/survey/sample_clips.py --drive D1             # plan (once) + cut the clips
+python src/survey/sample_clips.py --drive D2 --root /mnt/e   # other mount point
+```
+
+For each site, the date range is cut into `survey.sampling.periods` parts, and one 20 min
+clip is drawn per part. The sites are split into **train / heldout** within each drive
+(`survey.split.fractions`).
+
+**heldout sites are never used for training: they are the test set.**
+
+The plan of each drive is frozen in `data/survey/plan/<drive>_{sites,manifest}.csv` and
+reused as is; delete it to resample that drive. After each run, `data/survey/sites.csv`
+and `manifest.csv` are rebuilt from all frozen drives, and the clips go to
+`data/survey/clips/`.
+
+### 7. Detect
+
+```bash
+python src/survey/detect.py --dry-run            # how many clips would be analysed
+python src/survey/detect.py                      # analyse new clips + rebuild the tables
+python src/survey/detect.py --min-conf 0.35      # other event threshold for this run
+python src/survey/detect.py --post-only --min-conf 0.4   # re-threshold, no BirdNET
+python src/survey/detect.py --split heldout      # one split only
+```
+
+Runs `detection.model` on every clip of the manifest that has no result yet (the run
+can be resumed) → `data/survey/detections/`:
+
+- `raw/<clip_id>.BirdNET.results.csv`: every 3 s window ≥ `raw_min_conf`. Because the
+  low-scoring windows are kept, the threshold can be changed later without running the
+  model again.
+- `events.csv`: windows ≥ `min_conf`, merged per label when they are ≤ `merge_gap_s` apart.
+- `clip_summary.csv`: one row per clip × class, zeros included.
+
+About 25 s per 20 min clip on CPU.
+
+### 8. Review the detections
+
+```bash
+python src/survey/review.py --queue train --list   # build/show the queue, no GUI
+python src/survey/review.py --queue train --n 30   # judge the next 30 items
+python src/survey/review.py --queue test           # blind heldout test set
+```
+
+There are two queues, each frozen on first use in `data/survey/review/<queue>_queue.csv`
+(delete it to resample):
+
+| Queue | Sites | Content | Purpose |
+|---|---|---|---|
+| `train` | train | ~100 events per predicted class over confidence bins + background windows | training material for the next generation |
+| `test` | heldout | 3 s windows stratified by v0 score, **prediction hidden** | fixed benchmark for every generation |
+
+Keys:
+
+| Key | Verdict |
+|---|---|
+| `1` / `2` / `3` | Drumming / Song / Call (same order as the annotator) |
+| `0` or `n` | Noise |
+| `y` or `Enter` | prediction is right (train queue only) |
+| `u` | unsure (left out of training and evaluation) |
+| `Space` / `c` | play the item / play it with its context |
+| `b` / `q` | back (to change a verdict) / quit |
+
+Every verdict is saved at once to `<queue>_judgments.csv`, and the last verdict of an
+item wins. A new session resumes where the last one stopped. **Judge the whole test
+queue**: a partly judged low-score stratum gives very wide intervals.
+
+### 9. Train the next generation and compare
+
+```bash
+python src/survey/make_generation.py --gen 1 --dry-run   # clips per class
+python src/survey/make_generation.py --gen 1             # cut, build, train
+python src/survey/evaluate.py --gens 0 1                 # compare on the test queue
+python src/survey/detect.py --gen 1                      # whole survey with gen_1
+```
+
+**`make_generation.py`** builds generation K:
+
+- It turns the train verdicts into 3 s clips (`generations/gen_K/survey_clips/`):
+  - false positives and confirmed background → **Noise**;
+  - confirmed or relabelled calls → their class;
+  - Unsure → skipped.
+- It adds the clips to the XC clips (`gen_K/train/`, hard links).
+- It trains with v0's hyperparameters and `generations.train_seed` →
+  `gen_K/model.tflite`.
+- `gen_0/` holds links to v0.
+- Verdicts from heldout sites are refused.
+
+**`evaluate.py`** scores every listed generation on **the same** judged test windows:
+
+- Per class, and for "any snipe vs Noise", it gives average precision (AP) plus
+  precision and recall at `generations.eval_thresholds`, with 95 % bootstrap intervals.
+- For each newer generation it adds the paired difference to the first one listed.
+- Each window is weighted by the population of its score stratum, which corrects for
+  the stratified sampling.
+- Output: `results/survey/compare.csv` and `pr_<class>.png`.
+
+**Reading the result:** look at the `diff_vs_gen0` column and its interval. If the
+interval excludes 0, the change is probably real. Adding a generation later only means
+one more value after `--gens`: no new labelling is needed.
+
+**The loop:** review more train items → `make_generation.py --gen 2` →
+`evaluate.py --gens 0 1 2` → `detect.py --gen 2` once it is the best.
+
+---
+
+## Script reference
+
+All paths relative to `code/`.
+
+| Script | Stage | Reads | Writes |
+|---|---|---|---|
+| `src/tools/recording_fetch_xc.py` | 1 fetch | XC API (`XC_API_KEY`) | `data/xc_gallinago_gallinago/` |
+| `src/tools/annotator.py` | 2 annotate | XC audio + metadata, `project.yaml` | `data/annotation_labels/*.txt`, status CSV |
+| `src/tools/annotation_tools.py` | 2 annotate | metadata, label files | `annotation_status.csv`, batch folders |
+| `src/training/label_stats.py` | 2–3 | label files, metadata, clip metadata | console summary |
+| `src/training/make_training_clips.py` | 3 clips | audio + labels | `outputs/clips/` |
+| `src/training/make_folds.py` | 4 folds | clip + XC metadata | `outputs/folds/fold_K/`, `fold_stats.csv` |
+| `src/training/birdnet_training.sh` | 4 train | `outputs/folds/` | `models/fold_K.tflite` |
+| `src/training/model_analysis.sh` | 4 evaluate | folds + models | `models/preds/fold_K/` |
+| `src/tools/confusion_matrix.py` | 4 evaluate | folds + predictions | confusion-matrix CSV |
+| `src/training/run_learning_curve.py` | 5 learning curve | clip + XC metadata | `outputs/lc/`, `models/lc/` |
+| `src/training/plot_learning_curve.py` | 5 learning curve | `models/lc/`, `outputs/lc/` | `results/lc/` |
+| `src/survey/sample_clips.py` | 6 sample | a survey drive | `data/survey/{plan,clips}/`, `sites.csv`, `manifest.csv` |
+| `src/survey/detect.py` | 7 detect | manifest, clips, model | `data/survey/detections/` (or `generations/gen_K/detections/`) |
+| `src/survey/review.py` | 8 review | detections, manifest, clips | `data/survey/review/` |
+| `src/survey/make_generation.py` | 9 train | train judgments, XC clips | `generations/gen_K/` |
+| `src/survey/evaluate.py` | 9 compare | test judgments, generations | `results/survey/`, `gen_K/test_scores/` |
+| `src/common/config.py` | all | `config/project.yaml` | – |
+
+---
+
+## Documentation site
+
+Every module, function and class has a Google-style docstring (arguments, return values,
+errors). To browse them as a website with search, from `code/`:
+
+```bash
+pdoc --docformat google src/common/config.py src/survey/*.py src/tools/*.py src/training/*.py
+```
+
+This opens http://localhost:8080; the page reloads when a file is saved, and Ctrl+C
+stops the server. Add `-o docs/` to write a static HTML copy instead. Only Python files
+are documented: the YAML, shell scripts and data are not.
+
+---
+
+## Good to know
+
+- **Run from `code/`**: all default paths are relative to it.
+- **Label files:** lines starting with `\` (Audacity frequency ranges) are skipped, and
+  decimal commas are accepted. Keep the label names consistent, since they become class
+  folders.
+- **Frozen plans and queues:** `data/survey/plan/<drive>_*.csv` and
+  `data/survey/review/<queue>_queue.csv` are reused as they are. Delete them on purpose
+  to resample.
+- **heldout sites** are only used by the test queue and `evaluate.py`;
+  `make_generation.py` refuses their verdicts.
+- **Changing the detection model or overlap** invalidates `detections/raw/`: `detect.py`
+  stops rather than mixing results (`--force` re-runs everything).
+- **`confusion_matrix.py`** writes to its third argument, so give it a `.csv` path; it
+  refuses anything else.
