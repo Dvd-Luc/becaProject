@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 def read_labels(path):
+    """Read an Audacity label file -> [(start, end, label)]."""
     out = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("\\"):
@@ -26,6 +27,7 @@ def read_labels(path):
 
 
 def recordist_map(xc_csv, file_col, rec_col):
+    """Recording stem -> recordist name, from the Xeno-canto metadata CSV."""
     m = {}
     with open(xc_csv, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
@@ -34,6 +36,7 @@ def recordist_map(xc_csv, file_col, rec_col):
 
 
 def table(title, rows, header):
+    """Print rows as an aligned text table (first column left-aligned)."""
     print(f"\n{title}")
     widths = [max(len(str(x)) for x in col) for col in zip(header, *rows)]
     fmt = "  ".join(f"{{:>{w}}}" if i else f"{{:<{w}}}" for i, w in enumerate(widths))
@@ -43,6 +46,7 @@ def table(title, rows, header):
 
 
 def main():
+    """CLI entry point: print per-class label statistics, and per-class clip counts with --clips-csv."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--labels-dir", required=True)

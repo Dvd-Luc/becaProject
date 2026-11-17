@@ -7,7 +7,7 @@ Writes
   learning_curve_summary.csv   mean / sd over folds per (class, metric, fraction)
   learning_curve_<metric>.png  one panel per class; faint dots = folds, line = mean +- sd
 
-Every run is read from  <models-dir>/frac_X/seed_S/fold_K*Metrics*.csv  (BirdNET's table,
+Every run is read from  <models-dir>/frac_X/seed_S/fold_K*_evaluation.csv  (BirdNET's table,
 first column = class). Scores of different subset seeds are averaged within a fold first,
 so the spread shown is the spread between folds (= between validation recordists).
 """
@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 
 
 def num(x):
+    """float(x), or None if x is not a number."""
     try:
         return float(x)
     except (TypeError, ValueError):
@@ -41,6 +42,7 @@ def read_stats(path):
 
 
 def main():
+    """CLI entry point: collect all fold metrics, write the CSVs and plots, print the paired gap."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--models-dir", default="models/lc")
@@ -75,7 +77,7 @@ def main():
                     if v is not None:
                         long_rows.append([frac, seed, fold, n_rec, n_clips, cls, col, v])
     if not long_rows:
-        raise SystemExit(f"no metrics CSV found under {a.models_dir} (look for *Metrics*.csv)")
+        raise SystemExit(f"no metrics CSV found under {a.models_dir} (looked for *_evaluation.csv)")
 
     with open(out / "learning_curve_long.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)

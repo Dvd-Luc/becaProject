@@ -35,6 +35,7 @@ MANIFEST = ".queue_manifest.txt"   # names of the files placed in the batch fold
 
 
 def load_rows(path):
+    """Rows of a CSV file as dicts."""
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
@@ -53,6 +54,7 @@ def read_label_names(path):
 
 # ---------- split ----------
 def cmd_split(a):
+    """`split`: place each recording in <out-dir>/<quality>/ (copy, move or symlink)."""
     rows = load_rows(a.csv)
     counts, missing = Counter(), []
     for r in rows:
@@ -80,6 +82,7 @@ def cmd_split(a):
 
 # ---------- status ----------
 def build_status(a):
+    """One status row per CSV recording: todo / done / no_calls, with its label names."""
     rows = load_rows(a.csv)
     out = []
     for r in rows:
@@ -99,6 +102,7 @@ def build_status(a):
 
 
 def cmd_status(a):
+    """`status`: write the status CSV and print progress and label counts per class."""
     out = build_status(a)
     with open(a.status_file, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(out[0]))
@@ -124,6 +128,11 @@ def cmd_status(a):
 
 # ---------- next ----------
 def cmd_next(a):
+    """`next`: list the next recordings to annotate, best quality first.
+
+    With --queue-dir, the batch folder is emptied of the files it placed earlier
+    (tracked in .queue_manifest.txt) and refilled with copies of the next batch.
+    """
     todo = [o for o in build_status(a) if o["status"] == "todo"]
     if a.type:
         todo = [o for o in todo if a.type.lower() in o["type"].lower()]
@@ -184,6 +193,7 @@ def cmd_next(a):
 
 
 def main():
+    """CLI entry point: parse the subcommand and its options, then run it."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     common = argparse.ArgumentParser(add_help=False)

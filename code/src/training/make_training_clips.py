@@ -54,6 +54,7 @@ def read_labels(path):
 
 
 def overlap(a0, a1, b0, b1):
+    """Length of the overlap between [a0, a1] and [b0, b1] (0 if disjoint)."""
     return max(0.0, min(a1, b1) - max(a0, b0))
 
 
@@ -74,6 +75,7 @@ def has_conflict(w0, idx, labels, tol):
 
 
 def safe(name):
+    """Make a label usable as a folder name."""
     return re.sub(r"[^\w\-. ,]", "_", name).strip()
 
 
@@ -136,6 +138,7 @@ def noise_windows(labels, rec_len, n, rng, margin, max_tries=200):
 
 # ---------- I/O ----------
 def save_clip(audio_path, sr, w0, folder):
+    """Write the 3 s window starting at w0 to folder/<recording>_<start>s.wav."""
     data, _ = sf.read(audio_path, start=int(round(w0 * sr)),
                       frames=int(round(WIN * sr)))
     folder.mkdir(parents=True, exist_ok=True)
@@ -145,6 +148,11 @@ def save_clip(audio_path, sr, w0, folder):
 
 
 def process(audio_path, label_path, args, rng, writer):
+    """Cut the call windows of one recording and draw its noise windows.
+
+    Call clips are written at once; noise windows are returned as [(audio_path, start)]
+    so --noise-total can subsample them over all recordings.
+    """
     info = sf.info(audio_path)
     sr, rec_len = info.samplerate, info.frames / info.samplerate
     labels = read_labels(label_path)
@@ -176,6 +184,7 @@ def process(audio_path, label_path, args, rng, writer):
 
 
 def main():
+    """CLI entry point: process every labelled recording, then write the noise clips and a summary."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--audio-dir", required=True)

@@ -24,6 +24,7 @@ FIELDS = ["id", "gen", "sp", "en", "type", "sex", "stage", "q", "length",
 
 
 def get_json(params, retries=3):
+    """GET the API with these parameters and return the JSON, retrying with back-off."""
     for attempt in range(retries):
         try:
             r = requests.get(API_URL, params=params, timeout=60)
@@ -54,6 +55,10 @@ def fetch_metadata(quality):
 
 
 def download(rec):
+    """Download one recording into OUT_DIR -> 'ok', 'skipped' (already there) or 'failed'.
+
+    Writes to a .part file first, so an interrupted download is never taken as complete.
+    """
     name = rec.get("file-name") or f"XC{rec['id']}.mp3"
     path = os.path.join(OUT_DIR, name)
     if os.path.exists(path) and os.path.getsize(path) > 0:
@@ -77,6 +82,7 @@ def download(rec):
 
 
 def main():
+    """Fetch the metadata of all quality A/B recordings, save metadata.csv, download the audio."""
     os.makedirs(OUT_DIR, exist_ok=True)
     all_recs = []
     for q in QUALITIES:

@@ -47,11 +47,13 @@ PARAM_KEYS = ["model", "overlap", "raw_min_conf"]
 
 
 def read_dicts(path):
+    """Rows of a CSV file as dicts."""
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def write_rows(path, header, rows):
+    """Write a CSV file with a header row, creating parent folders."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -60,6 +62,7 @@ def write_rows(path, header, rows):
 
 
 def raw_path(raw_dir, cid):
+    """Path of BirdNET's raw result file for one clip."""
     return raw_dir / f"{cid}.BirdNET.results.csv"
 
 
@@ -108,6 +111,12 @@ def merge_windows(windows, gap):
 
 
 def post(clips, raw_dir, d, labels):
+    """Turn raw BirdNET windows into events and per-clip summaries.
+
+    Keeps windows >= detection.min_conf, merges them per clip and label when the gap
+    is <= merge_gap_s, optionally caps the events per clip (highest confidence kept).
+    Returns (event rows, summary rows); every clip x label gets a summary row, zeros included.
+    """
     min_conf, gap, cap = d["min_conf"], d["merge_gap_s"], d.get("max_events_per_clip")
     events_out, summary_out = [], []
     for r in clips:
@@ -137,6 +146,7 @@ def post(clips, raw_dir, d, labels):
 
 
 def main():
+    """CLI entry point: run BirdNET on the clips still to analyse, then rebuild the tables."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--config", default="config/project.yaml")

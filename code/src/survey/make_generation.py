@@ -59,11 +59,13 @@ TRAIN_WRAPPER = ("import sys, birdnet_analyzer.config as c; c.RANDOM_SEED = int(
 
 
 def read_dicts(path):
+    """Rows of a CSV file as dicts."""
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def write_dicts(path, header, rows):
+    """Write dicts to a CSV file with the given header, creating parent folders."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=header)
@@ -91,6 +93,7 @@ def link_gen0(model, gdir):
 
 
 def train_args(model):
+    """birdnet_analyzer.train options that reproduce the model's _Params.csv settings."""
     p = model_files(model)[2]
     if not p.exists():
         print(f"note: {p} not found, BirdNET defaults used")
@@ -118,6 +121,11 @@ def raw_scores(raw_dir, clip_id, label):
 
 
 def windows_of(item, raw_dir, max_n):
+    """Start times of the 3 s grid windows to cut for one judged item.
+
+    Events longer than max_n windows keep the max_n windows v0 scored highest for
+    the predicted class, so the gap windows bridged by merge_gap_s are dropped.
+    """
     s, e = float(item["start_s"]), float(item["end_s"])
     ks = list(range(round(s / WIN), max(round(s / WIN) + 1, round(e / WIN))))
     if item["kind"] == "event" and len(ks) > max_n:
@@ -127,6 +135,7 @@ def windows_of(item, raw_dir, max_n):
 
 
 def link(src, dst):
+    """Hard-link src to dst, or copy it when linking is impossible (other filesystem)."""
     try:
         os.link(src, dst)
     except OSError:                                    # other filesystem
@@ -134,6 +143,7 @@ def link(src, dst):
 
 
 def main():
+    """CLI entry point: check the verdicts, cut survey clips, build train/ and train gen_K."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--config", default="config/project.yaml")

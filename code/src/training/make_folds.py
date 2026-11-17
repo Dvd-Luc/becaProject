@@ -34,6 +34,7 @@ MIN_VAL, MIN_TRAIN = 10, 30      # warn below these clip counts per class
 
 
 def place(src, dst, mode):
+    """Put src at dst by hard link, symlink or copy (hard link falls back to copy)."""
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         return
@@ -75,6 +76,7 @@ def assign_groups(groups, k, rng):
 
 
 def main():
+    """CLI entry point: group clips by recordist, assign folds, fill fold_K/{train,val}, write stats."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--clips-csv", required=True)

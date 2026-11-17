@@ -58,6 +58,7 @@ HELP = ("drag: select | 1-9: label | right-click label: edit | Space: play | "
 # ---------------------------------------------------------------- config / IO
 @dataclass
 class Config:
+    """Annotator settings: annotator_config.yaml keys, or viewer + annotator in project.yaml."""
     audio_dir: str
     labels_dir: str
     categories: list
@@ -78,6 +79,10 @@ class Config:
     group_cols: list = field(default_factory=list) #CSV columns to balance across when selecting files (e.g. [rec, loc]). Empty = off
 
 def load_config(path):
+    """Load the annotator settings from the standalone file or the unified project.yaml.
+
+    Unknown keys are an error, so a new config key must also be a Config field.
+    """
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     if "annotator" in raw:                        # unified project.yaml
         raw = {**raw.get("viewer", {}), **raw["annotator"]}
@@ -91,6 +96,10 @@ def load_config(path):
 
 
 def read_labels(path):
+    """Read an Audacity label file -> [{start, end, cat}] sorted by start.
+
+    Frequency-range lines (starting with a backslash) are skipped and decimal commas accepted.
+    """
     labels = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("\\"):      # skip frequency-range lines
@@ -104,6 +113,7 @@ def read_labels(path):
 
 
 def write_labels(path, labels):
+    """Write labels in Audacity format (start TAB end TAB label), sorted by start."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         for l in sorted(labels, key=lambda l: l["start"]):
@@ -161,6 +171,11 @@ def balance_groups(files, info, done, max_per_group=None):
 
 
 def list_files(cfg, include_done=False, type_filter=None, limit=None, max_per_group=None):
+    """Recordings to annotate, best quality first.
+
+    Only those without a label file unless include_done; optionally filtered on the CSV
+    type, balanced across group_cols (e.g. recordists) and limited to `limit` files.
+    """
     meta = load_metadata(cfg)
     files = [p for p in Path(cfg.audio_dir).iterdir() if p.suffix.lower() in AUDIO_EXT]
     info = lambda p: meta.get(p.name, {"q": "", "type": "", "group": ""})
@@ -190,6 +205,7 @@ def list_files(cfg, include_done=False, type_filter=None, limit=None, max_per_gr
 
 
 def build_status(cfg):
+    """One status row per recording (quality, type, group, status, labels)."""
     meta = load_metadata(cfg)
     names = list(meta) + sorted(p.name for p in Path(cfg.audio_dir).iterdir()
                                 if p.suffix.lower() in AUDIO_EXT and p.name not in meta)
@@ -205,6 +221,7 @@ def build_status(cfg):
 
 
 def write_status(cfg):
+    """Rewrite the status CSV and return its rows."""
     rows = build_status(cfg)
     if rows:
         with open(cfg.status_file, "w", newline="", encoding="utf-8") as f:
@@ -215,6 +232,7 @@ def write_status(cfg):
 
 
 def print_status(cfg):
+    """Rewrite the status CSV and print progress, label counts and unknown label names."""
     rows = write_status(cfg)
     print(f"{len(rows)} recordings")
     print("by status:", dict(Counter(r["status"] for r in rows)))
@@ -255,7 +273,9 @@ def compute_spectrogram(x, sr, n_fft, hop, f_min, f_max):
 
 # ---------------------------------------------------------------- application
 class Annotator:
+    """Matplotlib spectrogram window to label time regions, one recording at a time."""
     def __init__(self, cfg, files):
+        """Build the figure, widgets and key bindings, then load the first file."""
         import matplotlib.pyplot as plt
         self.plt = plt
         for k in [k for k in plt.rcParams if k.startswith("keymap.")]:
@@ -308,6 +328,10 @@ class Annotator:
         return self._txt().with_suffix(".partial")
 
     def load_file(self, i):
+        """Load recording i, compute its spectrogram and restore its labels.
+
+        Unsaved work (.partial) takes precedence over the saved .txt.
+        """
         self._stop_play()
         self.idx = i
         path = self.files[i]
@@ -336,9 +360,11 @@ class Annotator:
             pass
 
     def _autosave(self):
+        """Save the current labels to the .partial file."""
         write_labels(self._partial(), self.labels)
 
     def save_and_next(self):
+        """Save the labels and go to the next recording (refuses an uncommitted selection)."""
         if self.get_selection() is not None:
             return self._msg("Uncommitted selection: press a category key or Backspace first")
         if not self.labels:
@@ -346,11 +372,13 @@ class Annotator:
         self._finish()
 
     def mark_empty(self):
+        """Save an empty label file ("listened, no calls") and go to the next recording."""
         if self.labels or self.get_selection() is not None:
             return self._msg("This recording has labels: delete them first if it has no calls")
         self._finish()
 
     def _finish(self):
+        """Write the .txt, drop the .partial, update the status CSV and load the next file."""
         write_labels(self._txt(), self.labels)
         self._partial().unlink(missing_ok=True)
         try:
@@ -365,6 +393,7 @@ class Annotator:
             self._msg(f"saved {done}. That was the last recording: all done")
 
     def go_back(self):
+        """Load the previous recording."""
         if self.idx > 0:
             self.load_file(self.idx - 1)
 
@@ -374,6 +403,7 @@ class Annotator:
                   "press a category key, Space to listen")
 
     def get_selection(self):
+        """Current selection (start, end) clipped to the recording, or None."""
         if not self.span.get_visible():
             return None
         a, b = self.span.extents
@@ -381,6 +411,7 @@ class Annotator:
         return (a, b) if b - a >= MIN_SEL else None
 
     def commit(self, cat_idx):
+        """Turn the selection into a label of category cat_idx (None = keep the edited label's category)."""
         sel = self.get_selection()
         if sel is None:
             return self._msg("No selection: drag on the spectrogram first")
@@ -399,6 +430,7 @@ class Annotator:
         self._msg(f"labelled {sel[0]:.2f}-{sel[1]:.2f} s as {cat}")
 
     def delete_selection(self):
+        """Clear the selection; if it was a label being edited, that label is deleted."""
         if self.get_selection() is None:
             return self._msg("Nothing selected: right-click a label to select it first")
         was_edit = self.edit_orig is not None
@@ -410,6 +442,7 @@ class Annotator:
         self._msg("label deleted" if was_edit else "selection cleared")
 
     def cancel(self):
+        """Cancel the selection, restoring a label being edited."""
         if self.edit_orig is not None:
             self.labels.append(self.edit_orig)
             self.labels.sort(key=lambda l: l["start"])
@@ -418,6 +451,7 @@ class Annotator:
         self.refresh()
 
     def _on_click(self, event):
+        """Right-click on a label: take it back into the selection to adjust or relabel it."""
         if event.button != 3 or event.inaxes is not self.ax or event.xdata is None:
             return
         if self.get_selection() is not None:
@@ -436,12 +470,14 @@ class Annotator:
 
     # ---- view
     def set_view(self, t0, length):
+        """Show `length` seconds from t0, kept inside the recording and zoom limits."""
         length = min(max(length, MIN_VIEW), self.duration)
         t0 = min(max(t0, 0.0), self.duration - length)
         self.view = (t0, t0 + length)
         self.refresh()
 
     def zoom(self, factor, center=None):
+        """Zoom the time axis by factor around center (default: centre of the view)."""
         t0, t1 = self.view
         length = t1 - t0
         c = (t0 + t1) / 2 if center is None else center
@@ -449,10 +485,12 @@ class Annotator:
         self.set_view(c - (c - t0) / length * new, new)
 
     def pan(self, frac):
+        """Scroll the view by a fraction of its width (negative = left)."""
         t0, t1 = self.view
         self.set_view(t0 + frac * (t1 - t0), t1 - t0)
 
     def _on_scroll(self, event):
+        """Mouse wheel: zoom around the cursor; shift + wheel: scroll."""
         if event.inaxes is not self.ax or event.xdata is None:
             return
         if event.key == "shift":
@@ -462,6 +500,7 @@ class Annotator:
 
     # ---- drawing
     def refresh(self):
+        """Redraw the spectrogram, labels, title and slider for the current view."""
         self._draw_image()
         self._draw_labels()
         t0, t1 = self.view
@@ -480,6 +519,7 @@ class Annotator:
         self.fig.canvas.draw_idle()
 
     def _draw_image(self):
+        """Draw the visible part of the spectrogram, max-pooled to MAX_COLS columns."""
         t0, t1 = self.view
         sr, hop, n_fft = self.sr, self.cfg.hop_length, self.cfg.n_fft
         n_frames = self.S.shape[1]
@@ -499,6 +539,7 @@ class Annotator:
         self.ax.set_ylim(self.f_lo, self.f_hi)
 
     def _draw_labels(self):
+        """Draw the labels that overlap the view as coloured spans with their name."""
         for a in self._label_artists:
             a.remove()
         self._label_artists = []
@@ -521,6 +562,7 @@ class Annotator:
 
     # ---- playback
     def toggle_play(self):
+        """Play the selection (or the visible part) with a moving playhead; again to stop."""
         if self._playing:
             return self._stop_play()
         sel = self.get_selection()
@@ -551,6 +593,7 @@ class Annotator:
         self.fig.canvas.draw_idle()
 
     def _stop_play(self):
+        """Stop playback and hide the playhead."""
         if self._timer is not None:
             self._timer.stop()
             self._timer = None
@@ -566,6 +609,7 @@ class Annotator:
 
     # ---- keyboard
     def _on_key(self, event):
+        """Dispatch a key press to the matching action (see Controls in the module docstring)."""
         k, n = event.key, len(self.cfg.categories)
         if k is None:
             return
@@ -601,10 +645,12 @@ class Annotator:
             self.go_back()
 
     def run(self):
+        """Open the window (blocks until it is closed)."""
         self.plt.show()
 
 
 def main():
+    """CLI entry point: --status / --list, or open the annotator on the selected recordings."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--config", default="config/project.yaml")

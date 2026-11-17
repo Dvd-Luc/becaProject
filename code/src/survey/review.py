@@ -58,11 +58,13 @@ NOISE, UNSURE = "Noise", "Unsure"
 
 # ---------------------------------------------------------------- IO
 def read_dicts(path):
+    """Rows of a CSV file as dicts."""
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def write_dicts(path, header, rows):
+    """Write dicts to a CSV file with the given header, creating parent folders."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=header)
@@ -71,6 +73,7 @@ def write_dicts(path, header, rows):
 
 
 def append_judgment(path, row):
+    """Append one judgment row to the judgments CSV (header written on first use)."""
     new = not path.exists()
     with open(path, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=JUDGE_HEADER)
@@ -99,6 +102,7 @@ def classes_from(cfg):
 
 # ---------------------------------------------------------------- queues
 def window_row(kind, m, start, stratum, predicted="", max_conf=""):
+    """Queue row for one 3 s window (background or test item) of a manifest clip."""
     return {"item_id": f"{kind}_{m['clip_id']}_{start:.0f}", "kind": kind,
             "clip_id": m["clip_id"], "site": m["site"], "split": m["split"],
             "period": m["period"], "clip_path": m["clip_path"],
@@ -107,11 +111,19 @@ def window_row(kind, m, start, stratum, predicted="", max_conf=""):
 
 
 def analysed_clips(manifest, raw_dir, split):
+    """Manifest clips of one split that have a raw BirdNET result."""
     return [m for m in manifest if m["split"] == split
             and (raw_dir / f"{m['clip_id']}.BirdNET.results.csv").exists()]
 
 
 def build_train(cfg, manifest, rng):
+    """Build the train queue: stratified events plus background windows.
+
+    Events (train sites) are drawn per predicted class, evenly over review.conf_bins,
+    topped up from other bins when one is short. Background = review.background_per_clip
+    random grid windows per analysed clip, at least context_s away from any event.
+    Returns (rows, None).
+    """
     r, d = cfg["review"], cfg["detection"]
     by_clip = {m["clip_id"]: m for m in manifest}
     events = [e for e in read_dicts(Path(d["dir"]) / "events.csv") if e["split"] == "train"]
@@ -161,6 +173,12 @@ def build_train(cfg, manifest, rng):
 
 
 def build_test(cfg, manifest, rng):
+    """Build the blind test queue from heldout clips.
+
+    Every 3 s grid window gets v0's best score over all classes (0 if absent from raw/),
+    is put in a review.test_bins stratum, and review.test_per_bin windows are drawn per
+    stratum. Returns (rows, strata) where strata hold each bin's population.
+    """
     r, d = cfg["review"], cfg["detection"]
     raw_dir = Path(d["dir"]) / "raw"
     bins = r["test_bins"]
@@ -186,6 +204,7 @@ def build_test(cfg, manifest, rng):
 
 
 def get_queue(cfg, queue, out):
+    """Return the frozen queue, building and saving it (shuffled) on first use."""
     path = out / f"{queue}_queue.csv"
     if path.exists():
         return read_dicts(path)
@@ -201,6 +220,7 @@ def get_queue(cfg, queue, out):
 
 
 def describe(queue, rows, judged):
+    """Print the queue size, items per stratum and the verdicts so far."""
     print(f"{queue} queue: {len(rows)} items, {sum(r['item_id'] in judged for r in rows)} judged")
     for s, n in sorted(Counter(r["stratum"] for r in rows).items()):
         print(f"    {s:28s} {n}")
@@ -210,7 +230,9 @@ def describe(queue, rows, judged):
 
 # ---------------------------------------------------------------- GUI
 class Reviewer:
+    """Matplotlib window to judge queue items one by one (keys in the module docstring)."""
     def __init__(self, cfg, queue, items, judged, jpath, classes):
+        """Set up the figure, key bindings and show the first item."""
         import matplotlib.pyplot as plt
         self.plt = plt
         for k in [k for k in plt.rcParams if k.startswith("keymap.")]:
@@ -232,9 +254,14 @@ class Reviewer:
         self.show(0)
 
     def item(self):
+        """The queue row currently shown."""
         return self.items[self.i]
 
     def show(self, i):
+        """Load item i with review.context_s around it and draw its spectrogram.
+
+        Only that segment is read from the clip. The prediction is hidden for the test queue.
+        """
         self._stop()
         self.i = i
         it = self.item()
@@ -272,6 +299,7 @@ class Reviewer:
         self.fig.canvas.draw_idle()
 
     def judge(self, verdict):
+        """Save a verdict for the current item and move to the next one."""
         it = self.item()
         append_judgment(self.jpath, {
             "item_id": it["item_id"], "clip_id": it["clip_id"], "start_s": it["start_s"],
@@ -292,6 +320,7 @@ class Reviewer:
         self.fig.canvas.draw_idle()
 
     def play(self, context):
+        """Play the item (or the whole context) with a moving playhead; again to stop."""
         if self._playing:
             return self._stop()
         s, e = (self.t0, self.t0 + len(self.x) / self.sr) if context else self.span
@@ -321,6 +350,7 @@ class Reviewer:
         self.fig.canvas.draw_idle()
 
     def _stop(self):
+        """Stop playback and hide the playhead."""
         if self._timer is not None:
             self._timer.stop()
             self._timer = None
@@ -335,6 +365,7 @@ class Reviewer:
             self.playhead.set_visible(False)
 
     def _on_key(self, ev):
+        """Dispatch a key press: verdicts, playback, back, quit."""
         k = ev.key
         if k is None:
             return
@@ -360,10 +391,12 @@ class Reviewer:
             self.plt.close(self.fig)
 
     def run(self):
+        """Open the window (blocks until it is closed)."""
         self.plt.show()
 
 
 def main():
+    """CLI entry point: load or build the queue, then judge the next items in the GUI."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--config", default="config/project.yaml")

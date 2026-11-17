@@ -41,11 +41,13 @@ COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]  # f
 
 
 def read_dicts(path):
+    """Rows of a CSV file as dicts."""
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def cut_windows(items, wdir):
+    """Cut each judged test window once to wdir/<item_id>.wav (existing files are kept)."""
     wdir.mkdir(parents=True, exist_ok=True)
     n = 0
     for it in items:
@@ -103,12 +105,14 @@ def ap_pr(y, s, w, thresholds):
 
 
 def pr_curve(y, s, w):
+    """Weighted (recall, precision) arrays along the ranking by score, for plotting."""
     o = np.argsort(-s, kind="stable")
     tp, fp = np.cumsum((w * y)[o]), np.cumsum((w * (1 - y))[o])
     return tp / max((w * y).sum(), 1e-12), tp / np.maximum(tp + fp, 1e-12)
 
 
 def main():
+    """CLI entry point: score the test windows with each generation, compute metrics, plot."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--config", default="config/project.yaml")

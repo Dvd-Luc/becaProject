@@ -36,6 +36,12 @@ MANIFEST_HEADER = ["clip_id", "site", "split", "period", "drive", "rel_path",
 
 
 def scan(s, drive, root):
+    """List the recordings of one drive.
+
+    Globs survey.audio_globs under root, takes the site from the first folder and the
+    date/time from survey.filename_pattern. Returns [{site, drive, rel, dt}];
+    files that do not match the pattern are reported and skipped.
+    """
     pat = re.compile(s["filename_pattern"])
     rows, seen, bad = [], set(), []
     for g in s["audio_globs"]:
@@ -76,6 +82,13 @@ def split_sites(sites, sp, drive):
 
 
 def plan(s, rows, drive, root):
+    """Split this drive's sites and choose one clip per site and period.
+
+    Each site's date range is cut into survey.sampling.periods equal parts; in each part
+    a random day, one of its files and a random clip_minutes offset are drawn
+    (seeded by site and period, so the choice is reproducible).
+    Returns (site rows, manifest rows) in SITE_HEADER / MANIFEST_HEADER order.
+    """
     by_site = defaultdict(list)
     for r in rows:
         by_site[r["site"]].append(r)
@@ -115,11 +128,13 @@ def plan(s, rows, drive, root):
 
 
 def read_rows(path):
+    """Rows of a CSV file as lists, header skipped."""
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.reader(f))[1:]
 
 
 def write_rows(path, header, rows):
+    """Write a CSV file with a header row, creating parent folders."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -128,6 +143,7 @@ def write_rows(path, header, rows):
 
 
 def check_duplicates(s, plan_dir, drive, sites):
+    """Warn if some of these sites are already planned on another drive."""
     for other in s["drives"]:
         p = plan_dir / f"{other}_sites.csv"
         if other == drive or not p.exists():
@@ -139,6 +155,11 @@ def check_duplicates(s, plan_dir, drive, sites):
 
 
 def cut(manifest, root):
+    """Cut the manifest's clips from the drive that are not on disk yet.
+
+    Returns the number of clips present after the run; missing source files are
+    reported (wrong drive plugged in, or wrong --root).
+    """
     done = missing = 0
     for cid, site, split, k, drive, rel, off, length, clip in manifest:
         dst = Path(clip)
@@ -164,6 +185,7 @@ def cut(manifest, root):
 
 
 def merge(s, plan_dir, out):
+    """Rebuild sites.csv and manifest.csv from all frozen per-drive plans and print a summary."""
     sites, manifest, drives_done = [], [], []
     for d in s["drives"]:
         sp, mp = plan_dir / f"{d}_sites.csv", plan_dir / f"{d}_manifest.csv"
@@ -181,6 +203,7 @@ def merge(s, plan_dir, out):
 
 
 def main():
+    """CLI entry point: plan this drive once (or reuse its frozen plan), cut clips, merge."""
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--config", default="config/project.yaml")
