@@ -13,3 +13,14 @@
 *.jpg
 *.jpeg
 *.png
+
+# Models and training logs (too heavy; their _Labels/_Params/metrics files are kept)
+*.tflite
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Stray copy of a recorder card
+code/data/2026_Beca_SMMICRO_070_25_Bouverans/
