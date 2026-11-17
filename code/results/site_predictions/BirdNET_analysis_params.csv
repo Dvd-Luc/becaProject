@@ -1,0 +1,2 @@
+File splitting duration,Segment length,Sample rate,Segment overlap,Minimum Segment length,Bandpass filter minimum,Bandpass filter maximum,Merge consecutive detections,Audio speed,Custom classifier path
+600,3.0,48000,1.0,1.0,0,15000,1,1.0,models/final/gallinago_v0.tflite

@@ -1,0 +1,5 @@
+Class,Precision (0.5),Recall (0.5),F1 Score (0.5),Precision (opt),Recall (opt),F1 Score (opt),AUPRC,AUROC,Optimal Threshold,True Positives,False Positives,True Negatives,False Negatives,Samples,Percentage (%)
+OVERALL (Macro-avg),0.9643,0.7988,0.8706,0.8978,0.9659,0.9279,0.9764,0.9904,,,,,,,
+Call,0.9675,0.9225,0.9444,0.9462,0.9535,0.9498,0.9862,0.9926,0.35,123,7,269,6,129,31.85
+Drumming,0.9429,0.6667,0.7811,0.7760,0.9798,0.8661,0.9529,0.9834,0.20,97,28,278,2,99,24.44
+Song,0.9826,0.8071,0.8863,0.9712,0.9643,0.9677,0.9901,0.9951,0.25,135,4,261,5,140,34.57
