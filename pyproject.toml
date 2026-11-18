@@ -1,0 +1,10 @@
+# Tooling config only (the project is plain scripts, not an installable package).
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["code/src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]   # pycodestyle, pyflakes, warnings, import order, bugbear
+ignore = ["E501"]                    # long lines tolerated for now

@@ -27,3 +27,5 @@ code/data/2026_Beca_SMMICRO_070_25_Bouverans/
 
 # Claude files
 CLAUDE.md
+.claude/
+.~lock.*
