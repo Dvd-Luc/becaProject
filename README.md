@@ -101,13 +101,15 @@ code/
 | `detection` | `detect.py`, `review.py`, `make_generation.py`, `evaluate.py` | model, thresholds, event merging |
 | `review` | `review.py`, `make_generation.py`, `evaluate.py` | review queues |
 | `generations` | `make_generation.py`, `evaluate.py`, `detect.py --gen` | training seed, evaluation thresholds |
+| `xc_test` | `annotation_tools.py sample-test`, `evaluate.py --testset xc`, `make_generation.py` | XC test sample: seed, strata, caps |
+| `annotator_xc_test` | `annotator.py --section annotator_xc_test` | annotating the XC test sample (own labels folder) |
 
 The training scripts (Part 1) don't read the YAML: they take everything as
 command-line options. Paths in the YAML are relative to `code/`, which is why every
 script must be run from there.
 
-> `annotator.py` rejects unknown keys in `viewer` / `annotator`: a key added there must
-> also be added to its `Config` dataclass.
+> `annotator.py` rejects unknown keys in `viewer` / `annotator` / `annotator_xc_test`:
+> a key added there must also be added to its `Config` dataclass.
 
 ---
 
@@ -307,7 +309,8 @@ python src/survey/detect.py --gen 1                      # whole survey with gen
   - false positives and confirmed background → **Noise**;
   - confirmed or relabelled calls → their class;
   - Unsure → skipped.
-- It adds the clips to the XC clips (`gen_K/train/`, hard links).
+- It adds the clips to the XC clips (`gen_K/train/`, hard links, removed after training
+  unless `--keep-train`).
 - It trains with v0's hyperparameters and `generations.train_seed` →
   `gen_K/model.tflite`.
 - `gen_0/` holds links to v0.
@@ -329,6 +332,42 @@ one more value after `--gens`: no new labelling is needed.
 **The loop:** review more train items → `make_generation.py --gen 2` →
 `evaluate.py --gens 0 1 2` → `detect.py --gen 2` once it is the best.
 
+### 10. XC test set (recordists never used for training)
+
+The survey test set has few Song and Drumming positives. A second benchmark comes from
+XC recordings that were never annotated, by recordists that **never appear in the
+training annotations**:
+
+```bash
+python src/tools/annotation_tools.py sample-test --csv data/xc_gallinago_gallinago/metadata.csv \
+    --labels-dir data/annotation_labels --dry-run      # show the draw
+python src/tools/annotation_tools.py sample-test --csv data/xc_gallinago_gallinago/metadata.csv \
+    --labels-dir data/annotation_labels                # freeze data/xc_test/sample.csv
+python src/tools/annotator.py --section annotator_xc_test   # annotate it (blind)
+python src/survey/evaluate.py --gens 0 1 --testset xc       # compare generations
+```
+
+- **The sample** (`xc_test` section) is stratified by XC `type` tag (`drum`, `song`, plus
+  `random` from all eligible recordings). The tags are often wrong, so they only enrich
+  the sample: the truth is the annotation. At most `max_per_recordist` recordings per
+  recordist, and only recordists with at most `max_recordist_recordings` unannotated
+  recordings (each test recordist is lost for training, with all their recordings).
+  The sample is frozen with its settings (`sample_settings.json`); a changed setting
+  stops the run (`--force` to redraw).
+- **Annotation** goes to `data/xc_test/labels/`, never to `data/annotation_labels/`, so
+  the test recordings never become training clips. The normal annotator skips every
+  test recordist (`annotator.exclude_csv`), and `make_generation.py` refuses XC clips
+  from a test recordist.
+- **Evaluation:** each annotated recording is cut into a grid of 3 s windows
+  (`data/xc_test/windows/`). A window is positive for a class when a label overlaps it
+  by at least min(1 s, label length), the rule of `make_training_clips.py`. A smaller
+  overlap leaves it out of that class. The metrics are unweighted, and the bootstrap
+  resamples recordists. Annotate in any order and re-run at any time: only annotated
+  recordings count. Output: `results/survey/compare_xc.csv`, `pr_xc_<class>.png`.
+- XC recordings are focal and clean, so this measures generalisation to **new
+  recordists**, not precision in the field. The survey test set stays the reference
+  for that.
+
 ---
 
 ## Script reference
@@ -338,8 +377,8 @@ All paths relative to `code/`.
 | Script | Stage | Reads | Writes |
 |---|---|---|---|
 | `src/tools/recording_fetch_xc.py` | 1 fetch | XC API (`XC_API_KEY`) | `data/xc_gallinago_gallinago/` |
-| `src/tools/annotator.py` | 2 annotate | XC audio + metadata, `project.yaml` | `data/annotation_labels/*.txt`, status CSV |
-| `src/tools/annotation_tools.py` | 2 annotate | metadata, label files | `annotation_status.csv`, batch folders |
+| `src/tools/annotator.py` | 2, 10 annotate | XC audio + metadata, `project.yaml` | `data/annotation_labels/*.txt` (or `data/xc_test/labels/`), status CSV |
+| `src/tools/annotation_tools.py` | 2 annotate, 10 sample | metadata, label files | `annotation_status.csv`, batch folders, `data/xc_test/sample.csv` |
 | `src/training/label_stats.py` | 2–3 | label files, metadata, clip metadata | console summary |
 | `src/training/make_training_clips.py` | 3 clips | audio + labels | `outputs/clips/` |
 | `src/training/make_folds.py` | 4 folds | clip + XC metadata | `outputs/folds/fold_K/`, `fold_stats.csv` |
@@ -352,7 +391,7 @@ All paths relative to `code/`.
 | `src/survey/detect.py` | 7 detect | manifest, clips, model | `data/survey/detections/` (or `generations/gen_K/detections/`) |
 | `src/survey/review.py` | 8 review | detections, manifest, clips | `data/survey/review/` |
 | `src/survey/make_generation.py` | 9 train | train judgments, XC clips | `generations/gen_K/` |
-| `src/survey/evaluate.py` | 9 compare | test judgments, generations | `results/survey/`, `gen_K/test_scores/` |
+| `src/survey/evaluate.py` | 9, 10 compare | test judgments or XC test labels, generations | `results/survey/`, `gen_K/{test,xc}_scores.csv` |
 | `src/common/config.py` | all | `config/project.yaml` | – |
 
 ---
@@ -383,6 +422,8 @@ are documented: the YAML, shell scripts and data are not.
   to resample.
 - **heldout sites** are only used by the test queue and `evaluate.py`;
   `make_generation.py` refuses their verdicts.
+- **XC test recordists** (`data/xc_test/sample.csv`) are never annotated for training;
+  `make_generation.py` refuses their clips.
 - **Changing the detection model or overlap** invalidates `detections/raw/`: `detect.py`
   stops rather than mixing results (`--force` re-runs everything).
 - **`confusion_matrix.py`** writes to its third argument, so give it a `.csv` path; it
