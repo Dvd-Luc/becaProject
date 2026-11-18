@@ -55,6 +55,7 @@ annotator_xc_test:                        # annotator.py --section annotator_xc_
   labels_dir: data/xc_test/labels         # never data/annotation_labels: stays out of training
   metadata_csv: data/xc_test/sample.csv
   only_csv: true                          # only the sampled recordings
+  show_tags: false                        # blind: no file name or XC tag in the window
   file_col: file-name
   q_col: q
   type_col: type

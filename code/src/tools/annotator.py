@@ -6,6 +6,7 @@ Audacity label format (start <TAB> end <TAB> label), one file per recording:
 so they work directly with annotation_tools.py and make_training_clips.py.
 
 Usage
+
     python annotator.py --config annotator_config.yaml                 # files still to do
     python annotator.py --config annotator_config.yaml --type drum --n 25
     python annotator.py --config annotator_config.yaml --list          # preview the queue
@@ -18,7 +19,8 @@ Usage
 
 The XC test sample (annotation_tools.py sample-test) is annotated with its own section:
 labels go to data/xc_test/labels, never to the training labels_dir. The training
-section skips every recordist of that sample (exclude_csv).
+section skips every recordist of that sample (exclude_csv). The test section has
+show_tags: false: no file name or XC tag is shown, so the annotation is blind.
 
 A recording is "to do" when labels_dir has no <stem>.txt for it. Work in progress is
 autosaved to <stem>.partial (ignored by the status tool) and reloaded next time.
@@ -91,6 +93,8 @@ class Config:
         exclude_csv (str): Optional CSV (e.g. the XC test sample): recordings whose group
             (group_cols values) appears in it are never queued, so test recordists stay
             out of the training annotations. Ignored while the file does not exist.
+        show_tags (bool): Show the file name and XC tags (q, type). False for blind test
+            annotation: the window only says "recording i/n".
     """
     audio_dir: str
     labels_dir: str
@@ -113,6 +117,7 @@ class Config:
     group_cols: list = field(default_factory=list)
     only_csv: bool = False
     exclude_csv: str = ""
+    show_tags: bool = True
 
 def load_config(path, section="annotator"):
     """Load the annotator settings from the standalone file or the unified project.yaml.
@@ -550,7 +555,8 @@ class Annotator:
         self.refresh()
         self._msg(note)
         try:
-            self.fig.canvas.manager.set_window_title(f"{path.name} [{i + 1}/{len(self.files)}]")
+            title_name = path.name if self.cfg.show_tags else "recording"
+            self.fig.canvas.manager.set_window_title(f"{title_name} [{i + 1}/{len(self.files)}]")
         except Exception:
             pass
 
@@ -738,9 +744,13 @@ class Annotator:
         self._draw_labels()
         start, end = self.view
         rec_meta = self.meta.get(self.files[self.idx].name)
-        tag = f"   q={rec_meta['q']} type={rec_meta['type']}" if rec_meta else ""
+        if self.cfg.show_tags:
+            tag = f"   q={rec_meta['q']} type={rec_meta['type']}" if rec_meta else ""
+            name = f" {self.files[self.idx].name}{tag}"
+        else:                                    # blind: file names often say "drum", "song"
+            name = " recording"
         self.ax.set_title(
-            f"[{self.idx + 1}/{len(self.files)}] {self.files[self.idx].name}{tag}   "
+            f"[{self.idx + 1}/{len(self.files)}]{name}   "
             f"{self.duration:.1f} s   {len(self.labels)} labels   view {start:.1f}-{end:.1f} s",
             loc="left", fontsize=10)
         slider_max = max(self.duration - (end - start), 1e-3)
@@ -917,6 +927,9 @@ def main():
                        limit=args.n, max_per_group=args.max_per_group)
     if not files:
         print("Nothing to annotate with these options.")
+        return
+    if args.list and not cfg.show_tags:
+        print(f"{len(files)} recordings queued (names and XC tags hidden: show_tags is false)")
         return
     if args.list:
         meta = load_metadata(cfg)
