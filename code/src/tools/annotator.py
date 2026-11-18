@@ -11,6 +11,14 @@ Usage
     python annotator.py --config annotator_config.yaml --list          # preview the queue
     python annotator.py --config annotator_config.yaml --status        # progress summary
     python annotator.py --config annotator_config.yaml --all     # also labelled ones
+    (from code/, with project.yaml)
+    python src/tools/annotator.py --n 5                          # training annotations
+    python src/tools/annotator.py --section annotator_xc_test --list   # XC test sample
+    python src/tools/annotator.py --section annotator_xc_test
+
+The XC test sample (annotation_tools.py sample-test) is annotated with its own section:
+labels go to data/xc_test/labels, never to the training labels_dir. The training
+section skips every recordist of that sample (exclude_csv).
 
 A recording is "to do" when labels_dir has no <stem>.txt for it. Work in progress is
 autosaved to <stem>.partial (ignored by the status tool) and reloaded next time.
@@ -79,6 +87,10 @@ class Config:
         type_col (str): Its sound-type column.
         status_file (str): Status CSV rewritten after each save.
         group_cols (list[str]): CSV columns to balance the queue across (e.g. [rec]).
+        only_csv (bool): Only the recordings listed in metadata_csv (e.g. a test sample).
+        exclude_csv (str): Optional CSV (e.g. the XC test sample): recordings whose group
+            (group_cols values) appears in it are never queued, so test recordists stay
+            out of the training annotations. Ignored while the file does not exist.
     """
     audio_dir: str
     labels_dir: str
@@ -99,24 +111,29 @@ class Config:
     status_file: str = "annotation_status.csv"
     # CSV columns to balance across when selecting files (e.g. [rec, loc]); empty = off
     group_cols: list = field(default_factory=list)
+    only_csv: bool = False
+    exclude_csv: str = ""
 
-def load_config(path):
+def load_config(path, section="annotator"):
     """Load the annotator settings from the standalone file or the unified project.yaml.
 
     Args:
         path (str | Path): annotator_config.yaml (flat keys) or project.yaml (viewer +
-            annotator sections merged).
+            the chosen section merged).
+        section (str): Section of project.yaml to use (e.g. annotator_xc_test).
 
     Returns:
         Config: The settings.
 
     Raises:
-        SystemExit: On unknown keys (a new key must also be a Config field) or a wrong
-            number of categories.
+        SystemExit: On unknown keys (a new key must also be a Config field), a missing
+            section or a wrong number of categories.
     """
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     if "annotator" in raw:                        # unified project.yaml
-        raw = {**raw.get("viewer", {}), **raw["annotator"]}
+        if section not in raw:
+            raise SystemExit(f"no section '{section}' in {path}")
+        raw = {**raw.get("viewer", {}), **raw[section]}
     unknown = set(raw) - {f.name for f in fields(Config)}
     if unknown:
         raise SystemExit(f"unknown keys in {path}: {sorted(unknown)}")
@@ -193,6 +210,28 @@ def load_metadata(cfg):
             for row in rows}
 
 
+def excluded_groups(cfg):
+    """Groups (e.g. recordists) listed in exclude_csv, which must not be queued.
+
+    Args:
+        cfg (Config): Settings (exclude_csv, group_cols).
+
+    Returns:
+        set[str]: Group keys, built like load_metadata's 'group'; empty when exclude_csv
+            is unset or does not exist yet.
+
+    Raises:
+        SystemExit: If exclude_csv is set without group_cols.
+    """
+    if not cfg.exclude_csv or not Path(cfg.exclude_csv).exists():
+        return set()
+    if not cfg.group_cols:
+        raise SystemExit("exclude_csv needs group_cols (e.g. [rec])")
+    with open(cfg.exclude_csv, newline="", encoding="utf-8") as f:
+        return {"|".join((row.get(col) or "").strip() for col in cfg.group_cols)
+                for row in csv.DictReader(f)}
+
+
 def label_status(cfg, name):
     """Annotation status of one recording.
 
@@ -261,6 +300,14 @@ def list_files(cfg, include_done=False, type_filter=None, limit=None, max_per_gr
     meta = load_metadata(cfg)
     files = [path for path in Path(cfg.audio_dir).iterdir() if path.suffix.lower() in AUDIO_EXT]
     info = lambda path: meta.get(path.name, {"q": "", "type": "", "group": ""})
+    if cfg.only_csv:
+        files = [path for path in files if path.name in meta]
+    excluded = excluded_groups(cfg)
+    if excluded:
+        n_before = len(files)
+        files = [path for path in files if info(path)["group"] not in excluded]
+        print(f"note: {n_before - len(files)} recordings by {len(excluded)} test-set recordists "
+              f"skipped ({cfg.exclude_csv})")
     if meta:
         unlisted = [path.name for path in files if path.name not in meta]
         if unlisted:
@@ -296,8 +343,10 @@ def build_status(cfg):
         list[dict]: Rows with recording, q, type, group, status, n_labels, label_names.
     """
     meta = load_metadata(cfg)
-    names = list(meta) + sorted(path.name for path in Path(cfg.audio_dir).iterdir()
-                                if path.suffix.lower() in AUDIO_EXT and path.name not in meta)
+    names = list(meta)
+    if not cfg.only_csv:
+        names += sorted(path.name for path in Path(cfg.audio_dir).iterdir()
+                        if path.suffix.lower() in AUDIO_EXT and path.name not in meta)
     rows = []
     for name in names:
         status, label_names = label_status(cfg, name)
@@ -848,6 +897,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default="config/project.yaml")
+    parser.add_argument("--section", default="annotator",
+                        help="project.yaml section (annotator_xc_test: the XC test sample)")
     parser.add_argument("--all", action="store_true", help="include already labelled recordings")
     parser.add_argument("--type", help="only recordings whose CSV 'type' contains this text")
     parser.add_argument("--n", type=int, help="only the next N recordings to annotate")
@@ -858,7 +909,7 @@ def main():
     parser.add_argument("--max-per-group", type=int,
                         help="cap on labelled + queued recordings per group (e.g. per recordist)")
     args = parser.parse_args()
-    cfg = load_config(args.config)
+    cfg = load_config(args.config, args.section)
 
     if args.status:
         return print_status(cfg)

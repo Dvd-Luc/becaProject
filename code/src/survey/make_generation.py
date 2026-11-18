@@ -6,7 +6,10 @@
 
 gen_0 is the existing model (detection.model): it is only linked, never retrained.
 gen_K (K >= 1) uses ALL current verdicts of <review.dir>/train_judgments.csv (last
-verdict per item), from train-split sites only (anything else is an error):
+verdict per item), from train-split sites only (anything else is an error). The XC
+clips (--base-clips) must not come from a recordist of the XC test sample
+(<xc_test.dir>/sample.csv), or the run stops.
+Survey verdicts are used as follows:
   * event judged as a class or Noise -> its 3 s grid windows, at most
     generations.max_windows_per_item of them, the ones v0 scored highest for the
     predicted class (skips the gap windows bridged by merge_gap_s)
@@ -16,6 +19,7 @@ verdict per item), from train-split sites only (anything else is an error):
 Writes, under generations.dir/gen_K/:
     survey_clips/<class>/<clip_id>_<start>s.wav, survey_clips/metadata.csv
     train/<class>/   hard links: outputs/clips/<class> (XC) + survey_clips/<class>
+                     (removed after training unless --keep-train; kept with --no-train)
     model.tflite (+ BirdNET's model_Labels.txt, model_Params.csv), train.log, info.csv
 
 Training uses the hyperparameters in <detection.model>_Params.csv (as v0) and
@@ -202,6 +206,41 @@ def link(src, dst):
         shutil.copy2(src, dst)
 
 
+def check_xc_test_leak(base_clips, cfg):
+    """Refuse XC training clips from a recordist of the XC test sample.
+
+    Args:
+        base_clips (str | Path): XC training clips folder (with metadata.csv).
+        cfg (dict): Whole config (xc_test, annotator sections).
+
+    Returns:
+        int: Number of test recordists checked (0 if no sample has been drawn).
+
+    Raises:
+        SystemExit: If a training clip comes from a test recording or test recordist.
+    """
+    sample_path = Path(cfg.get("xc_test", {}).get("dir", "data/xc_test")) / "sample.csv"
+    clips_meta_path = Path(base_clips) / "metadata.csv"
+    if not sample_path.exists():
+        return 0
+    if not clips_meta_path.exists():
+        raise SystemExit(f"{clips_meta_path} not found: cannot check the XC test recordists")
+    annot_cfg = cfg["annotator"]
+    file_col, group_col = annot_cfg.get("file_col", "file-name"), annot_cfg["group_cols"][0]
+    recordist_of = {row[file_col].strip(): row[group_col].strip()
+                    for row in read_dicts(annot_cfg["metadata_csv"])}
+    sample = read_dicts(sample_path)
+    test_recordings = {row[file_col].strip() for row in sample}
+    test_recordists = {row[group_col].strip() for row in sample}
+    clip_recordings = {row["recording"] for row in read_dicts(clips_meta_path)}
+    leak = sorted(recording for recording in clip_recordings
+                  if recording in test_recordings or recordist_of.get(recording) in test_recordists)
+    if leak:
+        raise SystemExit(f"{len(leak)} training recordings belong to the XC test sample "
+                         f"({sample_path}), refusing: {leak[:3]}")
+    return len(test_recordists)
+
+
 def main():
     """CLI entry point: check the verdicts, cut survey clips, build train/ and train gen_K."""
     parser = argparse.ArgumentParser(description=__doc__,
@@ -214,6 +253,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-train", action="store_true")
     parser.add_argument("--force", action="store_true", help="retrain if model.tflite exists")
+    parser.add_argument("--keep-train", action="store_true",
+                        help="keep train/ after training (it is removed by default; --no-train keeps it)")
     parser.add_argument("--train-extra", nargs=argparse.REMAINDER, default=[],
                         help="extra birdnet_analyzer.train options, e.g. --epochs 5 (last option)")
     args = parser.parse_args()
@@ -254,6 +295,9 @@ def main():
     dup_counts = Counter(entry["file"] for entry in plan)               # same window judged twice
     plan = list({entry["file"]: entry for entry in plan}.values())
 
+    n_test_recordists = check_xc_test_leak(args.base_clips, cfg)
+    if n_test_recordists:
+        print(f"XC test sample: none of its {n_test_recordists} recordists in {args.base_clips}")
     xc_clips = {class_dir.name: sorted(class_dir.glob("*.wav"))
                 for class_dir in sorted(Path(args.base_clips).iterdir())
                 if class_dir.is_dir() and any(class_dir.glob("*.wav"))}
@@ -309,14 +353,17 @@ def main():
     model = gen_dir / "model.tflite"
     if model.exists() and not args.force:
         print(f"{model} exists, not retrained (--force to retrain)")
-        return
-    cmd = [sys.executable, "-c", TRAIN_WRAPPER, str(gen_cfg["train_seed"]), str(train_dir),
-           "-o", str(model)] + train_args(detection_cfg["model"]) + args.train_extra
-    print(" ".join(cmd[3:]))
-    print(f"training... log: {gen_dir / 'train.log'}")
-    with open(gen_dir / "train.log", "w") as log:
-        subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, check=True)
-    print(f"wrote {model}")
+    else:
+        cmd = [sys.executable, "-c", TRAIN_WRAPPER, str(gen_cfg["train_seed"]), str(train_dir),
+               "-o", str(model)] + train_args(detection_cfg["model"]) + args.train_extra
+        print(" ".join(cmd[3:]))
+        print(f"training... log: {gen_dir / 'train.log'}")
+        with open(gen_dir / "train.log", "w") as log:
+            subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, check=True)
+        print(f"wrote {model}")
+    if not args.keep_train:          # only hard links, rebuilt by any run: no need to keep
+        shutil.rmtree(train_dir)
+        print(f"removed {train_dir} (--keep-train to keep it)")
 
 
 if __name__ == "__main__":

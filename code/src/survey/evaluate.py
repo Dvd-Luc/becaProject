@@ -1,27 +1,47 @@
-"""Compare model generations on the blind heldout test set (review.py --queue test).
+"""Compare model generations on a fixed test set: the blind survey windows, or the XC test.
 
+    python src/survey/evaluate.py --gens 0 1 --dry-run
     python src/survey/evaluate.py --gens 0 1
     python src/survey/evaluate.py --gens 0 1 2 --boot 1000
+    python src/survey/evaluate.py --gens 0 1 --testset xc
 
 Every generation scores exactly the same 3 s windows, so the numbers are comparable:
-  1. the judged test windows are cut once to <review.dir>/test_windows/<item_id>.wav
-  2. each generations.dir/gen_K/model.tflite scores them (BirdNET, min_conf 0.01) into
-     gen_K/test_scores/ (kept; delete it to re-score)
-  3. per class, plus "any" (any snipe class vs Noise): average precision (AP) and
+  1. the test windows are cut once (kept)
+  2. each generations.dir/gen_K/model.tflite scores them (BirdNET, min_conf 0.01); the
+     scores are cached in one CSV per generation (delete it to re-score)
+  3. per class, plus "any" (any snipe sound vs nothing): average precision (AP) and
      precision / recall at generations.eval_thresholds, with 95% bootstrap intervals
-     (items resampled within strata) and the paired difference to the first generation.
+     and the paired difference to the first generation.
 
-Weights: the test windows were sampled per v0-score stratum, so each judged window
-stands for population / n_judged windows of its stratum (test_strata.csv). Without
-weights, rare high-score windows would be over-represented. Unsure verdicts are left out.
-Windows judged Noise are negatives for every class.
+--testset survey (default): the blind heldout windows judged with review.py --queue test.
+  The windows were sampled per v0-score stratum, so each judged window stands for
+  population / n_judged windows of its stratum (test_strata.csv); without weights, rare
+  high-score windows would be over-represented. Bootstrap: windows resampled within
+  strata. Unsure verdicts are left out; Noise windows are negatives for every class.
 
-Writes results/survey/compare.csv, results/survey/pr_<class>.png.
+--testset xc: the XC test sample (annotation_tools.py sample-test), recordists never
+  used for training, annotated with annotator.py --section annotator_xc_test. Only
+  recordings with a label file count (annotate in any order, re-run any time). Each
+  recording is cut into a grid of 3 s windows. A window is positive for a class when a
+  label of that class overlaps it by >= min(TAU s, label length), the rule of
+  make_training_clips.py; a smaller overlap makes it ambiguous for that class (left out
+  of that class only). Unweighted. Bootstrap: recordists resampled, with all their
+  windows (windows of one recording are not independent). XC recordings are focal and
+  clean: this measures generalisation to new recordists, not field precision.
+
+Writes:
+  survey  <review.dir>/test_windows/<item_id>.wav, generations.dir/gen_K/test_scores.csv,
+          results/survey/compare.csv, results/survey/pr_<class>.png
+  xc      <xc_test.dir>/windows/<window_id>.wav, generations.dir/gen_K/xc_scores.csv,
+          results/survey/compare_xc.csv, results/survey/pr_xc_<class>.png
+  (gen_K/<cache>_params.csv: BirdNET's analysis parameters of the last scoring run)
 
 Run from code/.
 """
 import argparse
 import csv
+import os
+import shutil
 import subprocess
 import sys
 import warnings
@@ -33,10 +53,13 @@ import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.config import load
+from training.make_training_clips import overlap, read_labels
 
 WIN = 3.0
+TAU = 1.0                      # s, as make_training_clips.py --tau
 warnings.filterwarnings("ignore", "All-NaN slice")   # precision is NaN when nothing passes
 NOISE, UNSURE = "Noise", "Unsure"
+ANY = "any"
 COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]  # fixed order
 
 
@@ -53,73 +76,281 @@ def read_dicts(path):
         return list(csv.DictReader(f))
 
 
-def cut_windows(items, windows_dir):
-    """Cut each judged test window once to wdir/<item_id>.wav (existing files are kept).
+def cut_window(src, start_s, dst, subtype=None):
+    """Write the 3 s window of src starting at start_s to dst (kept if it exists).
 
     Args:
-        items (list[dict]): Test queue rows.
-        windows_dir (Path): <review.dir>/test_windows.
+        src (str | Path): Source audio file.
+        start_s (float): Window start, seconds.
+        dst (Path): Output wav file.
+        subtype (str | None): Output subtype (None: the source's, e.g. for wav sources).
+
+    Returns:
+        bool: True if the window was cut now.
     """
-    windows_dir.mkdir(parents=True, exist_ok=True)
-    n_cut = 0
-    for item in items:
-        dst = windows_dir / f"{item['item_id']}.wav"
-        if dst.exists():
+    if dst.exists():
+        return False
+    info = sf.info(src)
+    audio, sample_rate = sf.read(src, start=int(start_s * info.samplerate),
+                                 frames=int(WIN * info.samplerate), dtype="float32")
+    sf.write(dst, audio, sample_rate, subtype=subtype or info.subtype)
+    return True
+
+
+# ---------- test sets ----------
+def load_survey(cfg, args):
+    """The judged blind survey windows (review.py --queue test), cut once.
+
+    Args:
+        cfg (dict): Whole config (review section).
+        args (argparse.Namespace): review_dir, dry_run.
+
+    Returns:
+        dict: ids (list[str]), wavs (dict id -> Path), positives (list[set[str]]),
+            ambiguous (list[set[str]]), weights (numpy.ndarray), resample
+            (callable rng -> index array), cache (score CSV name), legacy (old score
+            folder name), suffix (output name suffix).
+
+    Raises:
+        SystemExit: If there are no test judgments yet.
+    """
+    review_dir = Path(args.review_dir or cfg["review"]["dir"])
+    queue = {row["item_id"]: row for row in read_dicts(review_dir / "test_queue.csv")}
+    judgments_path = review_dir / "test_judgments.csv"
+    if not judgments_path.exists():
+        raise SystemExit(f"no test judgments yet: {judgments_path}")
+    verdict_of = {row["item_id"]: row["verdict"] for row in read_dicts(judgments_path)}
+    items = [queue[item_id] for item_id in verdict_of if item_id in queue and verdict_of[item_id] != UNSURE]
+    population = {row["stratum"]: int(row["population"])
+                  for row in read_dicts(review_dir / "test_strata.csv")}
+    n_judged = Counter(item["stratum"] for item in items)
+    weights = np.array([population[item["stratum"]] / n_judged[item["stratum"]] for item in items])
+    strata = np.array([item["stratum"] for item in items])
+    verdicts = [verdict_of[item["item_id"]] for item in items]
+    print(f"{len(items)} judged test windows (unsure left out): {dict(Counter(verdicts))}")
+    print("judged per stratum:",
+          {stratum: f"{n_judged[stratum]}/{population[stratum]}" for stratum in population})
+
+    windows_dir = review_dir / "test_windows"
+    wavs = {item["item_id"]: windows_dir / f"{item['item_id']}.wav" for item in items}
+    if not args.dry_run:
+        windows_dir.mkdir(parents=True, exist_ok=True)
+        n_cut = sum(cut_window(item["clip_path"], float(item["start_s"]), wavs[item["item_id"]])
+                    for item in items)
+        if n_cut:
+            print(f"cut {n_cut} test windows into {windows_dir}")
+
+    groups = [np.where(strata == stratum)[0] for stratum in np.unique(strata)]
+
+    def resample(rng):
+        """One stratified bootstrap sample: windows resampled within each stratum.
+
+        Args:
+            rng (numpy.random.Generator): Random generator.
+
+        Returns:
+            numpy.ndarray: Window indices.
+        """
+        return np.concatenate([rng.choice(indices, len(indices)) for indices in groups])
+
+    return {"ids": [item["item_id"] for item in items], "wavs": wavs,
+            "positives": [set() if verdict == NOISE else {verdict} for verdict in verdicts],
+            "ambiguous": [set() for _ in items], "weights": weights, "resample": resample,
+            "cache": "test_scores", "legacy": "test_scores", "suffix": ""}
+
+
+def load_xc(cfg, args):
+    """The annotated recordings of the XC test sample, as a grid of 3 s windows.
+
+    Args:
+        cfg (dict): Whole config (xc_test, annotator_xc_test sections).
+        args (argparse.Namespace): dry_run.
+
+    Returns:
+        dict: Same keys as load_survey.
+
+    Raises:
+        SystemExit: If the sample is missing or nothing is annotated yet.
+    """
+    test_cfg = cfg["xc_test"]
+    test_dir = Path(test_cfg["dir"])
+    sample_path = test_dir / "sample.csv"
+    if not sample_path.exists():
+        raise SystemExit(f"{sample_path} not found (annotation_tools.py sample-test)")
+    annot_cfg = cfg["annotator_xc_test"]
+    audio_dir, labels_dir = Path(annot_cfg["audio_dir"]), Path(annot_cfg["labels_dir"])
+    file_col, group_col = annot_cfg.get("file_col", "file-name"), annot_cfg["group_cols"][0]
+    sample = read_dicts(sample_path)
+    annotated = [row for row in sample
+                 if (labels_dir / f"{Path(row[file_col]).stem}.txt").exists()]
+    if not annotated:
+        raise SystemExit(f"no annotated recording of the XC test sample yet in {labels_dir}")
+
+    windows_dir = test_dir / "windows"
+    if not args.dry_run:
+        windows_dir.mkdir(parents=True, exist_ok=True)
+    ids, wavs, positives, ambiguous, recordists = [], {}, [], [], []
+    confirmed = defaultdict(Counter)       # stratum -> label -> recordings having it
+    n_cut, missing = 0, []
+    for row in annotated:
+        audio_path = audio_dir / row[file_col]
+        if not audio_path.exists():
+            missing.append(row[file_col])
             continue
-        info = sf.info(item["clip_path"])
-        audio, sample_rate = sf.read(item["clip_path"], start=int(float(item["start_s"]) * info.samplerate),
-                                     frames=int(WIN * info.samplerate), dtype="float32")
-        sf.write(dst, audio, sample_rate, subtype=info.subtype)
-        n_cut += 1
+        labels = read_labels(labels_dir / f"{Path(row[file_col]).stem}.txt")
+        confirmed[row["stratum"]].update({label for _, _, label in labels} | {"(recordings)"})
+        n_windows = int(sf.info(audio_path).duration // WIN)
+        for k in range(n_windows):
+            win_start = k * WIN
+            window_id = f"{Path(row[file_col]).stem}_{win_start:07.1f}s"
+            positive, partial = set(), set()
+            for start, end, label in labels:
+                shared = overlap(win_start, win_start + WIN, start, end)
+                if shared >= min(TAU, end - start) - 1e-9:
+                    positive.add(label)
+                elif shared > 0:
+                    partial.add(label)
+            ids.append(window_id)
+            wavs[window_id] = windows_dir / f"{window_id}.wav"
+            positives.append(positive)
+            ambiguous.append(partial - positive)
+            recordists.append(row[group_col].strip())
+            if not args.dry_run:
+                n_cut += cut_window(audio_path, win_start, wavs[window_id], subtype="PCM_16")
+    if missing:
+        print(f"warning: {len(missing)} annotated recordings not found in {audio_dir}, "
+              f"e.g. {missing[:3]}")
+    print(f"XC test: {len(annotated)}/{len(sample)} sampled recordings annotated, "
+          f"{len(set(recordists))} recordists, {len(ids)} windows")
+    print("positive windows per class:",
+          dict(Counter(label for positive in positives for label in positive)))
+    print("recordings with each label, per sampling stratum (XC tags vs annotation):")
+    for stratum, counts in confirmed.items():
+        n_recordings = counts.pop("(recordings)")
+        print(f"  {stratum}: {n_recordings} annotated; "
+              + ", ".join(f"{label} {count}" for label, count in sorted(counts.items())))
     if n_cut:
-        print(f"cut {n_cut} test windows into {windows_dir}")
+        print(f"cut {n_cut} windows into {windows_dir}")
+
+    recordist_array = np.array(recordists)
+    groups = [np.where(recordist_array == recordist)[0] for recordist in np.unique(recordist_array)]
+
+    def resample(rng):
+        """One cluster bootstrap sample: recordists resampled, with all their windows.
+
+        Args:
+            rng (numpy.random.Generator): Random generator.
+
+        Returns:
+            numpy.ndarray: Window indices.
+        """
+        return np.concatenate([groups[k] for k in rng.choice(len(groups), len(groups))])
+
+    return {"ids": ids, "wavs": wavs, "positives": positives, "ambiguous": ambiguous,
+            "weights": np.ones(len(ids)), "resample": resample,
+            "cache": "xc_scores", "legacy": None, "suffix": "_xc"}
 
 
-def score(model, windows_dir, scores_dir, items, threads):
-    """Scores of one model on the test windows; runs BirdNET if results are missing.
+# ---------- scoring ----------
+def parse_result(path):
+    """Best score per label in the first 3 s segment of one BirdNET result file.
+
+    Args:
+        path (Path): <window>.BirdNET.results.csv.
+
+    Returns:
+        dict[str, float]: label -> score (labels below min_conf absent).
+    """
+    window_scores = defaultdict(float)
+    for window in read_dicts(path):
+        if float(window["Start (s)"]) < 0.5:              # the one 3 s segment
+            label = window["Common name"] or window["Scientific name"]
+            window_scores[label] = max(window_scores[label], float(window["Confidence"]))
+    return dict(window_scores)
+
+
+def score(model, wavs, gen_dir, cache_name, legacy_name, threads):
+    """Scores of one model on the test windows, cached in gen_dir/<cache_name>.csv.
+
+    Windows missing from the cache are taken from the old per-window result folder
+    (gen_dir/<legacy_name>/) when present, else scored with BirdNET (a temporary folder
+    of links to them, removed afterwards).
 
     Args:
         model (Path): The generation's model.tflite.
-        windows_dir (Path): Folder of the cut test windows.
-        scores_dir (Path): The generation's test_scores/ folder.
-        items (list[dict]): Test queue rows to score.
+        wavs (dict[str, Path]): Window id -> wav file.
+        gen_dir (Path): generations.dir/gen_K.
+        cache_name (str): Cache CSV stem (columns window_id, label, score).
+        legacy_name (str | None): Old per-window result folder name, if any.
         threads (int | None): BirdNET CPU threads (None: BirdNET's default).
 
     Returns:
-        dict[str, dict[str, float]]: item_id -> {label: score}; labels below 0.01 absent.
+        dict[str, dict[str, float]]: window id -> {label: score}; labels below 0.01 absent.
 
     Raises:
-        SystemExit: If BirdNET produced no result for an item.
+        SystemExit: If BirdNET produced no result for a window.
     """
-    todo = [item for item in items if not (scores_dir / f"{item['item_id']}.BirdNET.results.csv").exists()]
+    cache_path = gen_dir / f"{cache_name}.csv"
+    cached = {}
+    if cache_path.exists():
+        for row in read_dicts(cache_path):
+            window_scores = cached.setdefault(row["window_id"], {})
+            if row["label"]:
+                window_scores[row["label"]] = float(row["score"])
+    n_cached = len(cached)
+    legacy_dir = gen_dir / legacy_name if legacy_name else None
+    if legacy_dir and legacy_dir.is_dir():
+        for window_id in wavs:
+            result_path = legacy_dir / f"{window_id}.BirdNET.results.csv"
+            if window_id not in cached and result_path.exists():
+                cached[window_id] = parse_result(result_path)
+        params = legacy_dir / "BirdNET_analysis_params.csv"
+        if params.exists() and not (gen_dir / f"{cache_name}_params.csv").exists():
+            shutil.copy2(params, gen_dir / f"{cache_name}_params.csv")
+    todo = [window_id for window_id in wavs if window_id not in cached]
     if todo:
-        cmd = [sys.executable, "-m", "birdnet_analyzer.analyze", str(windows_dir), "-o", str(scores_dir),
-               "-c", str(model), "--min_conf", "0.01", "--overlap", "0", "--rtype", "csv"]
+        tmp_dir = gen_dir / f"{cache_name}_tmp"
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        (tmp_dir / "in").mkdir(parents=True)
+        for window_id in todo:
+            os.symlink(wavs[window_id].resolve(), tmp_dir / "in" / f"{window_id}.wav")
+        cmd = [sys.executable, "-m", "birdnet_analyzer.analyze", str(tmp_dir / "in"),
+               "-o", str(tmp_dir / "out"), "-c", str(model), "--min_conf", "0.01",
+               "--overlap", "0", "--rtype", "csv"]
         if threads:
             cmd += ["-t", str(threads)]
-        print(f"scoring {len(items)} windows with {model}")
+        print(f"scoring {len(todo)} windows with {model}")
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
-    scores = {}
-    for item in items:
-        result_path = scores_dir / f"{item['item_id']}.BirdNET.results.csv"
-        if not result_path.exists():
-            raise SystemExit(f"no BirdNET result for {item['item_id']} in {scores_dir}")
-        item_scores = defaultdict(float)
-        for window in read_dicts(result_path):
-            if float(window["Start (s)"]) < 0.5:              # the one 3 s segment
-                label = window["Common name"] or window["Scientific name"]
-                item_scores[label] = max(item_scores[label], float(window["Confidence"]))
-        scores[item["item_id"]] = item_scores
-    return scores
+        for window_id in todo:
+            result_path = tmp_dir / "out" / f"{window_id}.BirdNET.results.csv"
+            if not result_path.exists():
+                raise SystemExit(f"no BirdNET result for {window_id} in {tmp_dir / 'out'}")
+            cached[window_id] = parse_result(result_path)
+        params = tmp_dir / "out" / "BirdNET_analysis_params.csv"
+        if params.exists():
+            shutil.copy2(params, gen_dir / f"{cache_name}_params.csv")
+        shutil.rmtree(tmp_dir)
+    if len(cached) != n_cached:
+        with open(cache_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["window_id", "label", "score"])
+            for window_id in sorted(cached):
+                if not cached[window_id]:
+                    writer.writerow([window_id, "", ""])      # scored, nothing above 0.01
+                for label, value in sorted(cached[window_id].items()):
+                    writer.writerow([window_id, label, repr(value)])
+        print(f"{len(cached) - n_cached} windows added to {cache_path}")
+    return {window_id: cached[window_id] for window_id in wavs}
 
 
+# ---------- metrics ----------
 def ap_pr(y, scores, weights, thresholds):
     """Weighted average precision, and precision / recall per threshold.
 
     Args:
         y (numpy.ndarray): 1.0 for positive windows, 0.0 otherwise.
         scores (numpy.ndarray): Model scores.
-        weights (numpy.ndarray): Window weights (stratum population / judged windows).
+        weights (numpy.ndarray): Window weights (0 leaves a window out).
         thresholds (list[float]): Score thresholds.
 
     Returns:
@@ -159,67 +390,60 @@ def pr_curve(y, scores, weights):
 
 
 def main():
-    """CLI entry point: score the test windows with each generation, compute metrics, plot."""
+    """CLI entry point: load the test set, score it with each generation, compute metrics, plot."""
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default="config/project.yaml")
     parser.add_argument("--gens", type=int, nargs="+", required=True)
-    parser.add_argument("--review-dir", help="default: review.dir")
+    parser.add_argument("--testset", choices=["survey", "xc"], default="survey")
+    parser.add_argument("--review-dir", help="default: review.dir (survey test set)")
     parser.add_argument("--gen-dir", help="default: generations.dir")
     parser.add_argument("--out", default="results/survey")
     parser.add_argument("--boot", type=int, default=500, help="bootstrap resamples (0 = off)")
     parser.add_argument("--threads", type=int)
+    parser.add_argument("--dry-run", action="store_true",
+                        help="describe the test set and the models, cut / score / write nothing")
     args = parser.parse_args()
     cfg = load(args.config)
     gen_cfg = cfg["generations"]
-    review_dir = Path(args.review_dir or cfg["review"]["dir"])
     gens_dir = Path(args.gen_dir or gen_cfg["dir"])
     out_dir = Path(args.out)
     thresholds = sorted(set(gen_cfg.get("eval_thresholds", [0.35, 0.5, 0.7])
                             + [cfg["detection"]["min_conf"]]))
 
-    queue = {row["item_id"]: row for row in read_dicts(review_dir / "test_queue.csv")}
-    judgments_path = review_dir / "test_judgments.csv"
-    if not judgments_path.exists():
-        raise SystemExit(f"no test judgments yet: {judgments_path}")
-    verdict_of = {row["item_id"]: row["verdict"] for row in read_dicts(judgments_path)}
-    items = [queue[item_id] for item_id in verdict_of if item_id in queue and verdict_of[item_id] != UNSURE]
-    population = {row["stratum"]: int(row["population"])
-                  for row in read_dicts(review_dir / "test_strata.csv")}
-    n_judged = Counter(item["stratum"] for item in items)
-    weights = np.array([population[item["stratum"]] / n_judged[item["stratum"]] for item in items])
-    strata = np.array([item["stratum"] for item in items])
-    verdicts = [verdict_of[item["item_id"]] for item in items]
-    print(f"{len(items)} judged test windows (unsure left out): {dict(Counter(verdicts))}")
-    print("judged per stratum:",
-          {stratum: f"{n_judged[stratum]}/{population[stratum]}" for stratum in population})
-
-    windows_dir = review_dir / "test_windows"
-    cut_windows(items, windows_dir)
+    test = (load_xc if args.testset == "xc" else load_survey)(cfg, args)
     models = {gen: gens_dir / f"gen_{gen}" / "model.tflite" for gen in args.gens}
     for gen, model_path in models.items():
         if not model_path.exists():
             raise SystemExit(f"{model_path} not found (make_generation.py --gen {gen}; gen_0 is linked "
                              f"by any make_generation.py run)")
+    if args.dry_run:
+        print("models:", {gen: str(path) for gen, path in models.items()})
+        print("dry run: nothing cut, scored or written")
+        return
     labels = [line.strip() for line in models[args.gens[0]].with_name("model_Labels.txt")
               .read_text(encoding="utf-8").splitlines() if line.strip()]
-    scores = {gen: score(model_path, windows_dir, gens_dir / f"gen_{gen}" / "test_scores", items,
+    scores = {gen: score(model_path, test["wavs"], model_path.parent, test["cache"], test["legacy"],
                          args.threads)
               for gen, model_path in models.items()}
 
-    targets = {class_name: (np.array([verdict == class_name for verdict in verdicts], float),
-                            {gen: np.array([scores[gen][item["item_id"]].get(class_name, 0.0)
-                                            for item in items])
+    ids, positives, ambiguous = test["ids"], test["positives"], test["ambiguous"]
+    # per target: truth, kept windows (0 = ambiguous for that class), scores per generation
+    targets = {class_name: (np.array([class_name in positive for positive in positives], float),
+                            np.array([class_name not in partial for partial in ambiguous], float),
+                            {gen: np.array([scores[gen][window_id].get(class_name, 0.0)
+                                            for window_id in ids])
                              for gen in args.gens})
                for class_name in labels}
-    targets["any"] = (np.array([verdict != NOISE for verdict in verdicts], float),
-                      {gen: np.array([max(scores[gen][item["item_id"]].values(), default=0.0)
-                                      for item in items]) for gen in args.gens})
+    targets[ANY] = (np.array([bool(positive) for positive in positives], float),
+                    np.array([bool(positive) or not partial
+                              for positive, partial in zip(positives, ambiguous, strict=True)],
+                             float),
+                    {gen: np.array([max(scores[gen][window_id].values(), default=0.0)
+                                    for window_id in ids]) for gen in args.gens})
 
     rng = np.random.default_rng(0)
-    groups = {stratum: np.where(strata == stratum)[0] for stratum in np.unique(strata)}
-    boots = [np.concatenate([rng.choice(indices, len(indices)) for indices in groups.values()])
-             for _ in range(args.boot)]
+    boots = [test["resample"](rng) for _ in range(args.boot)]
 
     def metrics(y, scores, weights):
         """All metrics of one resample, flattened in the order of `names`.
@@ -238,7 +462,8 @@ def main():
     names = ["AP"] + [f"{metric}@{threshold:g}"
                       for threshold in thresholds for metric in ("precision", "recall")]
     rows = []
-    for class_name, (y, scores_by_gen) in targets.items():
+    for class_name, (y, kept, scores_by_gen) in targets.items():
+        weights = test["weights"] * kept
         point = {gen: metrics(y, scores_by_gen[gen], weights) for gen in args.gens}
         boot_metrics = {gen: np.array([metrics(y[sample], scores_by_gen[gen][sample], weights[sample])
                                        for sample in boots])
@@ -256,9 +481,10 @@ def main():
                         row["diff_lo"], row["diff_hi"] = np.nanpercentile(delta, [2.5, 97.5])
                 rows.append(row)
     out_dir.mkdir(parents=True, exist_ok=True)
+    compare_path = out_dir / f"compare{test['suffix']}.csv"
     header = ["gen", "class", "metric", "n_pos", "value", "lo", "hi",
               f"diff_vs_gen{args.gens[0]}", "diff_lo", "diff_hi"]
-    with open(out_dir / "compare.csv", "w", newline="", encoding="utf-8") as f:
+    with open(compare_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=header)
         writer.writeheader()
         for row in rows:
@@ -286,30 +512,32 @@ def main():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    for class_name, (y, scores_by_gen) in targets.items():
+    for class_name, (y, kept, scores_by_gen) in targets.items():
         if not y.sum():
             continue
         fig, ax = plt.subplots(figsize=(5.5, 4.5))
-        for item_id, gen in enumerate(args.gens):
-            recall, precision = pr_curve(y, scores_by_gen[gen], weights)
+        for color_index, gen in enumerate(args.gens):
+            recall, precision = pr_curve(y, scores_by_gen[gen], test["weights"] * kept)
             ap_value = next(row["value"] for row in rows
                             if row["gen"] == gen and row["class"] == class_name
                             and row["metric"] == "AP")
-            ax.plot(recall, precision, color=COLORS[item_id % len(COLORS)], lw=2, drawstyle="steps-post",
-                    label=f"gen_{gen}  AP {ap_value:.2f}")
+            ax.plot(recall, precision, color=COLORS[color_index % len(COLORS)], lw=2,
+                    drawstyle="steps-post", label=f"gen_{gen}  AP {ap_value:.2f}")
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
         ax.grid(color="#e4e3df", lw=0.8)
         ax.set_xlim(0, 1.02)
         ax.set_ylim(0, 1.02)
-        ax.set_xlabel("recall (weighted)")
-        ax.set_ylabel("precision (weighted)")
-        ax.set_title(f"{class_name}  ({int(y.sum())} positive test windows)", loc="left", fontsize=11)
+        weighted = "" if args.testset == "xc" else " (weighted)"
+        ax.set_xlabel(f"recall{weighted}")
+        ax.set_ylabel(f"precision{weighted}")
+        ax.set_title(f"{class_name}  ({int(y.sum())} positive {args.testset} test windows)",
+                     loc="left", fontsize=11)
         ax.legend(frameon=False, loc="upper right")
         fig.tight_layout()
-        fig.savefig(out_dir / f"pr_{class_name}.png", dpi=120)
+        fig.savefig(out_dir / f"pr{test['suffix']}_{class_name}.png", dpi=120)
         plt.close(fig)
-    print(f"\nwrote {out_dir / 'compare.csv'} and pr_<class>.png")
+    print(f"\nwrote {compare_path} and pr{test['suffix']}_<class>.png")
 
 
 if __name__ == "__main__":

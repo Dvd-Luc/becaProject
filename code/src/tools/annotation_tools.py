@@ -10,6 +10,11 @@ Commands
     status  rebuild annotation_status.csv from the labels/ folder and print a summary
     next    list the next recordings still to annotate; with --queue-dir, also
             refresh a batch folder of copies of them
+    sample-test
+            draw and freeze the XC test sample: recordings not yet annotated, by
+            recordists that never appear in the annotated (training) recordings.
+            Settings: config section xc_test. XC 'type' tags (often wrong) only enrich
+            the strata; the truth comes from annotating the sample later.
 
 A recording counts as
     todo      no labels/<stem>.txt yet
@@ -22,14 +27,31 @@ Examples
     python annotation_tools.py next   --csv metadata.csv --labels-dir labels --n 10 --type drum
     python annotation_tools.py next   --csv metadata.csv --labels-dir labels --audio-dir recordings \
                                       --queue-dir to_label --n 25
+    (run from code/ for sample-test, which reads config/project.yaml)
+    python src/tools/annotation_tools.py sample-test --csv data/xc_gallinago_gallinago/metadata.csv \
+                                      --labels-dir data/annotation_labels --dry-run
+    python src/tools/annotation_tools.py sample-test --csv data/xc_gallinago_gallinago/metadata.csv \
+                                      --labels-dir data/annotation_labels
 (the subcommand comes first, then all the options)
+
+Writes:
+    status       <--status-file> (default annotation_status.csv)
+    next         <--queue-dir>/ copies + .queue_manifest.txt
+    sample-test  <xc_test.dir>/sample.csv (frozen: reused as is, --force to redraw)
+                 <xc_test.dir>/sample_settings.json (settings used; a change stops the run)
 """
 import argparse
 import csv
+import json
 import os
+import random
 import shutil
+import sys
 from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from common.config import load
 
 MANIFEST = ".queue_manifest.txt"   # names of the files placed in the batch folder
 
@@ -228,6 +250,133 @@ def cmd_next(args):
               f"(e.g. {missing[:3]})")
 
 
+# ---------- sample-test ----------
+def length_seconds(text):
+    """Duration of an XC 'length' field ("m:ss" or "h:mm:ss") in seconds.
+
+    Args:
+        text (str): XC length, e.g. "1:34".
+
+    Returns:
+        float: Seconds; infinity when the field is empty or malformed.
+    """
+    try:
+        seconds = 0.0
+        for part in text.strip().split(":"):
+            seconds = seconds * 60 + float(part)
+        return seconds
+    except ValueError:
+        return float("inf")
+
+
+def draw_test_sample(rows, used_recordists, test_cfg, args):
+    """Seeded stratified draw of unseen-recordist recordings, capped per recordist.
+
+    Strata are filled in config order; a recording is picked at most once.
+
+    Args:
+        rows (list[dict]): XC metadata rows still to annotate (status todo).
+        used_recordists (set[str]): Recordists of the annotated (training) recordings.
+        test_cfg (dict): xc_test config section (seed, strata, max_per_recordist,
+            max_length_s, max_recordist_recordings).
+        args (argparse.Namespace): group_col, type_col.
+
+    Returns:
+        list[dict]: Sampled metadata rows, each with an added 'stratum' column.
+    """
+    rng = random.Random(test_cfg["seed"])
+    # a sampled recordist is lost for training: skip prolific ones to keep the training pool
+    pool_size = Counter(row[args.group_col].strip() for row in rows)
+    eligible = [row for row in rows
+                if row[args.group_col].strip() not in used_recordists
+                and pool_size[row[args.group_col].strip()] <= test_cfg["max_recordist_recordings"]
+                and length_seconds(row.get("length", "")) <= test_cfg["max_length_s"]]
+    per_recordist, picked, sample = Counter(), set(), []
+    for stratum, stratum_cfg in test_cfg["strata"].items():
+        keyword = stratum_cfg["keyword"].lower()
+        candidates = [row for row in eligible if keyword in row[args.type_col].lower()]
+        rng.shuffle(candidates)
+        n_taken = 0
+        for row in candidates:
+            if n_taken >= stratum_cfg["n"]:
+                break
+            name, recordist = row[args.file_col], row[args.group_col].strip()
+            if name in picked or per_recordist[recordist] >= test_cfg["max_per_recordist"]:
+                continue
+            sample.append({"stratum": stratum, **row})
+            picked.add(name)
+            per_recordist[recordist] += 1
+            n_taken += 1
+        if n_taken < stratum_cfg["n"]:
+            print(f"warning: stratum {stratum}: only {n_taken} of {stratum_cfg['n']} recordings "
+                  f"available")
+    return sample
+
+
+def cmd_sample_test(args):
+    """`sample-test`: draw and freeze the XC test sample from unseen recordists.
+
+    Args:
+        args (argparse.Namespace): csv, labels_dir, config, group_col, dry_run, force, ...
+
+    Raises:
+        SystemExit: If the settings changed under an existing sample (without --force),
+            or if the frozen sample shares a recordist with the annotated recordings.
+    """
+    test_cfg = load(args.config)["xc_test"]
+    out_dir = Path(test_cfg["dir"])
+    sample_path, settings_path = out_dir / "sample.csv", out_dir / "sample_settings.json"
+    settings = {key: test_cfg[key] for key in ("seed", "strata", "max_per_recordist", "max_length_s",
+                                               "max_recordist_recordings")}
+    settings.update(csv=str(args.csv), labels_dir=str(args.labels_dir))
+
+    rows = load_rows(args.csv)
+    status = {rec["recording"]: rec["status"] for rec in build_status(args)}
+    used_recordists = {row[args.group_col].strip() for row in rows
+                       if status[row[args.file_col].strip()] != "todo"}
+    todo_rows = [row for row in rows if status[row[args.file_col].strip()] == "todo"]
+
+    if sample_path.exists() and not args.force:
+        old_settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        if old_settings != settings:
+            raise SystemExit(f"settings changed since {sample_path} was drawn:\n  was {old_settings}\n"
+                             f"  now {settings}\nrestore them, or --force to redraw the sample")
+        sample = load_rows(sample_path)
+        print(f"frozen sample reused: {sample_path}")
+    else:
+        sample = draw_test_sample(todo_rows, used_recordists, test_cfg, args)
+
+    overlap = {row[args.group_col].strip() for row in sample} & used_recordists
+    if overlap:
+        raise SystemExit(f"test sample shares recordists with the annotated recordings: "
+                         f"{sorted(overlap)} (were they annotated after the draw?)")
+    sample_recordists = Counter(row[args.group_col].strip() for row in sample)
+    print(f"{len(used_recordists)} recordists in annotated recordings (excluded); "
+          f"{len(todo_rows)} recordings still to annotate")
+    print(f"sample: {len(sample)} recordings, {len(sample_recordists)} recordists "
+          f"(max {max(sample_recordists.values(), default=0)} per recordist), "
+          f"0 shared with training")
+    print("per stratum:", dict(Counter(row["stratum"] for row in sample)))
+    n_locked = sum(row[args.group_col].strip() in sample_recordists for row in todo_rows) - len(sample)
+    print(f"{n_locked} other unannotated recordings by these recordists become unavailable "
+          f"for training")
+    total_s = sum(length_seconds(row.get("length", "")) for row in sample)
+    print(f"audio to annotate: {total_s / 60:.0f} min")
+
+    if args.dry_run:
+        print("dry run: nothing written")
+        return
+    if sample_path.exists() and not args.force:
+        return
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with open(sample_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(sample[0]))
+        writer.writeheader()
+        writer.writerows(sample)
+    settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+    print(f"wrote {sample_path} and {settings_path.name}")
+
+
 def main():
     """CLI entry point: parse the subcommand and its options, then run it."""
     parser = argparse.ArgumentParser(description=__doc__,
@@ -260,6 +409,15 @@ def main():
                             "recordings to annotate")
     sub_parser.add_argument("--audio-dir", help="folder with the audio files (needed with --queue-dir)")
     sub_parser.set_defaults(fn=cmd_next)
+
+    sub_parser = sub.add_parser("sample-test", parents=[common])
+    sub_parser.add_argument("--labels-dir", required=True,
+                            help="training labels: their recordists are excluded")
+    sub_parser.add_argument("--config", default="config/project.yaml", help="reads section xc_test")
+    sub_parser.add_argument("--group-col", default="rec", help="CSV column with the recordist")
+    sub_parser.add_argument("--dry-run", action="store_true", help="show the draw, write nothing")
+    sub_parser.add_argument("--force", action="store_true", help="redraw over an existing sample")
+    sub_parser.set_defaults(fn=cmd_sample_test)
 
     args = parser.parse_args()
     args.fn(args)

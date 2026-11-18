@@ -35,6 +35,32 @@ annotator:
   status_file: data/annotation_labels/annotation_status.csv
   group_cols: [rec]
   categories: [Drumming, Song, Call, Other]
+  exclude_csv: data/xc_test/sample.csv    # never queue recordists of the XC test sample
+
+# ---------- xc test set (annotation_tools.py sample-test, evaluate.py --testset xc) ----------
+xc_test:
+  dir: data/xc_test                       # sample.csv (frozen), labels/, windows/
+  seed: 21
+  strata:                                 # filled in this order; keyword matched in XC 'type'
+    drum: {keyword: drum, n: 25}          # ('' = any recording). Tags only enrich the
+    song: {keyword: song, n: 30}          # sample: the truth is the annotation
+    random: {keyword: "", n: 30}
+  max_per_recordist: 2
+  max_length_s: 300
+  max_recordist_recordings: 10            # skip recordists with more unannotated recordings:
+                                          # all of them would be lost for training
+
+annotator_xc_test:                        # annotator.py --section annotator_xc_test
+  audio_dir: data/xc_gallinago_gallinago
+  labels_dir: data/xc_test/labels         # never data/annotation_labels: stays out of training
+  metadata_csv: data/xc_test/sample.csv
+  only_csv: true                          # only the sampled recordings
+  file_col: file-name
+  q_col: q
+  type_col: type
+  status_file: data/xc_test/annotation_status.csv
+  group_cols: [rec]
+  categories: [Drumming, Song, Call, Other]
 
 # ---------- learning curve (settings you used) ----------
 learning_curve:
