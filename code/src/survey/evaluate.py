@@ -262,7 +262,7 @@ def main():
             cells.append(f"{r['value']:.3f} [{r.get('lo', np.nan):.3f}, {r.get('hi', np.nan):.3f}]".rjust(24))
         print(f"{c:9s} {int(targets[c][0].sum()):5d}  " + "  ".join(cells))
     for r in rows:
-        if r["metric"] == "AP" and "diff_lo" in r:
+        if r["metric"] == "AP" and "diff_lo" in r and not np.isnan(r["diff_lo"]):   # skip classes without positives
             sig = "" if r["diff_lo"] <= 0 <= r["diff_hi"] else "  (interval excludes 0)"
             print(f"  {r['class']}: gen_{r['gen']} - gen_{a.gens[0]} AP = {r[f'diff_vs_gen{a.gens[0]}']:+.3f} "
                   f"[{r['diff_lo']:+.3f}, {r['diff_hi']:+.3f}]{sig}")
