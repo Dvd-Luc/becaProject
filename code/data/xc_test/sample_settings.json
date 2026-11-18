@@ -1,0 +1,22 @@
+{
+  "seed": 21,
+  "strata": {
+    "drum": {
+      "keyword": "drum",
+      "n": 25
+    },
+    "song": {
+      "keyword": "song",
+      "n": 30
+    },
+    "random": {
+      "keyword": "",
+      "n": 30
+    }
+  },
+  "max_per_recordist": 2,
+  "max_length_s": 300,
+  "max_recordist_recordings": 10,
+  "csv": "data/xc_gallinago_gallinago/metadata.csv",
+  "labels_dir": "data/annotation_labels"
+}
