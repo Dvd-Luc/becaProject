@@ -1,0 +1,4 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Drumming,Drumming,0.2837,data/survey/review/test_windows/test_BECA_SMMICRO_025_15_Coltines_20260524_202000_1836_114.wav
+0.0,3.0,Song,Song,0.1694,data/survey/review/test_windows/test_BECA_SMMICRO_025_15_Coltines_20260524_202000_1836_114.wav
+0.0,3.0,Call,Call,0.0478,data/survey/review/test_windows/test_BECA_SMMICRO_025_15_Coltines_20260524_202000_1836_114.wav

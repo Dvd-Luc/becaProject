@@ -1,0 +1,9 @@
+key,value
+built,2026-11-17T17:39:13
+judgments,data/survey/review/train_judgments.csv
+n_judged,496
+base_clips,outputs/clips
+params_from,models/final/gallinago_v0.tflite
+train_seed,1
+max_windows_per_item,3
+train_counts,"{'Call': 692, 'Drumming': 505, 'Noise': 781, 'Song': 789}"

@@ -1,0 +1,4 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Call,Call,0.3809,data/survey/review/test_windows/test_BECA_SMMICRO_035_43_Champclause_20260414_192700_1958_9.wav
+0.0,3.0,Drumming,Drumming,0.0481,data/survey/review/test_windows/test_BECA_SMMICRO_035_43_Champclause_20260414_192700_1958_9.wav
+0.0,3.0,Song,Song,0.0113,data/survey/review/test_windows/test_BECA_SMMICRO_035_43_Champclause_20260414_192700_1958_9.wav
