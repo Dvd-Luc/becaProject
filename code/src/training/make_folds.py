@@ -56,143 +56,155 @@ def place(src, dst, mode):
     shutil.copy2(src, dst)
 
 
-def assign_groups(groups, k, rng):
+def assign_groups(groups, n_folds, rng):
     """Greedy balanced assignment of groups to k folds, class by class.
 
     Args:
         groups (dict[str, Counter]): Recordist -> clips per class.
-        k (int): Number of folds.
+        n_folds (int): Number of folds.
         rng (random.Random): Breaks ties in the processing order.
 
     Returns:
         dict[str, int]: Recordist -> fold index; no fold is left empty.
     """
     totals = Counter()
-    for c in groups.values():
-        totals.update(c)
-    order = sorted(groups, key=lambda g: (-sum(n / totals[c] for c, n in groups[g].items()),
-                                          rng.random()))
-    load = [Counter() for _ in range(k)]
+    for class_counts in groups.values():
+        totals.update(class_counts)
+    def share(group):
+        """Sum over classes of the fraction of each class's clips that this group holds.
+
+        Args:
+            group (str): Recordist.
+
+        Returns:
+            float: Larger for groups that weigh more in the rare classes.
+        """
+        return sum(n_clips / totals[cls] for cls, n_clips in groups[group].items())
+
+    order = sorted(groups, key=lambda group: (-share(group), rng.random()))
+    load = [Counter() for _ in range(n_folds)]
     fold_of = {}
-    for g in order:
-        def cost(f):        # change in squared distance to the ideal share 1/k of each class
+    for group in order:
+        def cost(fold):        # change in squared distance to the ideal share 1/k of each class
             """Change in squared distance to the ideal share 1/k of each class if g goes to fold f.
 
             Args:
-                f (int): Candidate fold.
+                fold (int): Candidate fold.
 
             Returns:
                 float: The cost (lower is better).
             """
-            return sum(((load[f][c] + groups[g][c]) / totals[c] - 1 / k) ** 2
-                       - (load[f][c] / totals[c] - 1 / k) ** 2 for c in totals)
-        best = min(range(k), key=cost)
-        fold_of[g] = best
-        load[best].update(groups[g])
-    for f in range(k):      # safety net: never leave a fold empty
-        if f not in fold_of.values():
+            return sum(((load[fold][cls] + groups[group][cls]) / totals[cls] - 1 / n_folds) ** 2
+                       - (load[fold][cls] / totals[cls] - 1 / n_folds) ** 2 for cls in totals)
+        best = min(range(n_folds), key=cost)
+        fold_of[group] = best
+        load[best].update(groups[group])
+    for fold in range(n_folds):      # safety net: never leave a fold empty
+        if fold not in fold_of.values():
             sizes = Counter(fold_of.values())
             donor = max(sizes, key=sizes.get)
-            g = min((g for g in fold_of if fold_of[g] == donor), key=lambda g: sum(groups[g].values()))
-            fold_of[g] = f
+            group = min((group for group in fold_of if fold_of[group] == donor),
+                        key=lambda group: sum(groups[group].values()))
+            fold_of[group] = fold
     return fold_of
 
 
 def main():
     """CLI entry point: group clips by recordist, assign folds, fill fold_K/{train,val}, write stats."""
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("--clips-csv", required=True)
-    ap.add_argument("--xc-csv", required=True)
-    ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--folds", type=int, default=5)
-    ap.add_argument("--train-fraction", type=float, default=1.0)
-    ap.add_argument("--mode", choices=["hardlink", "copy", "symlink"], default="hardlink")
-    ap.add_argument("--seed", type=int, default=42, help="fold assignment (keep fixed)")
-    ap.add_argument("--subset-seed", type=int, default=0,
-                    help="choice of training recordists when --train-fraction < 1")
-    ap.add_argument("--file-col", default="file-name")
-    ap.add_argument("--rec-col", default="rec")
-    ap.add_argument("--keep-labels", nargs="+", default=None,
-                    help="only use these classes (all others are ignored)")
-    ap.add_argument("--drop-labels", nargs="+", default=[],
-                    help="classes to ignore, e.g. --drop-labels Other")
-    a = ap.parse_args()
-    rng = random.Random(a.seed)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("--clips-csv", required=True)
+    parser.add_argument("--xc-csv", required=True)
+    parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument("--train-fraction", type=float, default=1.0)
+    parser.add_argument("--mode", choices=["hardlink", "copy", "symlink"], default="hardlink")
+    parser.add_argument("--seed", type=int, default=42, help="fold assignment (keep fixed)")
+    parser.add_argument("--subset-seed", type=int, default=0,
+                        help="choice of training recordists when --train-fraction < 1")
+    parser.add_argument("--file-col", default="file-name")
+    parser.add_argument("--rec-col", default="rec")
+    parser.add_argument("--keep-labels", nargs="+", default=None,
+                        help="only use these classes (all others are ignored)")
+    parser.add_argument("--drop-labels", nargs="+", default=[],
+                        help="classes to ignore, e.g. --drop-labels Other")
+    args = parser.parse_args()
+    rng = random.Random(args.seed)
 
-    who = {}
-    with open(a.xc_csv, newline="", encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            who[Path(r[a.file_col]).stem] = (r.get(a.rec_col) or "").strip()
+    recordist_of = {}
+    with open(args.xc_csv, newline="", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            recordist_of[Path(row[args.file_col]).stem] = (row.get(args.rec_col) or "").strip()
 
         clips = []                                   # (group, label, clip path)
-    with open(a.clips_csv, newline="", encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            stem = Path(r["recording"]).stem
-            clips.append((who.get(stem) or f"file:{stem}", r["label"], r["clip"]))
+    with open(args.clips_csv, newline="", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            stem = Path(row["recording"]).stem
+            clips.append((recordist_of.get(stem) or f"file:{stem}", row["label"], row["clip"]))
 
-    present = {lab for _, lab, _ in clips}
-    if a.keep_labels:
-        unknown = set(a.keep_labels) - present
+    present = {label for _, label, _ in clips}
+    if args.keep_labels:
+        unknown = set(args.keep_labels) - present
         if unknown:
             raise SystemExit(f"--keep-labels not found in metadata: {sorted(unknown)}; "
                              f"available: {sorted(present)}")
-        clips = [c for c in clips if c[1] in a.keep_labels]
-    clips = [c for c in clips if c[1] not in a.drop_labels]
+        clips = [clip for clip in clips if clip[1] in args.keep_labels]
+    clips = [clip for clip in clips if clip[1] not in args.drop_labels]
     if not clips:
         raise SystemExit("no clips left after label filtering")
 
     groups = defaultdict(Counter)
-    for g, lab, _ in clips:
-        groups[g][lab] += 1
-    if a.folds > len(groups):
-        raise SystemExit(f"{a.folds} folds requested but only {len(groups)} recordists")
-    fold_of = assign_groups(groups, a.folds, rng)   # the only use of --seed
-    labels = sorted({lab for _, lab, _ in clips})
+    for group, label, _ in clips:
+        groups[group][label] += 1
+    if args.folds > len(groups):
+        raise SystemExit(f"{args.folds} folds requested but only {len(groups)} recordists")
+    fold_of = assign_groups(groups, args.folds, rng)   # the only use of --seed
+    labels = sorted({label for _, label, _ in clips})
     print(f"{len(clips)} clips, {len(groups)} recordists, classes: {labels}")
 
-    out = Path(a.out_dir)
+    out_dir = Path(args.out_dir)
     stats = [["fold", "part", "class", "clips", "recordists"]]
-    for f in range(a.folds):
-        val_groups = {g for g, k in fold_of.items() if k == f}
-        pool = sorted(g for g in groups if g not in val_groups)
+    for fold in range(args.folds):
+        val_groups = {group for group, group_fold in fold_of.items() if group_fold == fold}
+        pool = sorted(group for group in groups if group not in val_groups)
         train_groups = pool
-        if a.train_fraction < 1.0:
+        if args.train_fraction < 1.0:
             # one shuffle per (subset seed, fold); taking a prefix makes the subsets nested
             order = pool[:]
-            random.Random(f"{a.subset_seed}-{f}").shuffle(order)
-            n = max(1, round(a.train_fraction * len(pool)))
-            train_groups = order[:n]
+            random.Random(f"{args.subset_seed}-{fold}").shuffle(order)
+            n_train = max(1, round(args.train_fraction * len(pool)))
+            train_groups = order[:n_train]
         train_set = set(train_groups)
-        cnt = {"train": Counter(), "val": Counter()}
-        rec = {"train": defaultdict(set), "val": defaultdict(set)}
-        for g, lab, path in clips:
-            part = "val" if g in val_groups else "train" if g in train_set else None
+        counts = {"train": Counter(), "val": Counter()}
+        recordists = {"train": defaultdict(set), "val": defaultdict(set)}
+        for group, label, path in clips:
+            part = "val" if group in val_groups else "train" if group in train_set else None
             if part:
-                place(path, out / f"fold_{f}" / part / lab / Path(path).name, a.mode)
-                cnt[part][lab] += 1
-                rec[part][lab].add(g)
-        print(f"\nfold_{f}: {len(val_groups)} val recordists, {len(train_groups)} train recordists")
-        stats.append([f, "train", "ALL", sum(cnt["train"].values()), len(train_groups)])
-        stats.append([f, "val", "ALL", sum(cnt["val"].values()), len(val_groups)])
-        for lab in labels:
+                place(path, out_dir / f"fold_{fold}" / part / label / Path(path).name, args.mode)
+                counts[part][label] += 1
+                recordists[part][label].add(group)
+        print(f"\nfold_{fold}: {len(val_groups)} val recordists, {len(train_groups)} train recordists")
+        stats.append([fold, "train", "ALL", sum(counts["train"].values()), len(train_groups)])
+        stats.append([fold, "val", "ALL", sum(counts["val"].values()), len(val_groups)])
+        for label in labels:
             for part in ("train", "val"):
-                stats.append([f, part, lab, cnt[part][lab], len(rec[part][lab])])
+                stats.append([fold, part, label, counts[part][label], len(recordists[part][label])])
             warn = ""
-            if cnt["val"][lab] < MIN_VAL:
+            if counts["val"][label] < MIN_VAL:
                 warn += "   <-- few validation clips"
-            if cnt["train"][lab] < MIN_TRAIN:
+            if counts["train"][label] < MIN_TRAIN:
                 warn += "   <-- few training clips"
-            print(f"  {lab:<30} train {cnt['train'][lab]:>5} ({len(rec['train'][lab]):>2} rec)"
-                  f"   val {cnt['val'][lab]:>5} ({len(rec['val'][lab]):>2} rec){warn}")
+            n_train_rec, n_val_rec = len(recordists["train"][label]), len(recordists["val"][label])
+            print(f"  {label:<30} train {counts['train'][label]:>5} ({n_train_rec:>2} rec)"
+                  f"   val {counts['val'][label]:>5} ({n_val_rec:>2} rec){warn}")
 
-    out.mkdir(parents=True, exist_ok=True)
-    with open(out / "fold_stats.csv", "w", newline="", encoding="utf-8") as fh:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with open(out_dir / "fold_stats.csv", "w", newline="", encoding="utf-8") as fh:
         csv.writer(fh).writerows(stats)
 
     print("\nTrain one model per fold, for example:")
-    print(f"  python -m birdnet_analyzer.train {out}/fold_0/train "
-          f"-o models/fold_0.tflite --test_data {out}/fold_0/val")
+    print(f"  python -m birdnet_analyzer.train {out_dir}/fold_0/train "
+          f"-o models/fold_0.tflite --test_data {out_dir}/fold_0/val")
 
 
 if __name__ == "__main__":

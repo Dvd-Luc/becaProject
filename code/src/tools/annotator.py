@@ -97,7 +97,8 @@ class Config:
     q_col: str = "q"
     type_col: str = "type"
     status_file: str = "annotation_status.csv"
-    group_cols: list = field(default_factory=list) #CSV columns to balance across when selecting files (e.g. [rec, loc]). Empty = off
+    # CSV columns to balance across when selecting files (e.g. [rec, loc]); empty = off
+    group_cols: list = field(default_factory=list)
 
 def load_config(path):
     """Load the annotator settings from the standalone file or the unified project.yaml.
@@ -141,12 +142,12 @@ def read_labels(path):
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("\\"):      # skip frequency-range lines
             continue
-        p = line.split("\t")
-        if len(p) >= 3:
-            labels.append({"start": float(p[0].replace(",", ".")),
-                           "end": float(p[1].replace(",", ".")),
-                           "cat": p[2].strip()})
-    return sorted(labels, key=lambda l: l["start"])
+        parts = line.split("\t")
+        if len(parts) >= 3:
+            labels.append({"start": float(parts[0].replace(",", ".")),
+                           "end": float(parts[1].replace(",", ".")),
+                           "cat": parts[2].strip()})
+    return sorted(labels, key=lambda label: label["start"])
 
 
 def write_labels(path, labels):
@@ -158,8 +159,8 @@ def write_labels(path, labels):
     """
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
-        for l in sorted(labels, key=lambda l: l["start"]):
-            f.write(f"{l['start']:.6f}\t{l['end']:.6f}\t{l['cat']}\n")
+        for label in sorted(labels, key=lambda label: label["start"]):
+            f.write(f"{label['start']:.6f}\t{label['end']:.6f}\t{label['cat']}\n")
 
 
 def load_metadata(cfg):
@@ -181,15 +182,15 @@ def load_metadata(cfg):
     if rows and cfg.file_col not in rows[0]:
         raise SystemExit(f"column '{cfg.file_col}' not found in {cfg.metadata_csv} "
                          f"(columns: {list(rows[0])})")
-    for c in cfg.group_cols:
-        if rows and c not in rows[0]:
-            raise SystemExit(f"group column '{c}' not found in {cfg.metadata_csv} "
+    for col in cfg.group_cols:
+        if rows and col not in rows[0]:
+            raise SystemExit(f"group column '{col}' not found in {cfg.metadata_csv} "
                              f"(columns: {list(rows[0])})")
-    group = lambda r: "|".join((r.get(c) or "").strip() for c in cfg.group_cols)
-    return {r[cfg.file_col].strip(): {"q": (r.get(cfg.q_col) or "").strip().upper(),
-                                      "type": r.get(cfg.type_col) or "",
-                                      "group": group(r)}
-            for r in rows}
+    group = lambda row: "|".join((row.get(col) or "").strip() for col in cfg.group_cols)
+    return {row[cfg.file_col].strip(): {"q": (row.get(cfg.q_col) or "").strip().upper(),
+                                        "type": row.get(cfg.type_col) or "",
+                                        "group": group(row)}
+            for row in rows}
 
 
 def label_status(cfg, name):
@@ -202,10 +203,10 @@ def label_status(cfg, name):
     Returns:
         tuple[str, list[str]]: ("todo" | "done" | "no_calls", label names in its file).
     """
-    lab = Path(cfg.labels_dir) / f"{Path(name).stem}.txt"
-    if not lab.exists():
+    label_path = Path(cfg.labels_dir) / f"{Path(name).stem}.txt"
+    if not label_path.exists():
         return "todo", []
-    names = [l["cat"] for l in read_labels(lab)]
+    names = [label["cat"] for label in read_labels(label_path)]
     return ("done" if names else "no_calls"), names
 
 
@@ -224,20 +225,21 @@ def balance_groups(files, info, done, max_per_group=None):
         list[Path]: The queue order.
     """
     queues = {}
-    for p in files:
-        queues.setdefault(info(p)["group"], []).append(p)
+    for path in files:
+        queues.setdefault(info(path)["group"], []).append(path)
     count = Counter(done)
     if max_per_group:
-        queues = {g: v[:max(0, max_per_group - count[g])] for g, v in queues.items()}
-    queues = {g: v for g, v in queues.items() if v}
-    out = []
+        queues = {group: group_files[:max(0, max_per_group - count[group])]
+                  for group, group_files in queues.items()}
+    queues = {group: group_files for group, group_files in queues.items() if group_files}
+    order = []
     while queues:
-        g = min(queues, key=lambda g: (count[g], g)) # Example : (2, "B") vs (5, "A")
-        out.append(queues[g].pop(0))
-        count[g] += 1
-        if not queues[g]:
-            del queues[g]
-    return out
+        group = min(queues, key=lambda group: (count[group], group)) # Example : (2, "B") vs (5, "A")
+        order.append(queues[group].pop(0))
+        count[group] += 1
+        if not queues[group]:
+            del queues[group]
+    return order
 
 
 def list_files(cfg, include_done=False, type_filter=None, limit=None, max_per_group=None):
@@ -257,28 +259,28 @@ def list_files(cfg, include_done=False, type_filter=None, limit=None, max_per_gr
         SystemExit: If type_filter is used without metadata_csv.
     """
     meta = load_metadata(cfg)
-    files = [p for p in Path(cfg.audio_dir).iterdir() if p.suffix.lower() in AUDIO_EXT]
-    info = lambda p: meta.get(p.name, {"q": "", "type": "", "group": ""})
+    files = [path for path in Path(cfg.audio_dir).iterdir() if path.suffix.lower() in AUDIO_EXT]
+    info = lambda path: meta.get(path.name, {"q": "", "type": "", "group": ""})
     if meta:
-        unlisted = [p.name for p in files if p.name not in meta]
+        unlisted = [path.name for path in files if path.name not in meta]
         if unlisted:
             print(f"note: {len(unlisted)} audio files are not in the CSV "
                   f"(placed last), e.g. {unlisted[:3]}")
-        absent = [n for n in meta if not (Path(cfg.audio_dir) / n).exists()]
+        absent = [name for name in meta if not (Path(cfg.audio_dir) / name).exists()]
         if absent:
             print(f"note: {len(absent)} CSV recordings not found in audio_dir, "
                   f"e.g. {absent[:3]}")
-    files.sort(key=lambda p: (info(p)["q"] == "", info(p)["q"], p.name))   # A before B
+    files.sort(key=lambda path: (info(path)["q"] == "", info(path)["q"], path.name))   # A before B
 
-    status = {p: label_status(cfg, p.name)[0] for p in files}
-    done = Counter(info(p)["group"] for p in files if status[p] != "todo")
+    status = {path: label_status(cfg, path.name)[0] for path in files}
+    done = Counter(info(path)["group"] for path in files if status[path] != "todo")
 
     if type_filter:
         if not meta:
             raise SystemExit("--type needs metadata_csv in the config")
-        files = [p for p in files if type_filter.lower() in info(p)["type"].lower()]
+        files = [path for path in files if type_filter.lower() in info(path)["type"].lower()]
     if not include_done:
-        files = [p for p in files if status[p] == "todo"]
+        files = [path for path in files if status[path] == "todo"]
         if cfg.group_cols:
             files = balance_groups(files, info, done, max_per_group)
     return files[:limit] if limit else files
@@ -294,16 +296,16 @@ def build_status(cfg):
         list[dict]: Rows with recording, q, type, group, status, n_labels, label_names.
     """
     meta = load_metadata(cfg)
-    names = list(meta) + sorted(p.name for p in Path(cfg.audio_dir).iterdir()
-                                if p.suffix.lower() in AUDIO_EXT and p.name not in meta)
+    names = list(meta) + sorted(path.name for path in Path(cfg.audio_dir).iterdir()
+                                if path.suffix.lower() in AUDIO_EXT and path.name not in meta)
     rows = []
     for name in names:
-        status, labs = label_status(cfg, name)
-        m = meta.get(name, {"q": "", "type": "", "group": ""})
-        rows.append({"recording": name, "q": m["q"], "type": m["type"],
-                     "group": m["group"],
-                     "status": status, "n_labels": len(labs),
-                     "label_names": ";".join(sorted(set(labs)))})
+        status, label_names = label_status(cfg, name)
+        rec_meta = meta.get(name, {"q": "", "type": "", "group": ""})
+        rows.append({"recording": name, "q": rec_meta["q"], "type": rec_meta["type"],
+                     "group": rec_meta["group"],
+                     "status": status, "n_labels": len(label_names),
+                     "label_names": ";".join(sorted(set(label_names)))})
     return rows
 
 
@@ -319,9 +321,9 @@ def write_status(cfg):
     rows = build_status(cfg)
     if rows:
         with open(cfg.status_file, "w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=list(rows[0]))
-            w.writeheader()
-            w.writerows(rows)
+            writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
     return rows
 
 
@@ -333,29 +335,31 @@ def print_status(cfg):
     """
     rows = write_status(cfg)
     print(f"{len(rows)} recordings")
-    print("by status:", dict(Counter(r["status"] for r in rows)))
-    if any(r["q"] for r in rows):
-        print("by quality:", dict(Counter(r["q"] for r in rows)))
-        by = Counter((r["q"], r["status"]) for r in rows)
-        print("quality x status:", {f"{q}/{s}": n for (q, s), n in sorted(by.items())})
+    print("by status:", dict(Counter(row["status"] for row in rows)))
+    if any(row["q"] for row in rows):
+        print("by quality:", dict(Counter(row["q"] for row in rows)))
+        by_q_status = Counter((row["q"], row["status"]) for row in rows)
+        print("quality x status:", {f"{quality}/{status}": count
+                                    for (quality, status), count in sorted(by_q_status.items())})
     total = Counter()
-    for lab in Path(cfg.labels_dir).glob("*.txt"):
-        total.update(l["cat"] for l in read_labels(lab))
+    for label_path in Path(cfg.labels_dir).glob("*.txt"):
+        total.update(label["cat"] for label in read_labels(label_path))
     if cfg.group_cols:
-        g = Counter(r["group"] for r in rows if r["status"] != "todo")
-        print(f"labelled recordings per group ({len(g)} groups):", dict(g.most_common()))
+        group_counts = Counter(row["group"] for row in rows if row["status"] != "todo")
+        print(f"labelled recordings per group ({len(group_counts)} groups):",
+              dict(group_counts.most_common()))
     print("labels per class:", dict(total))
-    bad = {n: c for n, c in total.items() if n not in cfg.categories}
-    print("UNKNOWN label names (typos?):", bad or "none")
+    unknown_names = {name: count for name, count in total.items() if name not in cfg.categories}
+    print("UNKNOWN label names (typos?):", unknown_names or "none")
     print(f"saved {cfg.status_file}")
 
 
-def compute_spectrogram(x, sr, n_fft, hop, f_min, f_max):
+def compute_spectrogram(audio, sample_rate, n_fft, hop, f_min, f_max):
     """Magnitude spectrogram in dB, only the bins between f_min and f_max.
 
     Args:
-        x (numpy.ndarray): Mono samples.
-        sr (int): Sample rate.
+        audio (numpy.ndarray): Mono samples.
+        sample_rate (int): Sample rate.
         n_fft (int): FFT size.
         hop (int): Hop between frames, in samples.
         f_min (float): Lowest frequency kept, Hz.
@@ -365,21 +369,21 @@ def compute_spectrogram(x, sr, n_fft, hop, f_min, f_max):
         tuple[numpy.ndarray, float, float]: (dB array of shape (bins, frames),
             lowest and highest frequency of the kept bins in Hz).
     """
-    df = sr / n_fft
-    b0 = int(f_min // df)
-    b1 = min(int(f_max // df) + 1, n_fft // 2 + 1)
-    if len(x) < n_fft:
-        x = np.pad(x, (0, n_fft - len(x)))
-    n_frames = 1 + (len(x) - n_fft) // hop
-    win = np.hanning(n_fft).astype(np.float32)
-    windows = np.lib.stride_tricks.sliding_window_view(x, n_fft)
-    S = np.empty((b1 - b0, n_frames), dtype=np.float32)
-    for i0 in range(0, n_frames, 1500):                    # chunks keep memory low
-        i1 = min(i0 + 1500, n_frames)
-        frames = windows[i0 * hop:(i1 - 1) * hop + 1:hop] * win
-        mag = np.abs(np.fft.rfft(frames, axis=1))[:, b0:b1]
-        S[:, i0:i1] = 20 * np.log10(mag.T + 1e-10)
-    return S, b0 * df, b1 * df
+    bin_hz = sample_rate / n_fft
+    bin_lo = int(f_min // bin_hz)
+    bin_hi = min(int(f_max // bin_hz) + 1, n_fft // 2 + 1)
+    if len(audio) < n_fft:
+        audio = np.pad(audio, (0, n_fft - len(audio)))
+    n_frames = 1 + (len(audio) - n_fft) // hop
+    window_fn = np.hanning(n_fft).astype(np.float32)
+    windows = np.lib.stride_tricks.sliding_window_view(audio, n_fft)
+    spec = np.empty((bin_hi - bin_lo, n_frames), dtype=np.float32)
+    for chunk_start in range(0, n_frames, 1500):                    # chunks keep memory low
+        chunk_end = min(chunk_start + 1500, n_frames)
+        frames = windows[chunk_start * hop:(chunk_end - 1) * hop + 1:hop] * window_fn
+        mag = np.abs(np.fft.rfft(frames, axis=1))[:, bin_lo:bin_hi]
+        spec[:, chunk_start:chunk_end] = 20 * np.log10(mag.T + 1e-10)
+    return spec, bin_lo * bin_hz, bin_hi * bin_hz
 
 
 # ---------------------------------------------------------------- application
@@ -392,10 +396,10 @@ class Annotator:
         idx (int): Index of the recording shown.
         labels (list[dict]): Committed labels of that recording (start, end, cat).
         edit_orig (dict | None): Label taken back for editing, restored by Esc.
-        x (numpy.ndarray): Mono samples of the recording.
-        sr (int): Sample rate.
+        audio (numpy.ndarray): Mono samples of the recording.
+        sample_rate (int): Sample rate.
         duration (float): Recording length, seconds.
-        S (numpy.ndarray): Its dB spectrogram.
+        spec (numpy.ndarray): Its dB spectrogram.
         view (tuple[float, float]): Visible time range, seconds.
     """
     def __init__(self, cfg, files):
@@ -407,13 +411,13 @@ class Annotator:
         """
         import matplotlib.pyplot as plt
         self.plt = plt
-        for k in [k for k in plt.rcParams if k.startswith("keymap.")]:
-            plt.rcParams[k] = []                           # free the keys for our shortcuts
+        for key in [key for key in plt.rcParams if key.startswith("keymap.")]:
+            plt.rcParams[key] = []                           # free the keys for our shortcuts
 
         self.cfg, self.files, self.idx = cfg, files, 0
         self.meta = load_metadata(cfg)
         cmap = matplotlib.colormaps["tab10"]
-        self.colors = {c: cmap(i % 10) for i, c in enumerate(cfg.categories)}
+        self.colors = {cat: cmap(i % 10) for i, cat in enumerate(cfg.categories)}
         self.edit_orig = None
         self._label_artists = []
         self._playing = False
@@ -421,9 +425,9 @@ class Annotator:
 
         self.fig = plt.figure(figsize=(14, 7.5))
         self.ax = self.fig.add_axes([0.06, 0.17, 0.74, 0.73])
-        ax_sl = self.fig.add_axes([0.06, 0.08, 0.74, 0.03])
-        self.slider = Slider(ax_sl, "", 0.0, 1.0, valinit=0.0, valfmt="%.1f s")
-        self.slider.on_changed(lambda v: self.set_view(v, self.view[1] - self.view[0]))
+        slider_ax = self.fig.add_axes([0.06, 0.08, 0.74, 0.03])
+        self.slider = Slider(slider_ax, "", 0.0, 1.0, valinit=0.0, valfmt="%.1f s")
+        self.slider.on_changed(lambda value: self.set_view(value, self.view[1] - self.view[0]))
         self.im = self.ax.imshow(np.zeros((2, 2)), origin="lower", aspect="auto",
                                  cmap=cfg.cmap, interpolation="nearest")
         self.ax.set_xlabel("time (s)")
@@ -436,17 +440,17 @@ class Annotator:
             props=dict(facecolor="red", alpha=0.3),
             handle_props=dict(color="red", linewidth=2))
 
-        handles = [Patch(facecolor=self.colors[c], alpha=0.6, label=f"[{CAT_KEYS[i]}]  {c}")
-                   for i, c in enumerate(cfg.categories)]
+        handles = [Patch(facecolor=self.colors[cat], alpha=0.6, label=f"[{CAT_KEYS[i]}]  {cat}")
+                   for i, cat in enumerate(cfg.categories)]
         self.ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.01, 1.0),
                        frameon=False, title="Categories")
         self.fig.text(0.06, 0.975, HELP, fontsize=8, va="top")
         self.msg = self.fig.text(0.06, 0.02, "", fontsize=10, color="darkred")
 
-        c = self.fig.canvas
-        c.mpl_connect("key_press_event", self._on_key)
-        c.mpl_connect("scroll_event", self._on_scroll)
-        c.mpl_connect("button_press_event", self._on_click)
+        canvas = self.fig.canvas
+        canvas.mpl_connect("key_press_event", self._on_key)
+        canvas.mpl_connect("scroll_event", self._on_scroll)
+        canvas.mpl_connect("button_press_event", self._on_click)
         self.load_file(0)
 
     # ---- loading / saving
@@ -479,21 +483,21 @@ class Annotator:
         path = self.files[i]
         self.span.clear()
         self.edit_orig = None
-        x, sr = sf.read(path, dtype="float32", always_2d=True)
-        self.x, self.sr = x.mean(axis=1), sr
-        self.duration = len(self.x) / sr
-        c = self.cfg
-        self.S, self.f_lo, self.f_hi = compute_spectrogram(
-            self.x, sr, c.n_fft, c.hop_length, c.f_min, min(c.f_max, sr / 2))
-        self.vmax = float(np.percentile(self.S[:, ::max(1, self.S.shape[1] // 2000)], 99.5))
-        self.db_range = c.db_range
+        audio, sample_rate = sf.read(path, dtype="float32", always_2d=True)
+        self.audio, self.sample_rate = audio.mean(axis=1), sample_rate
+        self.duration = len(self.audio) / sample_rate
+        cfg = self.cfg
+        self.spec, self.f_lo, self.f_hi = compute_spectrogram(
+            self.audio, sample_rate, cfg.n_fft, cfg.hop_length, cfg.f_min, min(cfg.f_max, sample_rate / 2))
+        self.vmax = float(np.percentile(self.spec[:, ::max(1, self.spec.shape[1] // 2000)], 99.5))
+        self.db_range = cfg.db_range
         if self._partial().exists():
             self.labels, note = read_labels(self._partial()), "restored unsaved work"
         elif self._txt().exists():
             self.labels, note = read_labels(self._txt()), "loaded saved labels"
         else:
             self.labels, note = [], ""
-        self.view = (0.0, min(c.view_seconds, self.duration))
+        self.view = (0.0, min(cfg.view_seconds, self.duration))
         self.refresh()
         self._msg(note)
         try:
@@ -525,8 +529,8 @@ class Annotator:
         self._partial().unlink(missing_ok=True)
         try:
             write_status(self.cfg)
-        except Exception as e:
-            print(f"could not update {self.cfg.status_file}: {e}")
+        except Exception as err:
+            print(f"could not update {self.cfg.status_file}: {err}")
         done = self.files[self.idx].name
         if self.idx + 1 < len(self.files):
             self.load_file(self.idx + 1)
@@ -559,9 +563,9 @@ class Annotator:
         """
         if not self.span.get_visible():
             return None
-        a, b = self.span.extents
-        a, b = max(0.0, a), min(self.duration, b)
-        return (a, b) if b - a >= MIN_SEL else None
+        start, end = self.span.extents
+        start, end = max(0.0, start), min(self.duration, end)
+        return (start, end) if end - start >= MIN_SEL else None
 
     def commit(self, cat_idx):
         """Turn the selection into a label.
@@ -570,8 +574,8 @@ class Annotator:
             cat_idx (int | None): Index in cfg.categories; None keeps the category of the
                 label being edited.
         """
-        sel = self.get_selection()
-        if sel is None:
+        selection = self.get_selection()
+        if selection is None:
             return self._msg("No selection: drag on the spectrogram first")
         if cat_idx is None:
             if self.edit_orig is None:
@@ -579,13 +583,13 @@ class Annotator:
             cat = self.edit_orig["cat"]
         else:
             cat = self.cfg.categories[cat_idx]
-        self.labels.append({"start": sel[0], "end": sel[1], "cat": cat})
-        self.labels.sort(key=lambda l: l["start"])
+        self.labels.append({"start": selection[0], "end": selection[1], "cat": cat})
+        self.labels.sort(key=lambda label: label["start"])
         self.span.clear()
         self.edit_orig = None
         self._autosave()
         self.refresh()
-        self._msg(f"labelled {sel[0]:.2f}-{sel[1]:.2f} s as {cat}")
+        self._msg(f"labelled {selection[0]:.2f}-{selection[1]:.2f} s as {cat}")
 
     def delete_selection(self):
         """Clear the selection; if it was a label being edited, that label is deleted."""
@@ -603,7 +607,7 @@ class Annotator:
         """Cancel the selection, restoring a label being edited."""
         if self.edit_orig is not None:
             self.labels.append(self.edit_orig)
-            self.labels.sort(key=lambda l: l["start"])
+            self.labels.sort(key=lambda label: label["start"])
             self.edit_orig = None
         self.span.clear()
         self.refresh()
@@ -618,29 +622,29 @@ class Annotator:
             return
         if self.get_selection() is not None:
             return self._msg("Commit or delete the current selection first")
-        hits = [l for l in self.labels if l["start"] <= event.xdata <= l["end"]]
+        hits = [label for label in self.labels if label["start"] <= event.xdata <= label["end"]]
         if not hits:
             return
-        l = min(hits, key=lambda l: l["end"] - l["start"])
-        self.labels.remove(l)
-        self.edit_orig = dict(l)
-        self.span.extents = (l["start"], l["end"])
+        label = min(hits, key=lambda label: label["end"] - label["start"])
+        self.labels.remove(label)
+        self.edit_orig = dict(label)
+        self.span.extents = (label["start"], label["end"])
         self.span.set_visible(True)
         self.refresh()
-        self._msg(f"editing '{l['cat']}': adjust the edges, then press a category key "
+        self._msg(f"editing '{label['cat']}': adjust the edges, then press a category key "
                   "or Enter (Backspace deletes, Esc cancels)")
 
     # ---- view
-    def set_view(self, t0, length):
+    def set_view(self, start, length):
         """Show a time range, kept inside the recording and the zoom limits.
 
         Args:
-            t0 (float): Start, seconds.
+            start (float): Start, seconds.
             length (float): Width, seconds.
         """
         length = min(max(length, MIN_VIEW), self.duration)
-        t0 = min(max(t0, 0.0), self.duration - length)
-        self.view = (t0, t0 + length)
+        start = min(max(start, 0.0), self.duration - length)
+        self.view = (start, start + length)
         self.refresh()
 
     def zoom(self, factor, center=None):
@@ -650,11 +654,11 @@ class Annotator:
             factor (float): New width / old width (< 1 zooms in).
             center (float | None): Time kept fixed, seconds (None: centre of the view).
         """
-        t0, t1 = self.view
-        length = t1 - t0
-        c = (t0 + t1) / 2 if center is None else center
-        new = min(max(length * factor, MIN_VIEW), self.duration)
-        self.set_view(c - (c - t0) / length * new, new)
+        start, end = self.view
+        length = end - start
+        pivot = (start + end) / 2 if center is None else center
+        new_length = min(max(length * factor, MIN_VIEW), self.duration)
+        self.set_view(pivot - (pivot - start) / length * new_length, new_length)
 
     def pan(self, frac):
         """Scroll the view.
@@ -662,8 +666,8 @@ class Annotator:
         Args:
             frac (float): Shift as a fraction of the view width (negative = left).
         """
-        t0, t1 = self.view
-        self.set_view(t0 + frac * (t1 - t0), t1 - t0)
+        start, end = self.view
+        self.set_view(start + frac * (end - start), end - start)
 
     def _on_scroll(self, event):
         """Mouse wheel: zoom around the cursor; shift + wheel: scroll.
@@ -683,58 +687,58 @@ class Annotator:
         """Redraw the spectrogram, labels, title and slider for the current view."""
         self._draw_image()
         self._draw_labels()
-        t0, t1 = self.view
-        m = self.meta.get(self.files[self.idx].name)
-        tag = f"   q={m['q']} type={m['type']}" if m else ""
+        start, end = self.view
+        rec_meta = self.meta.get(self.files[self.idx].name)
+        tag = f"   q={rec_meta['q']} type={rec_meta['type']}" if rec_meta else ""
         self.ax.set_title(
             f"[{self.idx + 1}/{len(self.files)}] {self.files[self.idx].name}{tag}   "
-            f"{self.duration:.1f} s   {len(self.labels)} labels   view {t0:.1f}-{t1:.1f} s",
+            f"{self.duration:.1f} s   {len(self.labels)} labels   view {start:.1f}-{end:.1f} s",
             loc="left", fontsize=10)
-        vmax = max(self.duration - (t1 - t0), 1e-3)
+        slider_max = max(self.duration - (end - start), 1e-3)
         self.slider.eventson = False
-        self.slider.valmax = vmax
-        self.slider.ax.set_xlim(0, vmax)
-        self.slider.set_val(t0)
+        self.slider.valmax = slider_max
+        self.slider.ax.set_xlim(0, slider_max)
+        self.slider.set_val(start)
         self.slider.eventson = True
         self.fig.canvas.draw_idle()
 
     def _draw_image(self):
         """Draw the visible part of the spectrogram, max-pooled to MAX_COLS columns."""
-        t0, t1 = self.view
-        sr, hop, n_fft = self.sr, self.cfg.hop_length, self.cfg.n_fft
-        n_frames = self.S.shape[1]
-        c0 = max(0, int((t0 * sr - n_fft / 2) // hop))
-        c1 = min(n_frames, int(np.ceil((t1 * sr - n_fft / 2) / hop)) + 1)
-        sl = self.S[:, c0:c1]
-        step = max(1, sl.shape[1] // MAX_COLS)
+        start, end = self.view
+        sample_rate, hop, n_fft = self.sample_rate, self.cfg.hop_length, self.cfg.n_fft
+        n_frames = self.spec.shape[1]
+        col_start = max(0, int((start * sample_rate - n_fft / 2) // hop))
+        col_end = min(n_frames, int(np.ceil((end * sample_rate - n_fft / 2) / hop)) + 1)
+        visible = self.spec[:, col_start:col_end]
+        step = max(1, visible.shape[1] // MAX_COLS)
         if step > 1:                                        # max-pool: keep short calls visible
-            k = sl.shape[1] // step * step
-            sl = sl[:, :k].reshape(sl.shape[0], -1, step).max(axis=2)
-        xa = (c0 * hop + n_fft / 2) / sr - hop / (2 * sr)
-        xb = xa + sl.shape[1] * step * hop / sr
-        self.im.set_data(sl)
-        self.im.set_extent([xa, xb, self.f_lo, self.f_hi])
+            n_kept = visible.shape[1] // step * step
+            visible = visible[:, :n_kept].reshape(visible.shape[0], -1, step).max(axis=2)
+        x_left = (col_start * hop + n_fft / 2) / sample_rate - hop / (2 * sample_rate)
+        x_right = x_left + visible.shape[1] * step * hop / sample_rate
+        self.im.set_data(visible)
+        self.im.set_extent([x_left, x_right, self.f_lo, self.f_hi])
         self.im.set_clim(self.vmax - self.db_range, self.vmax)
-        self.ax.set_xlim(t0, t1)
+        self.ax.set_xlim(start, end)
         self.ax.set_ylim(self.f_lo, self.f_hi)
 
     def _draw_labels(self):
         """Draw the labels that overlap the view as coloured spans with their name."""
-        for a in self._label_artists:
-            a.remove()
+        for artist in self._label_artists:
+            artist.remove()
         self._label_artists = []
-        t0, t1 = self.view
-        for l in self.labels:
-            if l["end"] < t0 or l["start"] > t1:
+        start, end = self.view
+        for label in self.labels:
+            if label["end"] < start or label["start"] > end:
                 continue
-            col = self.colors.get(l["cat"], (0.5, 0.5, 0.5, 1.0))
+            color = self.colors.get(label["cat"], (0.5, 0.5, 0.5, 1.0))
             self._label_artists.append(
-                self.ax.axvspan(l["start"], l["end"], color=col, alpha=0.3, lw=0))
+                self.ax.axvspan(label["start"], label["end"], color=color, alpha=0.3, lw=0))
             self._label_artists.append(self.ax.text(
-                max(l["start"], t0), 0.98, l["cat"], transform=self.ax.get_xaxis_transform(),
+                max(label["start"], start), 0.98, label["cat"], transform=self.ax.get_xaxis_transform(),
                 va="top", ha="left", fontsize=9, color="white", clip_on=True,
-                bbox=dict(facecolor=col, alpha=0.8, pad=1.5, lw=0)))
-        self.ax.set_xlim(t0, t1)
+                bbox=dict(facecolor=color, alpha=0.8, pad=1.5, lw=0)))
+        self.ax.set_xlim(start, end)
 
     def _msg(self, text):
         """Show a message under the spectrogram.
@@ -750,31 +754,31 @@ class Annotator:
         """Play the selection (or the visible part) with a moving playhead; again to stop."""
         if self._playing:
             return self._stop_play()
-        sel = self.get_selection()
-        t0, t1 = sel if sel else self.view
-        seg = self.x[int(t0 * self.sr):int(t1 * self.sr)].copy()
-        if len(seg) == 0:
+        selection = self.get_selection()
+        start, end = selection if selection else self.view
+        segment = self.audio[int(start * self.sample_rate):int(end * self.sample_rate)].copy()
+        if len(segment) == 0:
             return
-        if self.cfg.normalize_playback and np.abs(seg).max() > 0:
-            seg *= 0.8 / np.abs(seg).max()
+        if self.cfg.normalize_playback and np.abs(segment).max() > 0:
+            segment *= 0.8 / np.abs(segment).max()
         try:
             import sounddevice as sd
             sd.stop()
-            sd.play(seg, self.sr)
-        except Exception as e:                              # no audio device / sounddevice
-            return self._msg(f"cannot play audio: {e}")
+            sd.play(segment, self.sample_rate)
+        except Exception as err:                              # no audio device / sounddevice
+            return self._msg(f"cannot play audio: {err}")
         self._playing = True
-        self._p_t0, self._p_len, self._p_start = t0, t1 - t0, time.time()
+        self._play_from, self._play_len, self._play_clock = start, end - start, time.time()
         self._timer = self.fig.canvas.new_timer(interval=60)
         self._timer.add_callback(self._tick)
         self._timer.start()
 
     def _tick(self):
         """Timer callback: move the playhead, stop at the end of the segment."""
-        el = time.time() - self._p_start
-        if el >= self._p_len:
+        elapsed = time.time() - self._play_clock
+        if elapsed >= self._play_len:
             return self._stop_play()
-        self.playhead.set_xdata([self._p_t0 + el] * 2)
+        self.playhead.set_xdata([self._play_from + elapsed] * 2)
         self.playhead.set_visible(True)
         self.fig.canvas.draw_idle()
 
@@ -800,38 +804,38 @@ class Annotator:
         Args:
             event (matplotlib.backend_bases.KeyEvent): The key event.
         """
-        k, n = event.key, len(self.cfg.categories)
-        if k is None:
+        key, n_cats = event.key, len(self.cfg.categories)
+        if key is None:
             return
-        if len(k) == 1 and k in CAT_KEYS[:n]:
-            self.commit(CAT_KEYS.index(k))
-        elif k == "enter":
+        if len(key) == 1 and key in CAT_KEYS[:n_cats]:
+            self.commit(CAT_KEYS.index(key))
+        elif key == "enter":
             self.commit(None)
-        elif k == " ":
+        elif key == " ":
             self.toggle_play()
-        elif k in ("backspace", "delete"):
+        elif key in ("backspace", "delete"):
             self.delete_selection()
-        elif k == "escape":
+        elif key == "escape":
             self.cancel()
-        elif k == "left":
+        elif key == "left":
             self.pan(-0.25)
-        elif k == "right":
+        elif key == "right":
             self.pan(0.25)
-        elif k in ("up", "+", "="):
+        elif key in ("up", "+", "="):
             self.zoom(0.7)
-        elif k in ("down", "-"):
+        elif key in ("down", "-"):
             self.zoom(1 / 0.7)
-        elif k == "[":
+        elif key == "[":
             self.db_range = max(10.0, self.db_range - 5)
             self.refresh()
-        elif k == "]":
+        elif key == "]":
             self.db_range += 5
             self.refresh()
-        elif k == "s":
+        elif key == "s":
             self.save_and_next()
-        elif k == "x":
+        elif key == "x":
             self.mark_empty()
-        elif k == "b":
+        elif key == "b":
             self.go_back()
 
     def run(self):
@@ -841,33 +845,34 @@ class Annotator:
 
 def main():
     """CLI entry point: --status / --list, or open the annotator on the selected recordings."""
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("--config", default="config/project.yaml")
-    ap.add_argument("--all", action="store_true", help="include already labelled recordings")
-    ap.add_argument("--type", help="only recordings whose CSV 'type' contains this text")
-    ap.add_argument("--n", type=int, help="only the next N recordings to annotate")
-    ap.add_argument("--status", action="store_true",
-                    help="print the progress summary, rewrite the status CSV and exit")
-    ap.add_argument("--list", action="store_true",
-                    help="list the recordings that would be annotated and exit")
-    ap.add_argument("--max-per-group", type=int,
-                help="cap on labelled + queued recordings per group (e.g. per recordist)")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("--config", default="config/project.yaml")
+    parser.add_argument("--all", action="store_true", help="include already labelled recordings")
+    parser.add_argument("--type", help="only recordings whose CSV 'type' contains this text")
+    parser.add_argument("--n", type=int, help="only the next N recordings to annotate")
+    parser.add_argument("--status", action="store_true",
+                        help="print the progress summary, rewrite the status CSV and exit")
+    parser.add_argument("--list", action="store_true",
+                        help="list the recordings that would be annotated and exit")
+    parser.add_argument("--max-per-group", type=int,
+                        help="cap on labelled + queued recordings per group (e.g. per recordist)")
+    args = parser.parse_args()
     cfg = load_config(args.config)
 
     if args.status:
         return print_status(cfg)
     files = list_files(cfg, include_done=args.all, type_filter=args.type,
-            limit=args.n, max_per_group=args.max_per_group)
+                       limit=args.n, max_per_group=args.max_per_group)
     if not files:
         print("Nothing to annotate with these options.")
         return
     if args.list:
         meta = load_metadata(cfg)
-        for p in files:
-            m = meta.get(p.name, {})
-            print(f"  {p.name}  q={m.get('q', '')}  type={m.get('type', '')}, group={m.get('group', '')}")
+        for path in files:
+            rec_meta = meta.get(path.name, {})
+            print(f"  {path.name}  q={rec_meta.get('q', '')}  type={rec_meta.get('type', '')}, "
+                  f"group={rec_meta.get('group', '')}")
         return
     if cfg.backend:
         matplotlib.use(cfg.backend)

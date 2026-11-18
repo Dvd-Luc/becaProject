@@ -25,16 +25,16 @@ def read_preds(pred_root, fold):
         dict[str, tuple[str, float]]: Clip file name -> (best label, confidence).
     """
     best = {}
-    for f in sorted((pred_root / fold).rglob("*.csv")):
-        with open(f, newline="", encoding="utf-8") as fh:
+    for csv_path in sorted((pred_root / fold).rglob("*.csv")):
+        with open(csv_path, newline="", encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
             if not {"File", "Common name", "Confidence"} <= set(reader.fieldnames or []):
                 continue                      # e.g. BirdNET_analysis_params.csv
-            for r in reader:
-                name = Path(r["File"]).name
-                conf = float(r["Confidence"])
+            for row in reader:
+                name = Path(row["File"]).name
+                conf = float(row["Confidence"])
                 if name not in best or conf > best[name][1]:
-                    best[name] = (r["Common name"], conf)
+                    best[name] = (row["Common name"], conf)
     return best
 
 
@@ -53,15 +53,15 @@ def confusion(val_root, pred_root, folds):
     per_fold, total = {}, Counter()
     for fold in folds:
         best = read_preds(pred_root, fold)
-        m = Counter()
+        counts = Counter()
         for cls_dir in sorted((val_root / fold / "val").iterdir()):
             if not cls_dir.is_dir():
                 continue
             for clip in cls_dir.glob("*.wav"):
-                m[(cls_dir.name, best.get(clip.name, ("none", 0))[0])] += 1
-        per_fold[fold] = m
-        total.update(m)
-        print(f"{fold}: {len(best)} predicted clips, {sum(m.values())} validation clips")
+                counts[(cls_dir.name, best.get(clip.name, ("none", 0))[0])] += 1
+        per_fold[fold] = counts
+        total.update(counts)
+        print(f"{fold}: {len(best)} predicted clips, {sum(counts.values())} validation clips")
     return per_fold, total
 
 
@@ -71,40 +71,40 @@ def main():
     Raises:
         SystemExit: If the output is not a .csv file or no fold_* folder is found.
     """
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("val_root", type=Path, help="folds folder, e.g. outputs/folds")
-    ap.add_argument("pred_root", type=Path, help="predictions folder, e.g. models/preds")
-    ap.add_argument("out_csv", type=Path, nargs="?", default=Path("confusion_matrices.csv"),
-                    help="output CSV (default: confusion_matrices.csv)")
-    a = ap.parse_args()
-    if a.out_csv.suffix.lower() != ".csv":
-        raise SystemExit(f"output must be a .csv file, got {a.out_csv} (refusing to overwrite it)")
-    folds = sorted(p.name for p in a.val_root.glob("fold_*"))
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("val_root", type=Path, help="folds folder, e.g. outputs/folds")
+    parser.add_argument("pred_root", type=Path, help="predictions folder, e.g. models/preds")
+    parser.add_argument("out_csv", type=Path, nargs="?", default=Path("confusion_matrices.csv"),
+                        help="output CSV (default: confusion_matrices.csv)")
+    args = parser.parse_args()
+    if args.out_csv.suffix.lower() != ".csv":
+        raise SystemExit(f"output must be a .csv file, got {args.out_csv} (refusing to overwrite it)")
+    folds = sorted(pred.name for pred in args.val_root.glob("fold_*"))
     if not folds:
-        raise SystemExit(f"no fold_* folder in {a.val_root}; nothing written")
+        raise SystemExit(f"no fold_* folder in {args.val_root}; nothing written")
 
-    per_fold, total = confusion(a.val_root, a.pred_root, folds)
-    true_cls = sorted({t for t, _ in total})
-    pred_cls = sorted({p for _, p in total})
+    per_fold, total = confusion(args.val_root, args.pred_root, folds)
+    true_cls = sorted({true for true, _ in total})
+    pred_cls = sorted({pred for _, pred in total})
 
     print("\nPOOLED (rows = true, columns = predicted)")
-    print(f"{'':<12}" + "".join(f"{p:>10}" for p in pred_cls))
-    for t in true_cls:
-        print(f"{t:<12}" + "".join(f"{total[(t, p)]:>10}" for p in pred_cls))
+    print(f"{'':<12}" + "".join(f"{pred:>10}" for pred in pred_cls))
+    for true in true_cls:
+        print(f"{true:<12}" + "".join(f"{total[(true, pred)]:>10}" for pred in pred_cls))
 
     # one row per (fold, true class), plus a pooled block
-    a.out_csv.parent.mkdir(parents=True, exist_ok=True)
-    with open(a.out_csv, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["fold", "true"] + pred_cls + ["total", "recall"])
-        for name, m in [*per_fold.items(), ("pooled", total)]:
-            for t in true_cls:
-                row = [m[(t, p)] for p in pred_cls]
-                n = sum(row)
-                recall = f"{m[(t, t)] / n:.4f}" if n else ""
-                w.writerow([name, t] + row + [n, recall])
-    print(f"\nsaved {a.out_csv}")
+    args.out_csv.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.out_csv, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["fold", "true"] + pred_cls + ["total", "recall"])
+        for name, counts in [*per_fold.items(), ("pooled", total)]:
+            for true in true_cls:
+                row = [counts[(true, pred)] for pred in pred_cls]
+                n_true = sum(row)
+                recall = f"{counts[(true, true)] / n_true:.4f}" if n_true else ""
+                writer.writerow([name, true] + row + [n_true, recall])
+    print(f"\nsaved {args.out_csv}")
 
 
 if __name__ == "__main__":

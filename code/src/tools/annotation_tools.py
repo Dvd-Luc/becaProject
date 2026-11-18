@@ -67,134 +67,135 @@ def read_label_names(path):
 
 
 # ---------- split ----------
-def cmd_split(a):
+def cmd_split(args):
     """`split`: place each recording in <out-dir>/<quality>/ (copy, move or symlink).
 
     Args:
-        a (argparse.Namespace): csv, file_col, q_col, audio_dir, out_dir, mode.
+        args (argparse.Namespace): csv, file_col, q_col, audio_dir, out_dir, mode.
     """
-    rows = load_rows(a.csv)
+    rows = load_rows(args.csv)
     counts, missing = Counter(), []
-    for r in rows:
-        name, q = r[a.file_col].strip(), r[a.q_col].strip().upper() or "unknown"
-        src = Path(a.audio_dir) / name
+    for row in rows:
+        name, quality = row[args.file_col].strip(), row[args.q_col].strip().upper() or "unknown"
+        src = Path(args.audio_dir) / name
         if not src.exists():
             missing.append(name)
             continue
-        dest_dir = Path(a.out_dir) / q
+        dest_dir = Path(args.out_dir) / quality
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / name
         if dest.exists() or dest.is_symlink():
             continue
-        if a.mode == "copy":
+        if args.mode == "copy":
             shutil.copy2(src, dest)
-        elif a.mode == "move":
+        elif args.mode == "move":
             shutil.move(src, dest)
         else:
             os.symlink(src.resolve(), dest)
-        counts[q] += 1
+        counts[quality] += 1
     print("placed:", dict(counts))
     if missing:
         print(f"{len(missing)} files listed in the CSV were not found, e.g. {missing[:3]}")
 
 
 # ---------- status ----------
-def build_status(a):
+def build_status(args):
     """One status row per CSV recording: todo / done / no_calls, with its label names.
 
     Args:
-        a (argparse.Namespace): csv, file_col, q_col, type_col, labels_dir.
+        args (argparse.Namespace): csv, file_col, q_col, type_col, labels_dir.
 
     Returns:
         list[dict]: Rows with recording, q, type, status, n_labels, label_names.
     """
-    rows = load_rows(a.csv)
-    out = []
-    for r in rows:
-        name = r[a.file_col].strip()
-        lab = Path(a.labels_dir) / f"{Path(name).stem}.txt"
-        if not lab.exists():
+    rows = load_rows(args.csv)
+    status_rows = []
+    for row in rows:
+        name = row[args.file_col].strip()
+        label_path = Path(args.labels_dir) / f"{Path(name).stem}.txt"
+        if not label_path.exists():
             status, names = "todo", []
         else:
-            names = read_label_names(lab)
+            names = read_label_names(label_path)
             status = "done" if names else "no_calls"
-        out.append({"recording": name,
-                    "q": r.get(a.q_col, "").strip().upper(),
-                    "type": r.get(a.type_col, ""),
-                    "status": status, "n_labels": len(names),
-                    "label_names": ";".join(sorted(set(names)))})
-    return out
+        status_rows.append({"recording": name,
+                            "q": row.get(args.q_col, "").strip().upper(),
+                            "type": row.get(args.type_col, ""),
+                            "status": status, "n_labels": len(names),
+                            "label_names": ";".join(sorted(set(names)))})
+    return status_rows
 
 
-def cmd_status(a):
+def cmd_status(args):
     """`status`: write the status CSV and print progress and label counts per class.
 
     Args:
-        a (argparse.Namespace): Status options (status_file, allowed, ...).
+        args (argparse.Namespace): Status options (status_file, allowed, ...).
     """
-    out = build_status(a)
-    with open(a.status_file, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=list(out[0]))
-        w.writeheader()
-        w.writerows(out)
+    status_rows = build_status(args)
+    with open(args.status_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(status_rows[0]))
+        writer.writeheader()
+        writer.writerows(status_rows)
 
-    print(f"{len(out)} recordings")
+    print(f"{len(status_rows)} recordings")
     for key in ("q", "status"):
-        print(f"by {key}:", dict(Counter(o[key] for o in out)))
-    by_qs = Counter((o["q"], o["status"]) for o in out)
-    print("quality x status:", {f"{q}/{s}": n for (q, s), n in sorted(by_qs.items())})
+        print(f"by {key}:", dict(Counter(row[key] for row in status_rows)))
+    by_qs = Counter((row["q"], row["status"]) for row in status_rows)
+    print("quality x status:",
+          {f"{quality}/{status}": count for (quality, status), count in sorted(by_qs.items())})
 
     total = Counter()
-    for lab in Path(a.labels_dir).glob("*.txt"):
-        total.update(read_label_names(lab))
+    for label_path in Path(args.labels_dir).glob("*.txt"):
+        total.update(read_label_names(label_path))
     print("labels per class:", dict(total))
-    if a.allowed:
-        allowed = set(a.allowed)
-        bad = {n: c for n, c in total.items() if n not in allowed}
-        print("UNKNOWN label names (typos?):", bad if bad else "none")
-    print(f"saved {a.status_file}")
+    if args.allowed:
+        allowed = set(args.allowed)
+        unknown_names = {name: count for name, count in total.items() if name not in allowed}
+        print("UNKNOWN label names (typos?):", unknown_names if unknown_names else "none")
+    print(f"saved {args.status_file}")
 
 
 # ---------- next ----------
-def cmd_next(a):
+def cmd_next(args):
     """`next`: list the next recordings to annotate, best quality first.
 
     With --queue-dir, the batch folder is emptied of the files it placed earlier
     (tracked in .queue_manifest.txt) and refilled with copies of the next batch.
 
     Args:
-        a (argparse.Namespace): Next options (n, type, queue_dir, audio_dir, ...).
+        args (argparse.Namespace): Next options (n, type, queue_dir, audio_dir, ...).
 
     Raises:
         SystemExit: If --queue-dir is given without --audio-dir.
     """
-    todo = [o for o in build_status(a) if o["status"] == "todo"]
-    if a.type:
-        todo = [o for o in todo if a.type.lower() in o["type"].lower()]
-    todo.sort(key=lambda o: (o["q"], o["recording"]))   # A before B
+    todo = [rec for rec in build_status(args) if rec["status"] == "todo"]
+    if args.type:
+        todo = [rec for rec in todo if args.type.lower() in rec["type"].lower()]
+    todo.sort(key=lambda rec: (rec["q"], rec["recording"]))   # A before B
 
-    if not a.queue_dir:
-        print(f"{len(todo)} left to annotate; next {a.n}:")
-        for o in todo[: a.n]:
-            print(f"  {o['recording']}  q={o['q']}  type={o['type']}")
+    if not args.queue_dir:
+        print(f"{len(todo)} left to annotate; next {args.n}:")
+        for rec in todo[: args.n]:
+            print(f"  {rec['recording']}  q={rec['q']}  type={rec['type']}")
         return
 
-    if not a.audio_dir:
+    if not args.audio_dir:
         raise SystemExit("--audio-dir is required together with --queue-dir")
-    queue = Path(a.queue_dir)
+    queue = Path(args.queue_dir)
     queue.mkdir(parents=True, exist_ok=True)
     manifest = queue / MANIFEST
 
     # choose the next recordings still to annotate (that exist on disk)
     batch, missing = [], []
-    for o in todo:
-        if len(batch) >= a.n:
+    for rec in todo:
+        if len(batch) >= args.n:
             break
-        if not (Path(a.audio_dir) / o["recording"]).exists():
-            missing.append(o["recording"])
+        if not (Path(args.audio_dir) / rec["recording"]).exists():
+            missing.append(rec["recording"])
             continue
-        batch.append(o)
-    wanted = {o["recording"] for o in batch}
+        batch.append(rec)
+    wanted = {rec["recording"] for rec in batch}
 
     # empty the batch folder: remove only what this command put there earlier
     # (listed in the manifest) plus old symlinks; anything else is left alone.
@@ -213,55 +214,55 @@ def cmd_next(a):
               f"and were left alone, e.g. {kept[:3]}")
 
     # fill it with copies
-    for o in batch:
-        dest = queue / o["recording"]
+    for rec in batch:
+        dest = queue / rec["recording"]
         if not dest.exists():
-            shutil.copy2(Path(a.audio_dir) / o["recording"], dest)
+            shutil.copy2(Path(args.audio_dir) / rec["recording"], dest)
     manifest.write_text("\n".join(sorted(wanted)), encoding="utf-8")
 
     print(f"{len(todo)} left to annotate; {len(batch)} copied to {queue}:")
-    for o in batch:
-        print(f"  {o['recording']}  q={o['q']}  type={o['type']}")
+    for rec in batch:
+        print(f"  {rec['recording']}  q={rec['q']}  type={rec['type']}")
     if missing:
-        print(f"{len(missing)} todo files not found in {a.audio_dir}, skipped "
+        print(f"{len(missing)} todo files not found in {args.audio_dir}, skipped "
               f"(e.g. {missing[:3]})")
 
 
 def main():
     """CLI entry point: parse the subcommand and its options, then run it."""
-    p = argparse.ArgumentParser(description=__doc__,
-                                formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--csv", required=True)
     common.add_argument("--file-col", default="file-name", help="CSV column with the file name")
     common.add_argument("--q-col", default="q", help="CSV column with the quality")
     common.add_argument("--type-col", default="type", help="CSV column with the sound type")
-    sub = p.add_subparsers(dest="cmd", required=True)
+    sub = parser.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("split", parents=[common])
-    s.add_argument("--audio-dir", required=True)
-    s.add_argument("--out-dir", required=True)
-    s.add_argument("--mode", choices=["copy", "move", "symlink"], default="copy")
-    s.set_defaults(fn=cmd_split)
+    sub_parser = sub.add_parser("split", parents=[common])
+    sub_parser.add_argument("--audio-dir", required=True)
+    sub_parser.add_argument("--out-dir", required=True)
+    sub_parser.add_argument("--mode", choices=["copy", "move", "symlink"], default="copy")
+    sub_parser.set_defaults(fn=cmd_split)
 
-    s = sub.add_parser("status", parents=[common])
-    s.add_argument("--labels-dir", required=True)
-    s.add_argument("--status-file", default="annotation_status.csv")
-    s.add_argument("--allowed", nargs="*", help="valid label names, to catch typos")
-    s.set_defaults(fn=cmd_status)
+    sub_parser = sub.add_parser("status", parents=[common])
+    sub_parser.add_argument("--labels-dir", required=True)
+    sub_parser.add_argument("--status-file", default="annotation_status.csv")
+    sub_parser.add_argument("--allowed", nargs="*", help="valid label names, to catch typos")
+    sub_parser.set_defaults(fn=cmd_status)
 
-    s = sub.add_parser("next", parents=[common])
-    s.add_argument("--labels-dir", required=True)
-    s.add_argument("--n", type=int, default=10, help="batch size")
-    s.add_argument("--type", help="only recordings whose CSV 'type' contains this text")
-    s.add_argument("--queue-dir", help="batch folder: created if missing, emptied "
-                   "(only files it placed itself) and refilled with copies of the next "
-                   "recordings to annotate")
-    s.add_argument("--audio-dir", help="folder with the audio files (needed with --queue-dir)")
-    s.set_defaults(fn=cmd_next)
+    sub_parser = sub.add_parser("next", parents=[common])
+    sub_parser.add_argument("--labels-dir", required=True)
+    sub_parser.add_argument("--n", type=int, default=10, help="batch size")
+    sub_parser.add_argument("--type", help="only recordings whose CSV 'type' contains this text")
+    sub_parser.add_argument("--queue-dir", help="batch folder: created if missing, emptied "
+                            "(only files it placed itself) and refilled with copies of the next "
+                            "recordings to annotate")
+    sub_parser.add_argument("--audio-dir", help="folder with the audio files (needed with --queue-dir)")
+    sub_parser.set_defaults(fn=cmd_next)
 
-    a = p.parse_args()
-    a.fn(a)
+    args = parser.parse_args()
+    args.fn(args)
 
 
 if __name__ == "__main__":

@@ -38,11 +38,11 @@ def get_json(params, retries=3):
     """
     for attempt in range(retries):
         try:
-            r = requests.get(API_URL, params=params, timeout=60)
-            r.raise_for_status()
-            return r.json()
-        except requests.RequestException as e:
-            print(f"  request failed ({e}), retry {attempt + 1}/{retries}")
+            resp = requests.get(API_URL, params=params, timeout=60)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as err:
+            print(f"  request failed ({err}), retry {attempt + 1}/{retries}")
             time.sleep(5 * (attempt + 1))
     raise RuntimeError("API request failed repeatedly")
 
@@ -95,15 +95,15 @@ def download(rec):
         url = "https:" + url
     for attempt in range(3):
         try:
-            with requests.get(url, stream=True, timeout=120) as r:
-                r.raise_for_status()
+            with requests.get(url, stream=True, timeout=120) as resp:
+                resp.raise_for_status()
                 with open(path + ".part", "wb") as f:
-                    for chunk in r.iter_content(1 << 16):
+                    for chunk in resp.iter_content(1 << 16):
                         f.write(chunk)
             os.replace(path + ".part", path)
             return "ok"
-        except requests.RequestException as e:
-            print(f"  download failed for XC{rec['id']} ({e})")
+        except requests.RequestException as err:
+            print(f"  download failed for XC{rec['id']} ({err})")
             time.sleep(5 * (attempt + 1))
     return "failed"
 
@@ -118,15 +118,15 @@ def main():
         raise SystemExit("XC_API_KEY is not set: export XC_API_KEY=... (from your xeno-canto account page)")
     os.makedirs(OUT_DIR, exist_ok=True)
     all_recs = []
-    for q in QUALITIES:
-        all_recs += fetch_metadata(q)
+    for quality in QUALITIES:
+        all_recs += fetch_metadata(quality)
         time.sleep(PAUSE)
 
     with open(os.path.join(OUT_DIR, "metadata.csv"), "w",
               newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(all_recs)
+        writer = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(all_recs)
     print(f"Saved metadata for {len(all_recs)} recordings.")
 
     counts = {"ok": 0, "skipped": 0, "failed": 0}

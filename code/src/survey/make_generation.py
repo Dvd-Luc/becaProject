@@ -30,7 +30,7 @@ import os
 import shutil
 import subprocess
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -81,9 +81,9 @@ def write_dicts(path, header, rows):
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=header)
-        w.writeheader()
-        w.writerows(rows)
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def model_files(model):
@@ -96,29 +96,31 @@ def model_files(model):
         list[Path]: [model, <stem>_Labels.txt, <stem>_Params.csv,
             <name>_sample_counts.csv], whether they exist or not.
     """
-    m = Path(model)
-    return [m, m.with_name(m.stem + "_Labels.txt"), m.with_name(m.stem + "_Params.csv"),
-            m.with_name(m.name + "_sample_counts.csv")]
+    model_path = Path(model)
+    return [model_path,
+            model_path.with_name(model_path.stem + "_Labels.txt"),
+            model_path.with_name(model_path.stem + "_Params.csv"),
+            model_path.with_name(model_path.name + "_sample_counts.csv")]
 
 
-def link_gen0(model, gdir):
+def link_gen0(model, gens_dir):
     """Make gen_0/ point to the existing v0 files with relative symlinks.
 
     Args:
         model (str | Path): detection.model (the v0 .tflite).
-        gdir (Path): generations.dir.
+        gens_dir (Path): generations.dir.
 
     Returns:
         Path: gdir/gen_0/model.tflite.
     """
-    g0 = gdir / "gen_0"
-    g0.mkdir(parents=True, exist_ok=True)
+    gen0_dir = gens_dir / "gen_0"
+    gen0_dir.mkdir(parents=True, exist_ok=True)
     for src, name in zip(model_files(model), ["model.tflite", "model_Labels.txt",
                                               "model_Params.csv", "model.tflite_sample_counts.csv"]):
-        dst = g0 / name
+        dst = gen0_dir / name
         if src.exists() and not dst.exists():
-            dst.symlink_to(os.path.relpath(src.resolve(), g0.resolve()))
-    return g0 / "model.tflite"
+            dst.symlink_to(os.path.relpath(src.resolve(), gen0_dir.resolve()))
+    return gen0_dir / "model.tflite"
 
 
 def train_args(model):
@@ -130,19 +132,19 @@ def train_args(model):
     Returns:
         list[str]: CLI options (empty, with a note, if _Params.csv is missing).
     """
-    p = model_files(model)[2]
-    if not p.exists():
-        print(f"note: {p} not found, BirdNET defaults used")
+    params_path = model_files(model)[2]
+    if not params_path.exists():
+        print(f"note: {params_path} not found, BirdNET defaults used")
         return []
-    row = read_dicts(p)[0]
-    out = []
-    for k, opt in PARAM_ARGS.items():
-        if row.get(k, "") != "":
-            out += [opt, row[k]]
-    for k, opt in PARAM_FLAGS.items():
-        if row.get(k, "").strip().lower() == "true":
-            out.append(opt)
-    return out
+    row = read_dicts(params_path)[0]
+    options = []
+    for column, option in PARAM_ARGS.items():
+        if row.get(column, "") != "":
+            options += [option, row[column]]
+    for column, option in PARAM_FLAGS.items():
+        if row.get(column, "").strip().lower() == "true":
+            options.append(option)
+    return options
 
 
 def raw_scores(raw_dir, clip_id, label):
@@ -156,13 +158,13 @@ def raw_scores(raw_dir, clip_id, label):
     Returns:
         dict[int, float]: 3 s window index -> confidence (windows below raw_min_conf absent).
     """
-    p = raw_dir / f"{clip_id}.BirdNET.results.csv"
-    out = {}
-    if p.exists():
-        for w in read_dicts(p):
-            if (w["Common name"] or w["Scientific name"]) == label:
-                out[round(float(w["Start (s)"]) / WIN)] = float(w["Confidence"])
-    return out
+    result_path = raw_dir / f"{clip_id}.BirdNET.results.csv"
+    scores = {}
+    if result_path.exists():
+        for window in read_dicts(result_path):
+            if (window["Common name"] or window["Scientific name"]) == label:
+                scores[round(float(window["Start (s)"]) / WIN)] = float(window["Confidence"])
+    return scores
 
 
 def windows_of(item, raw_dir, max_n):
@@ -179,12 +181,12 @@ def windows_of(item, raw_dir, max_n):
     Returns:
         list[float]: Window start times in seconds, sorted.
     """
-    s, e = float(item["start_s"]), float(item["end_s"])
-    ks = list(range(round(s / WIN), max(round(s / WIN) + 1, round(e / WIN))))
-    if item["kind"] == "event" and len(ks) > max_n:
-        sc = raw_scores(raw_dir, item["clip_id"], item["predicted"])
-        ks = sorted(sorted(ks, key=lambda k: -sc.get(k, 0.0))[:max_n])
-    return [k * WIN for k in ks]
+    start, end = float(item["start_s"]), float(item["end_s"])
+    window_indices = list(range(round(start / WIN), max(round(start / WIN) + 1, round(end / WIN))))
+    if item["kind"] == "event" and len(window_indices) > max_n:
+        scores = raw_scores(raw_dir, item["clip_id"], item["predicted"])
+        window_indices = sorted(sorted(window_indices, key=lambda index: -scores.get(index, 0.0))[:max_n])
+    return [index * WIN for index in window_indices]
 
 
 def link(src, dst):
@@ -202,115 +204,117 @@ def link(src, dst):
 
 def main():
     """CLI entry point: check the verdicts, cut survey clips, build train/ and train gen_K."""
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("--config", default="config/project.yaml")
-    ap.add_argument("--gen", type=int, required=True, help="generation number, >= 1")
-    ap.add_argument("--review-dir", help="default: review.dir")
-    ap.add_argument("--gen-dir", help="default: generations.dir")
-    ap.add_argument("--base-clips", default="outputs/clips", help="XC training clips")
-    ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--no-train", action="store_true")
-    ap.add_argument("--force", action="store_true", help="retrain if model.tflite exists")
-    ap.add_argument("--train-extra", nargs=argparse.REMAINDER, default=[],
-                    help="extra birdnet_analyzer.train options, e.g. --epochs 5 (last option)")
-    a = ap.parse_args()
-    if a.gen < 1:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("--config", default="config/project.yaml")
+    parser.add_argument("--gen", type=int, required=True, help="generation number, >= 1")
+    parser.add_argument("--review-dir", help="default: review.dir")
+    parser.add_argument("--gen-dir", help="default: generations.dir")
+    parser.add_argument("--base-clips", default="outputs/clips", help="XC training clips")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--no-train", action="store_true")
+    parser.add_argument("--force", action="store_true", help="retrain if model.tflite exists")
+    parser.add_argument("--train-extra", nargs=argparse.REMAINDER, default=[],
+                        help="extra birdnet_analyzer.train options, e.g. --epochs 5 (last option)")
+    args = parser.parse_args()
+    if args.gen < 1:
         raise SystemExit("--gen must be >= 1 (gen_0 is the existing model)")
-    cfg = load(a.config)
-    g, d = cfg["generations"], cfg["detection"]
-    gdir = Path(a.gen_dir or g["dir"])
-    rdir = Path(a.review_dir or cfg["review"]["dir"])
-    raw_dir = Path(d["dir"]) / "raw"
-    max_n = g.get("max_windows_per_item", 3)
+    cfg = load(args.config)
+    gen_cfg, detection_cfg = cfg["generations"], cfg["detection"]
+    gens_dir = Path(args.gen_dir or gen_cfg["dir"])
+    review_dir = Path(args.review_dir or cfg["review"]["dir"])
+    raw_dir = Path(detection_cfg["dir"]) / "raw"
+    max_n = gen_cfg.get("max_windows_per_item", 3)
 
-    queue = {r["item_id"]: r for r in read_dicts(rdir / "train_queue.csv")}
-    jpath = rdir / "train_judgments.csv"
-    if not jpath.exists():
-        raise SystemExit(f"no judgments yet: {jpath}")
-    verdicts = {r["item_id"]: r["verdict"] for r in read_dicts(jpath)}
-    missing = [i for i in verdicts if i not in queue]
+    queue = {row["item_id"]: row for row in read_dicts(review_dir / "train_queue.csv")}
+    judgments_path = review_dir / "train_judgments.csv"
+    if not judgments_path.exists():
+        raise SystemExit(f"no judgments yet: {judgments_path}")
+    verdicts = {row["item_id"]: row["verdict"] for row in read_dicts(judgments_path)}
+    missing = [item_id for item_id in verdicts if item_id not in queue]
     if missing:
-        raise SystemExit(f"{len(missing)} judged items are not in {rdir / 'train_queue.csv'} "
+        raise SystemExit(f"{len(missing)} judged items are not in {review_dir / 'train_queue.csv'} "
                          f"(queue rebuilt?), e.g. {missing[:2]}")
-    leak = sorted({queue[i]["site"] for i in verdicts if queue[i]["split"] != "train"})
+    leak = sorted({queue[item_id]["site"] for item_id in verdicts if queue[item_id]["split"] != "train"})
     if leak:
         raise SystemExit(f"judgments from non-train sites, refusing: {leak[:5]}")
 
     plan, skipped = [], Counter()
     for item_id, verdict in verdicts.items():
-        it = queue[item_id]
+        item = queue[item_id]
         if verdict == UNSURE:
             skipped["unsure"] += 1
             continue
-        for start in windows_of(it, raw_dir, max_n):
-            name = f"{it['clip_id']}_{start:.0f}s.wav"
+        for start in windows_of(item, raw_dir, max_n):
+            name = f"{item['clip_id']}_{start:.0f}s.wav"
             plan.append({"file": f"{verdict}/{name}", "class": verdict, "item_id": item_id,
-                         "kind": it["kind"], "predicted": it["predicted"],
-                         "clip_id": it["clip_id"], "site": it["site"],
-                         "start_s": f"{start:.1f}", "_path": it["clip_path"]})
-    dup = Counter(p["file"] for p in plan)               # same window judged twice
-    plan = list({p["file"]: p for p in plan}.values())
+                         "kind": item["kind"], "predicted": item["predicted"],
+                         "clip_id": item["clip_id"], "site": item["site"],
+                         "start_s": f"{start:.1f}", "_path": item["clip_path"]})
+    dup_counts = Counter(entry["file"] for entry in plan)               # same window judged twice
+    plan = list({entry["file"]: entry for entry in plan}.values())
 
-    base = {c.name: sorted(c.glob("*.wav")) for c in sorted(Path(a.base_clips).iterdir())
-            if c.is_dir() and any(c.glob("*.wav"))}
-    surv = Counter(p["class"] for p in plan)
+    xc_clips = {class_dir.name: sorted(class_dir.glob("*.wav"))
+                for class_dir in sorted(Path(args.base_clips).iterdir())
+                if class_dir.is_dir() and any(class_dir.glob("*.wav"))}
+    survey_counts = Counter(entry["class"] for entry in plan)
     print(f"{len(verdicts)} judged items ({skipped['unsure']} unsure), "
-          f"{len(plan)} survey windows, {sum(n > 1 for n in dup.values())} duplicates merged")
+          f"{len(plan)} survey windows, {sum(n > 1 for n in dup_counts.values())} duplicates merged")
     print(f"{'class':10s} {'XC':>6s} {'survey':>7s}")
-    for c in sorted(set(base) | set(surv)):
-        print(f"{c:10s} {len(base.get(c, [])):6d} {surv[c]:7d}")
+    for class_name in sorted(set(xc_clips) | set(survey_counts)):
+        print(f"{class_name:10s} {len(xc_clips.get(class_name, [])):6d} {survey_counts[class_name]:7d}")
     print("survey windows by kind x class:",
-          dict(Counter(f"{p['kind']}->{p['class']}" for p in plan)))
-    if a.dry_run:
+          dict(Counter(f"{entry['kind']}->{entry['class']}" for entry in plan)))
+    if args.dry_run:
         return
 
-    g0 = link_gen0(d["model"], gdir)
-    out = gdir / f"gen_{a.gen}"
-    sc_dir, tr_dir = out / "survey_clips", out / "train"
-    for p in (sc_dir, tr_dir):
-        if p.exists():
-            shutil.rmtree(p)
-    for p in plan:
-        dst = sc_dir / p["file"]
+    gen0_model = link_gen0(detection_cfg["model"], gens_dir)
+    gen_dir = gens_dir / f"gen_{args.gen}"
+    clips_dir, train_dir = gen_dir / "survey_clips", gen_dir / "train"
+    for folder in (clips_dir, train_dir):
+        if folder.exists():
+            shutil.rmtree(folder)
+    for entry in plan:
+        dst = clips_dir / entry["file"]
         dst.parent.mkdir(parents=True, exist_ok=True)
-        info = sf.info(p["_path"])
-        x, sr = sf.read(p["_path"], start=int(float(p["start_s"]) * info.samplerate),
-                        frames=int(WIN * info.samplerate), dtype="float32")
-        sf.write(dst, x, sr, subtype=info.subtype)
-    write_dicts(sc_dir / "metadata.csv", META_HEADER,
-                [{k: p[k] for k in META_HEADER} for p in plan])
-    for c, files in base.items():
-        (tr_dir / c).mkdir(parents=True, exist_ok=True)
-        for f in files:
-            link(f, tr_dir / c / f"xc_{f.name}")
-    for p in plan:
-        (tr_dir / p["class"]).mkdir(parents=True, exist_ok=True)
-        link(sc_dir / p["file"], tr_dir / p["class"] / f"survey_{Path(p['file']).name}")
-    counts = {c.name: len(list(c.glob("*.wav"))) for c in sorted(tr_dir.iterdir())}
-    print(f"built {tr_dir}: {counts}")
-    write_dicts(out / "info.csv", ["key", "value"], [
+        info = sf.info(entry["_path"])
+        audio, sample_rate = sf.read(entry["_path"], start=int(float(entry["start_s"]) * info.samplerate),
+                                     frames=int(WIN * info.samplerate), dtype="float32")
+        sf.write(dst, audio, sample_rate, subtype=info.subtype)
+    write_dicts(clips_dir / "metadata.csv", META_HEADER,
+                [{col: entry[col] for col in META_HEADER} for entry in plan])
+    for class_name, files in xc_clips.items():
+        (train_dir / class_name).mkdir(parents=True, exist_ok=True)
+        for xc_file in files:
+            link(xc_file, train_dir / class_name / f"xc_{xc_file.name}")
+    for entry in plan:
+        (train_dir / entry["class"]).mkdir(parents=True, exist_ok=True)
+        link(clips_dir / entry["file"], train_dir / entry["class"] / f"survey_{Path(entry['file']).name}")
+    counts = {class_dir.name: len(list(class_dir.glob("*.wav")))
+              for class_dir in sorted(train_dir.iterdir())}
+    print(f"built {train_dir}: {counts}")
+    write_dicts(gen_dir / "info.csv", ["key", "value"], [
         {"key": "built", "value": datetime.now().isoformat(timespec="seconds")},
-        {"key": "judgments", "value": str(jpath)},
+        {"key": "judgments", "value": str(judgments_path)},
         {"key": "n_judged", "value": len(verdicts)},
-        {"key": "base_clips", "value": a.base_clips},
-        {"key": "params_from", "value": d["model"]},
-        {"key": "train_seed", "value": g["train_seed"]},
+        {"key": "base_clips", "value": args.base_clips},
+        {"key": "params_from", "value": detection_cfg["model"]},
+        {"key": "train_seed", "value": gen_cfg["train_seed"]},
         {"key": "max_windows_per_item", "value": max_n},
         {"key": "train_counts", "value": counts}])
-    print(f"gen_0 -> {g0.resolve()}")
-    if a.no_train:
+    print(f"gen_0 -> {gen0_model.resolve()}")
+    if args.no_train:
         return
 
-    model = out / "model.tflite"
-    if model.exists() and not a.force:
+    model = gen_dir / "model.tflite"
+    if model.exists() and not args.force:
         print(f"{model} exists, not retrained (--force to retrain)")
         return
-    cmd = [sys.executable, "-c", TRAIN_WRAPPER, str(g["train_seed"]), str(tr_dir),
-           "-o", str(model)] + train_args(d["model"]) + a.train_extra
+    cmd = [sys.executable, "-c", TRAIN_WRAPPER, str(gen_cfg["train_seed"]), str(train_dir),
+           "-o", str(model)] + train_args(detection_cfg["model"]) + args.train_extra
     print(" ".join(cmd[3:]))
-    print(f"training... log: {out / 'train.log'}")
-    with open(out / "train.log", "w") as log:
+    print(f"training... log: {gen_dir / 'train.log'}")
+    with open(gen_dir / "train.log", "w") as log:
         subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, check=True)
     print(f"wrote {model}")
 

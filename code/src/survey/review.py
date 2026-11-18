@@ -80,9 +80,9 @@ def write_dicts(path, header, rows):
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=header)
-        w.writeheader()
-        w.writerows(rows)
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def append_judgment(path, row):
@@ -94,10 +94,10 @@ def append_judgment(path, row):
     """
     new = not path.exists()
     with open(path, "a", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=JUDGE_HEADER)
+        writer = csv.DictWriter(f, fieldnames=JUDGE_HEADER)
         if new:
-            w.writeheader()
-        w.writerow(row)
+            writer.writeheader()
+        writer.writerow(row)
 
 
 def load_judgments(path):
@@ -109,7 +109,7 @@ def load_judgments(path):
     Returns:
         dict[str, str]: item_id -> verdict; the last judgment of an item wins.
     """
-    return {r["item_id"]: r["verdict"] for r in read_dicts(path)} if path.exists() else {}
+    return {row["item_id"]: row["verdict"] for row in read_dicts(path)} if path.exists() else {}
 
 
 def classes_from(cfg):
@@ -123,23 +123,23 @@ def classes_from(cfg):
             order when annotator.categories does not cover the model labels.
     """
     model = Path(cfg["detection"]["model"])
-    labels = [l.strip() for l in model.with_name(model.stem + "_Labels.txt")
-              .read_text(encoding="utf-8").splitlines() if l.strip()]
-    cats = [c for c in cfg.get("annotator", {}).get("categories", []) if c in labels]
-    if sorted(cats) != sorted(labels):
+    labels = [line.strip() for line in model.with_name(model.stem + "_Labels.txt")
+              .read_text(encoding="utf-8").splitlines() if line.strip()]
+    classes = [category for category in cfg.get("annotator", {}).get("categories", []) if category in labels]
+    if sorted(classes) != sorted(labels):
         print(f"note: annotator.categories do not cover the model labels {labels}; "
               f"using the model order")
-        cats = labels
-    return cats
+        classes = labels
+    return classes
 
 
 # ---------------------------------------------------------------- queues
-def window_row(kind, m, start, stratum, predicted="", max_conf=""):
+def window_row(kind, clip, start, stratum, predicted="", max_conf=""):
     """Queue row for one 3 s window (background or test item) of a manifest clip.
 
     Args:
         kind (str): "background" or "test".
-        m (dict): Manifest row of the clip.
+        clip (dict): Manifest row of the clip.
         start (float): Window start in seconds.
         stratum (str): Stratum name stored in the queue.
         predicted (str): Expected class ("Noise" for background, "" for test).
@@ -148,9 +148,9 @@ def window_row(kind, m, start, stratum, predicted="", max_conf=""):
     Returns:
         dict[str, str]: Row keyed by QUEUE_HEADER.
     """
-    return {"item_id": f"{kind}_{m['clip_id']}_{start:.0f}", "kind": kind,
-            "clip_id": m["clip_id"], "site": m["site"], "split": m["split"],
-            "period": m["period"], "clip_path": m["clip_path"],
+    return {"item_id": f"{kind}_{clip['clip_id']}_{start:.0f}", "kind": kind,
+            "clip_id": clip["clip_id"], "site": clip["site"], "split": clip["split"],
+            "period": clip["period"], "clip_path": clip["clip_path"],
             "start_s": f"{start:.1f}", "end_s": f"{start + WIN:.1f}",
             "predicted": predicted, "max_conf": max_conf, "stratum": stratum}
 
@@ -166,8 +166,8 @@ def analysed_clips(manifest, raw_dir, split):
     Returns:
         list[dict]: The matching manifest rows.
     """
-    return [m for m in manifest if m["split"] == split
-            and (raw_dir / f"{m['clip_id']}.BirdNET.results.csv").exists()]
+    return [clip for clip in manifest if clip["split"] == split
+            and (raw_dir / f"{clip['clip_id']}.BirdNET.results.csv").exists()]
 
 
 def build_train(cfg, manifest, rng):
@@ -185,59 +185,64 @@ def build_train(cfg, manifest, rng):
     Returns:
         tuple[list[dict], None]: (queue rows keyed by QUEUE_HEADER, no strata).
     """
-    r, d = cfg["review"], cfg["detection"]
-    by_clip = {m["clip_id"]: m for m in manifest}
-    events = [e for e in read_dicts(Path(d["dir"]) / "events.csv") if e["split"] == "train"]
-    bins = r["conf_bins"]
-    nb = len(bins) - 1
-    def bin_of(c):
+    review_cfg, detection_cfg = cfg["review"], cfg["detection"]
+    by_clip = {clip["clip_id"]: clip for clip in manifest}
+    events = [event for event in read_dicts(Path(detection_cfg["dir"]) / "events.csv")
+              if event["split"] == "train"]
+    bins = review_cfg["conf_bins"]
+    n_bins = len(bins) - 1
+    def bin_of(conf):
         """Index of the conf_bins bin containing c (the last bin includes its upper edge).
 
         Args:
-            c (float): An event's max_conf.
+            conf (float): An event's max_conf.
 
         Returns:
             int | None: Bin index, None if c is outside the bins.
         """
-        for i in range(nb):
-            if bins[i] <= c < bins[i + 1] or (i == nb - 1 and c == bins[-1]):
+        for i in range(n_bins):
+            if bins[i] <= conf < bins[i + 1] or (i == n_bins - 1 and conf == bins[-1]):
                 return i
         return None
     cells = defaultdict(list)
-    for e in events:
-        b = bin_of(float(e["max_conf"]))
-        if b is not None:
-            cells[(e["label"], b)].append(e)
+    for event in events:
+        bin_idx = bin_of(float(event["max_conf"]))
+        if bin_idx is not None:
+            cells[(event["label"], bin_idx)].append(event)
     rows = []
-    for label in sorted({e["label"] for e in events}):
-        want = r["events_per_class"]
-        pools = [rng.sample(cells[(label, b)], len(cells[(label, b)])) for b in range(nb)]
-        take = [0] * nb
-        while want and any(take[b] < len(pools[b]) for b in range(nb)):   # even, then top up
-            for b in range(nb):
-                if want and take[b] < len(pools[b]):
-                    take[b] += 1
+    for label in sorted({event["label"] for event in events}):
+        want = review_cfg["events_per_class"]
+        pools = [rng.sample(cells[(label, bin_idx)], len(cells[(label, bin_idx)]))
+                 for bin_idx in range(n_bins)]
+        take = [0] * n_bins
+        # spread evenly over the bins, then top up from the bins that still have events
+        while want and any(take[bin_idx] < len(pools[bin_idx]) for bin_idx in range(n_bins)):
+            for bin_idx in range(n_bins):
+                if want and take[bin_idx] < len(pools[bin_idx]):
+                    take[bin_idx] += 1
                     want -= 1
-        for b in range(nb):
-            for e in pools[b][:take[b]]:
-                m = by_clip[e["clip_id"]]
-                rows.append({"item_id": f"event_{e['clip_id']}_{e['label']}_{float(e['start_s']):.0f}",
-                             "kind": "event", "clip_id": e["clip_id"], "site": e["site"],
-                             "split": e["split"], "period": e["period"],
-                             "clip_path": m["clip_path"], "start_s": e["start_s"],
-                             "end_s": e["end_s"], "predicted": e["label"],
-                             "max_conf": e["max_conf"], "stratum": f"{label}|{bins[b]}-{bins[b + 1]}"})
-    ev_by_clip = defaultdict(list)
-    for e in events:
-        ev_by_clip[e["clip_id"]].append((float(e["start_s"]), float(e["end_s"])))
-    ctx = r["context_s"]
-    for m in analysed_clips(manifest, Path(d["dir"]) / "raw", "train"):
-        n_win = int(float(m["duration_s"]) // WIN)
+        for bin_idx in range(n_bins):
+            for event in pools[bin_idx][:take[bin_idx]]:
+                clip = by_clip[event["clip_id"]]
+                item_id = f"event_{event['clip_id']}_{event['label']}_{float(event['start_s']):.0f}"
+                rows.append({"item_id": item_id,
+                             "kind": "event", "clip_id": event["clip_id"], "site": event["site"],
+                             "split": event["split"], "period": event["period"],
+                             "clip_path": clip["clip_path"], "start_s": event["start_s"],
+                             "end_s": event["end_s"], "predicted": event["label"],
+                             "max_conf": event["max_conf"],
+                             "stratum": f"{label}|{bins[bin_idx]}-{bins[bin_idx + 1]}"})
+    event_spans = defaultdict(list)
+    for event in events:
+        event_spans[event["clip_id"]].append((float(event["start_s"]), float(event["end_s"])))
+    context_s = review_cfg["context_s"]
+    for clip in analysed_clips(manifest, Path(detection_cfg["dir"]) / "raw", "train"):
+        n_win = int(float(clip["duration_s"]) // WIN)
         free = [k * WIN for k in range(n_win)
-                if all(k * WIN + WIN <= s - ctx or k * WIN >= e + ctx
-                       for s, e in ev_by_clip[m["clip_id"]])]
-        for start in sorted(rng.sample(free, min(r["background_per_clip"], len(free)))):
-            rows.append(window_row("background", m, start, "background", predicted=NOISE))
+                if all(k * WIN + WIN <= ev_start - context_s or k * WIN >= ev_end + context_s
+                       for ev_start, ev_end in event_spans[clip["clip_id"]])]
+        for start in sorted(rng.sample(free, min(review_cfg["background_per_clip"], len(free)))):
+            rows.append(window_row("background", clip, start, "background", predicted=NOISE))
     return rows, None
 
 
@@ -257,42 +262,42 @@ def build_test(cfg, manifest, rng):
         tuple[list[dict], list[dict]]: (queue rows keyed by QUEUE_HEADER,
             strata rows with stratum, population, sampled).
     """
-    r, d = cfg["review"], cfg["detection"]
-    raw_dir = Path(d["dir"]) / "raw"
-    bins = r["test_bins"]
-    nb = len(bins) - 1
-    pop = defaultdict(list)
-    for m in analysed_clips(manifest, raw_dir, "heldout"):
+    review_cfg, detection_cfg = cfg["review"], cfg["detection"]
+    raw_dir = Path(detection_cfg["dir"]) / "raw"
+    bins = review_cfg["test_bins"]
+    n_bins = len(bins) - 1
+    population = defaultdict(list)
+    for clip in analysed_clips(manifest, raw_dir, "heldout"):
         best = defaultdict(float)
-        for w in read_dicts(raw_dir / f"{m['clip_id']}.BirdNET.results.csv"):
-            k = round(float(w["Start (s)"]) / WIN)
-            best[k] = max(best[k], float(w["Confidence"]))
-        for k in range(int(float(m["duration_s"]) // WIN)):
-            c = best.get(k, 0.0)
-            b = next(i for i in range(nb) if c < bins[i + 1] or i == nb - 1)
-            pop[b].append((m, k * WIN, c))
+        for window in read_dicts(raw_dir / f"{clip['clip_id']}.BirdNET.results.csv"):
+            k = round(float(window["Start (s)"]) / WIN)
+            best[k] = max(best[k], float(window["Confidence"]))
+        for k in range(int(float(clip["duration_s"]) // WIN)):
+            conf = best.get(k, 0.0)
+            bin_idx = next(i for i in range(n_bins) if conf < bins[i + 1] or i == n_bins - 1)
+            population[bin_idx].append((clip, k * WIN, conf))
     rows, strata = [], []
-    for b in range(nb):
-        pick = rng.sample(pop[b], min(r["test_per_bin"], len(pop[b])))
-        name = f"{bins[b]}-{bins[b + 1]}"
-        strata.append({"stratum": name, "population": len(pop[b]), "sampled": len(pick)})
-        for m, start, c in sorted(pick, key=lambda x: (x[0]["clip_id"], x[1])):
-            rows.append(window_row("test", m, start, name, max_conf=f"{c:.4f}"))
+    for bin_idx in range(n_bins):
+        picked = rng.sample(population[bin_idx], min(review_cfg["test_per_bin"], len(population[bin_idx])))
+        name = f"{bins[bin_idx]}-{bins[bin_idx + 1]}"
+        strata.append({"stratum": name, "population": len(population[bin_idx]), "sampled": len(picked)})
+        for clip, start, conf in sorted(picked, key=lambda entry: (entry[0]["clip_id"], entry[1])):
+            rows.append(window_row("test", clip, start, name, max_conf=f"{conf:.4f}"))
     return rows, strata
 
 
-def get_queue(cfg, queue, out):
+def get_queue(cfg, queue, review_dir):
     """Return the frozen queue, building and saving it (shuffled) on first use.
 
     Args:
         cfg (dict): The whole project config.
         queue (str): "train" or "test".
-        out (Path): Review folder.
+        review_dir (Path): Review folder.
 
     Returns:
         list[dict]: Queue rows keyed by QUEUE_HEADER.
     """
-    path = out / f"{queue}_queue.csv"
+    path = review_dir / f"{queue}_queue.csv"
     if path.exists():
         return read_dicts(path)
     manifest = read_dicts(Path(cfg["survey"]["dir"]) / "manifest.csv")
@@ -301,7 +306,7 @@ def get_queue(cfg, queue, out):
     rng.shuffle(rows)                       # any session of --n N gets a mix
     write_dicts(path, QUEUE_HEADER, rows)
     if strata:
-        write_dicts(out / "test_strata.csv", ["stratum", "population", "sampled"], strata)
+        write_dicts(review_dir / "test_strata.csv", ["stratum", "population", "sampled"], strata)
     print(f"built {path}: {len(rows)} items")
     return rows
 
@@ -314,9 +319,9 @@ def describe(queue, rows, judged):
         rows (list[dict]): Queue rows.
         judged (dict[str, str]): item_id -> verdict.
     """
-    print(f"{queue} queue: {len(rows)} items, {sum(r['item_id'] in judged for r in rows)} judged")
-    for s, n in sorted(Counter(r["stratum"] for r in rows).items()):
-        print(f"    {s:28s} {n}")
+    print(f"{queue} queue: {len(rows)} items, {sum(row['item_id'] in judged for row in rows)} judged")
+    for stratum, count in sorted(Counter(row["stratum"] for row in rows).items()):
+        print(f"    {stratum:28s} {count}")
     if judged:
         print("verdicts:", dict(Counter(judged.values())))
 
@@ -327,16 +332,16 @@ class Reviewer:
 
     Attributes:
         items (list[dict]): Queue rows of this session.
-        i (int): Index of the item shown.
+        index (int): Index of the item shown.
         judged (dict[str, str]): item_id -> verdict, updated at each key press.
         classes (list[str]): Classes bound to keys 1, 2, 3, ...
         blind (bool): True for the test queue (prediction hidden, y/Enter disabled).
-        x (numpy.ndarray): Mono samples of the item with its context.
-        sr (int): Sample rate.
-        t0 (float): Clip time of the first sample of x, in seconds.
+        audio (numpy.ndarray): Mono samples of the item with its context.
+        sample_rate (int): Sample rate.
+        load_start (float): Clip time of the first sample of audio, in seconds.
         span (tuple[float, float]): Item start and end, in clip seconds.
     """
-    def __init__(self, cfg, queue, items, judged, jpath, classes):
+    def __init__(self, cfg, queue, items, judged, judgments_path, classes):
         """Set up the figure and key bindings, then show the first item.
 
         Args:
@@ -344,21 +349,21 @@ class Reviewer:
             queue (str): "train" or "test".
             items (list[dict]): Queue rows to judge this session.
             judged (dict[str, str]): Verdicts so far (item_id -> verdict).
-            jpath (Path): Judgments CSV to append to.
+            judgments_path (Path): Judgments CSV to append to.
             classes (list[str]): Classes bound to keys 1, 2, 3, ...
         """
         import matplotlib.pyplot as plt
         self.plt = plt
-        for k in [k for k in plt.rcParams if k.startswith("keymap.")]:
-            plt.rcParams[k] = []
-        self.v = cfg.get("viewer", {})
-        self.ctx = cfg["review"]["context_s"]
-        self.queue, self.items, self.judged, self.jpath = queue, items, judged, jpath
+        for key in [key for key in plt.rcParams if key.startswith("keymap.")]:
+            plt.rcParams[key] = []
+        self.viewer_cfg = cfg.get("viewer", {})
+        self.context_s = cfg["review"]["context_s"]
+        self.queue, self.items, self.judged, self.judgments_path = queue, items, judged, judgments_path
         self.classes, self.blind = classes, queue == "test"
-        self.i, self._playing, self._timer = 0, False, None
+        self.index, self._playing, self._timer = 0, False, None
         self.fig = plt.figure(figsize=(13, 6))
         self.ax = self.fig.add_axes([0.06, 0.12, 0.9, 0.76])
-        keys = "   ".join(f"[{k + 1}] {c}" for k, c in enumerate(classes))
+        keys = "   ".join(f"[{key + 1}] {cls}" for key, cls in enumerate(classes))
         ok = "" if self.blind else "[y/Enter] prediction right   "
         self.fig.text(0.06, 0.97, f"{keys}   [0/n] Noise   {ok}[u] unsure   "
                       "[Space] play   [c] play+context   [b] back   [q] quit",
@@ -373,7 +378,7 @@ class Reviewer:
         Returns:
             dict: Queue row keyed by QUEUE_HEADER.
         """
-        return self.items[self.i]
+        return self.items[self.index]
 
     def show(self, i):
         """Load item i with review.context_s around it and draw its spectrogram.
@@ -384,37 +389,38 @@ class Reviewer:
             i (int): Index in self.items.
         """
         self._stop()
-        self.i = i
-        it = self.item()
-        s, e = float(it["start_s"]), float(it["end_s"])
-        info = sf.info(it["clip_path"])
-        sr = info.samplerate
-        self.t0 = max(0.0, s - self.ctx)
-        t1 = min(info.frames / sr, e + self.ctx)
-        x, _ = sf.read(it["clip_path"], start=int(self.t0 * sr),
-                       frames=int((t1 - self.t0) * sr), dtype="float32", always_2d=True)
-        self.x, self.sr, self.span = x.mean(axis=1), sr, (s, e)
-        v = self.v
-        S, flo, fhi = compute_spectrogram(self.x, sr, v.get("n_fft", 1024),
-                                          v.get("hop_length", 256), v.get("f_min", 0),
-                                          min(v.get("f_max", 10000), sr / 2))
-        vmax = float(np.percentile(S, 99.5))
+        self.index = i
+        item = self.item()
+        start, end = float(item["start_s"]), float(item["end_s"])
+        info = sf.info(item["clip_path"])
+        sample_rate = info.samplerate
+        self.load_start = max(0.0, start - self.context_s)
+        load_end = min(info.frames / sample_rate, end + self.context_s)
+        audio, _ = sf.read(item["clip_path"], start=int(self.load_start * sample_rate),
+                           frames=int((load_end - self.load_start) * sample_rate),
+                           dtype="float32", always_2d=True)
+        self.audio, self.sample_rate, self.span = audio.mean(axis=1), sample_rate, (start, end)
+        viewer_cfg = self.viewer_cfg
+        spec, f_low, f_high = compute_spectrogram(
+            self.audio, sample_rate, viewer_cfg.get("n_fft", 1024), viewer_cfg.get("hop_length", 256),
+            viewer_cfg.get("f_min", 0), min(viewer_cfg.get("f_max", 10000), sample_rate / 2))
+        vmax = float(np.percentile(spec, 99.5))
         ax = self.ax
         ax.clear()
-        ax.imshow(S, origin="lower", aspect="auto", cmap=v.get("cmap", "magma"),
-                  extent=[self.t0, self.t0 + len(self.x) / sr, flo, fhi],
-                  vmin=vmax - v.get("db_range", 70), vmax=vmax, interpolation="nearest")
-        ax.axvspan(s, e, ymin=0.97, ymax=1.0, color="cyan", lw=0)   # marker, not over the image
-        for t in (s, e):
-            ax.axvline(t, color="cyan", lw=1.2)
-        self.playhead = ax.axvline(s, color="white", lw=1, visible=False)
+        ax.imshow(spec, origin="lower", aspect="auto", cmap=viewer_cfg.get("cmap", "magma"),
+                  extent=[self.load_start, self.load_start + len(self.audio) / sample_rate, f_low, f_high],
+                  vmin=vmax - viewer_cfg.get("db_range", 70), vmax=vmax, interpolation="nearest")
+        ax.axvspan(start, end, ymin=0.97, ymax=1.0, color="cyan", lw=0)   # marker, not over the image
+        for edge in (start, end):
+            ax.axvline(edge, color="cyan", lw=1.2)
+        self.playhead = ax.axvline(start, color="white", lw=1, visible=False)
         ax.set_xlabel("time in clip (s)")
         ax.set_ylabel("frequency (Hz)")
-        what = (f"window {s:.0f}-{e:.0f} s" if self.blind else
-                f"{it['kind']}  predicted {it['predicted']}"
-                + (f" ({float(it['max_conf']):.2f})" if it["max_conf"] else ""))
-        done = self.judged.get(it["item_id"])
-        ax.set_title(f"[{i + 1}/{len(self.items)}] {it['site']}   {what}"
+        what = (f"window {start:.0f}-{end:.0f} s" if self.blind else
+                f"{item['kind']}  predicted {item['predicted']}"
+                + (f" ({float(item['max_conf']):.2f})" if item["max_conf"] else ""))
+        done = self.judged.get(item["item_id"])
+        ax.set_title(f"[{i + 1}/{len(self.items)}] {item['site']}   {what}"
                      + (f"   -> judged: {done}" if done else ""), loc="left", fontsize=10)
         self._msg("")
         self.fig.canvas.draw_idle()
@@ -425,28 +431,28 @@ class Reviewer:
         Args:
             verdict (str): A class name, "Noise" or "Unsure".
         """
-        it = self.item()
-        append_judgment(self.jpath, {
-            "item_id": it["item_id"], "clip_id": it["clip_id"], "start_s": it["start_s"],
-            "end_s": it["end_s"], "kind": it["kind"], "predicted": it["predicted"],
-            "max_conf": it["max_conf"], "verdict": verdict,
+        item = self.item()
+        append_judgment(self.judgments_path, {
+            "item_id": item["item_id"], "clip_id": item["clip_id"], "start_s": item["start_s"],
+            "end_s": item["end_s"], "kind": item["kind"], "predicted": item["predicted"],
+            "max_conf": item["max_conf"], "verdict": verdict,
             "time": datetime.now().isoformat(timespec="seconds")})
-        self.judged[it["item_id"]] = verdict
-        if self.i + 1 < len(self.items):
-            self.show(self.i + 1)
+        self.judged[item["item_id"]] = verdict
+        if self.index + 1 < len(self.items):
+            self.show(self.index + 1)
             self._msg(f"saved: {verdict}")
         else:
             self._msg(f"saved: {verdict}. Session done ({len(self.items)} items), q to quit")
-            self.show(self.i)
+            self.show(self.index)
             self._msg(f"saved: {verdict}. Session done ({len(self.items)} items), q to quit")
 
-    def _msg(self, t):
+    def _msg(self, text):
         """Show a message under the spectrogram.
 
         Args:
-            t (str): Message text ("" clears it).
+            text (str): Message text ("" clears it).
         """
-        self.msg.set_text(t)
+        self.msg.set_text(text)
         self.fig.canvas.draw_idle()
 
     def play(self, context):
@@ -457,30 +463,35 @@ class Reviewer:
         """
         if self._playing:
             return self._stop()
-        s, e = (self.t0, self.t0 + len(self.x) / self.sr) if context else self.span
-        seg = self.x[int((s - self.t0) * self.sr):int((e - self.t0) * self.sr)].copy()
-        if not len(seg):
+        if context:
+            start, end = self.load_start, self.load_start + len(self.audio) / self.sample_rate
+        else:
+            start, end = self.span
+        first = int((start - self.load_start) * self.sample_rate)
+        last = int((end - self.load_start) * self.sample_rate)
+        segment = self.audio[first:last].copy()
+        if not len(segment):
             return
-        if self.v.get("normalize_playback", True) and np.abs(seg).max() > 0:
-            seg *= 0.8 / np.abs(seg).max()
+        if self.viewer_cfg.get("normalize_playback", True) and np.abs(segment).max() > 0:
+            segment *= 0.8 / np.abs(segment).max()
         try:
             import sounddevice as sd
             sd.stop()
-            sd.play(seg, self.sr)
-        except Exception as ex:
-            return self._msg(f"cannot play audio: {ex}")
-        self._playing, self._p = True, (s, e - s, time.time())
+            sd.play(segment, self.sample_rate)
+        except Exception as err:
+            return self._msg(f"cannot play audio: {err}")
+        self._playing, self._play_state = True, (start, end - start, time.time())
         self._timer = self.fig.canvas.new_timer(interval=60)
         self._timer.add_callback(self._tick)
         self._timer.start()
 
     def _tick(self):
         """Timer callback: move the playhead, stop at the end of the segment."""
-        s, length, t = self._p
-        el = time.time() - t
-        if el >= length:
+        start, length, t_started = self._play_state
+        elapsed = time.time() - t_started
+        if elapsed >= length:
             return self._stop()
-        self.playhead.set_xdata([s + el] * 2)
+        self.playhead.set_xdata([start + elapsed] * 2)
         self.playhead.set_visible(True)
         self.fig.canvas.draw_idle()
 
@@ -499,33 +510,33 @@ class Reviewer:
         if hasattr(self, "playhead"):
             self.playhead.set_visible(False)
 
-    def _on_key(self, ev):
+    def _on_key(self, event):
         """Dispatch a key press: verdicts, playback, back, quit.
 
         Args:
-            ev (matplotlib.backend_bases.KeyEvent): The key event.
+            event (matplotlib.backend_bases.KeyEvent): The key event.
         """
-        k = ev.key
-        if k is None:
+        key = event.key
+        if key is None:
             return
-        if k.isdigit() and 1 <= int(k) <= len(self.classes):
-            self.judge(self.classes[int(k) - 1])
-        elif k in ("0", "n"):
+        if key.isdigit() and 1 <= int(key) <= len(self.classes):
+            self.judge(self.classes[int(key) - 1])
+        elif key in ("0", "n"):
             self.judge(NOISE)
-        elif k in ("y", "enter"):
+        elif key in ("y", "enter"):
             if self.blind:
                 self._msg("test queue is blind: choose the class (1-3) or Noise (0)")
             else:
                 self.judge(self.item()["predicted"])
-        elif k == "u":
+        elif key == "u":
             self.judge(UNSURE)
-        elif k == " ":
+        elif key == " ":
             self.play(context=False)
-        elif k == "c":
+        elif key == "c":
             self.play(context=True)
-        elif k == "b" and self.i > 0:
-            self.show(self.i - 1)
-        elif k == "q":
+        elif key == "b" and self.index > 0:
+            self.show(self.index - 1)
+        elif key == "q":
             self._stop()
             self.plt.close(self.fig)
 
@@ -536,23 +547,23 @@ class Reviewer:
 
 def main():
     """CLI entry point: load or build the queue, then judge the next items in the GUI."""
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("--config", default="config/project.yaml")
-    ap.add_argument("--queue", choices=["train", "test"], required=True)
-    ap.add_argument("--n", type=int, help="only the next N unjudged items this session")
-    ap.add_argument("--dir", help="output folder (default: review.dir)")
-    ap.add_argument("--list", action="store_true", help="build/show the queue, no GUI")
-    a = ap.parse_args()
-    cfg = load(a.config)
-    out = Path(a.dir or cfg["review"]["dir"])
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("--config", default="config/project.yaml")
+    parser.add_argument("--queue", choices=["train", "test"], required=True)
+    parser.add_argument("--n", type=int, help="only the next N unjudged items this session")
+    parser.add_argument("--dir", help="output folder (default: review.dir)")
+    parser.add_argument("--list", action="store_true", help="build/show the queue, no GUI")
+    args = parser.parse_args()
+    cfg = load(args.config)
+    review_dir = Path(args.dir or cfg["review"]["dir"])
     classes = classes_from(cfg)
-    rows = get_queue(cfg, a.queue, out)
-    jpath = out / f"{a.queue}_judgments.csv"
-    judged = load_judgments(jpath)
-    describe(a.queue, rows, judged)
-    todo = [r for r in rows if r["item_id"] not in judged][:a.n]
-    if a.list:
+    rows = get_queue(cfg, args.queue, review_dir)
+    judgments_path = review_dir / f"{args.queue}_judgments.csv"
+    judged = load_judgments(judgments_path)
+    describe(args.queue, rows, judged)
+    todo = [row for row in rows if row["item_id"] not in judged][:args.n]
+    if args.list:
         return
     if not todo:
         print("nothing left to judge in this queue")
@@ -561,7 +572,7 @@ def main():
     if cfg.get("viewer", {}).get("backend"):
         matplotlib.use(cfg["viewer"]["backend"])
     print(f"{len(todo)} items this session")
-    Reviewer(cfg, a.queue, todo, judged, jpath, classes).run()
+    Reviewer(cfg, args.queue, todo, judged, judgments_path, classes).run()
 
 
 if __name__ == "__main__":

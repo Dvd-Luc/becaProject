@@ -54,25 +54,25 @@ def read_labels(path):
         parts = line.split("\t")
         if len(parts) < 3:
             continue
-        s = float(parts[0].replace(",", "."))
-        e = float(parts[1].replace(",", "."))
-        labels.append((s, e, parts[2].strip()))
+        start = float(parts[0].replace(",", "."))
+        end = float(parts[1].replace(",", "."))
+        labels.append((start, end, parts[2].strip()))
     return labels
 
 
-def overlap(a0, a1, b0, b1):
+def overlap(a_start, a_end, b_start, b_end):
     """Length of the overlap of two intervals.
 
     Args:
-        a0 (float): Start of the first interval.
-        a1 (float): End of the first interval.
-        b0 (float): Start of the second interval.
-        b1 (float): End of the second interval.
+        a_start (float): Start of the first interval.
+        a_end (float): End of the first interval.
+        b_start (float): Start of the second interval.
+        b_end (float): End of the second interval.
 
     Returns:
         float: Overlap in seconds, 0 if disjoint.
     """
-    return max(0.0, min(a1, b1) - max(a0, b0))
+    return max(0.0, min(a_end, b_end) - max(a_start, b_start))
 
 
 def clamp_start(start, rec_len):
@@ -90,11 +90,11 @@ def clamp_start(start, rec_len):
     return min(max(start, 0.0), rec_len - WIN)
 
 
-def has_conflict(w0, idx, labels, tol):
+def has_conflict(win_start, idx, labels, tol):
     """True if the window contains a call of a different type.
 
     Args:
-        w0 (float): Window start, seconds.
+        win_start (float): Window start, seconds.
         idx (int): Index of the call the window is made for.
         labels (list[tuple[float, float, str]]): All labels of the recording.
         tol (float): Overlap tolerated with another call type, seconds.
@@ -102,9 +102,10 @@ def has_conflict(w0, idx, labels, tol):
     Returns:
         bool: Whether the window must be rejected.
     """
-    _, _, lab = labels[idx]
-    for j, (o0, o1, olab) in enumerate(labels):
-        if j != idx and olab != lab and overlap(w0, w0 + WIN, o0, o1) > tol:
+    _, _, label = labels[idx]
+    for j, (other_start, other_end, other_label) in enumerate(labels):
+        shared = overlap(win_start, win_start + WIN, other_start, other_end)
+        if j != idx and other_label != label and shared > tol:
             return True
     return False
 
@@ -136,17 +137,17 @@ def short_window(idx, labels, rec_len, rng, tol, tries=20):
     Returns:
         list[float]: [window start], or [] if no valid position was found.
     """
-    s, e, _ = labels[idx]
+    start, end, _ = labels[idx]
     for _ in range(tries):
-        delta = rng.uniform(0, WIN - (e - s))      # padding placed BEFORE the call
-        w0 = clamp_start(s - delta, rec_len)
-        if w0 is None:
+        delta = rng.uniform(0, WIN - (end - start))      # padding placed BEFORE the call
+        win_start = clamp_start(start - delta, rec_len)
+        if win_start is None:
             return []
-        if w0 > s or w0 + WIN < e:                 # safety: call must be inside
+        if win_start > start or win_start + WIN < end:                 # safety: call must be inside
             continue
-        if has_conflict(w0, idx, labels, tol):
+        if has_conflict(win_start, idx, labels, tol):
             continue
-        return [w0]
+        return [win_start]
     return []
 
 
@@ -165,27 +166,27 @@ def long_windows(idx, labels, rec_len, rng, tau, max_overlap, tol):
     Returns:
         list[float]: Window starts.
     """
-    s, e, _ = labels[idx]
+    start, end, _ = labels[idx]
     delta = rng.uniform(tau, WIN)                  # overlap of the first window
     if rng.random() < 0.5:                         # start from the beginning
-        w0, direction = s - (WIN - delta), +1
+        win_start, direction = start - (WIN - delta), +1
     else:                                          # start from the end
-        w0, direction = e - delta, -1
+        win_start, direction = end - delta, -1
 
-    out = []
-    while overlap(w0, w0 + WIN, s, e) >= tau:      # unclamped test -> loop ends
-        c = clamp_start(w0, rec_len)
-        if c is None:
+    starts = []
+    while overlap(win_start, win_start + WIN, start, end) >= tau:      # unclamped test -> loop ends
+        clamped = clamp_start(win_start, rec_len)
+        if clamped is None:
             break
-        if (overlap(c, c + WIN, s, e) >= tau
-                and not has_conflict(c, idx, labels, tol)
-                and all(abs(c - o) > 1e-3 for o in out)):
-            out.append(c)
-        w0 += direction * rng.uniform(WIN - max_overlap, WIN)
-    return out
+        if (overlap(clamped, clamped + WIN, start, end) >= tau
+            and not has_conflict(clamped, idx, labels, tol)
+            and all(abs(clamped - prev) > 1e-3 for prev in starts)):
+            starts.append(clamped)
+        win_start += direction * rng.uniform(WIN - max_overlap, WIN)
+    return starts
 
 
-def noise_windows(labels, rec_len, n, rng, margin, max_tries=200):
+def noise_windows(labels, rec_len, max_n, rng, margin, max_tries=200):
     """Up to n random windows away from every label and not overlapping each other.
 
     Returns fewer (possibly none) when the recording has too little free time, e.g. a
@@ -194,7 +195,7 @@ def noise_windows(labels, rec_len, n, rng, margin, max_tries=200):
     Args:
         labels (list[tuple[float, float, str]]): All labels of the recording.
         rec_len (float): Recording length, seconds.
-        n (int): Maximum number of windows.
+        max_n (int): Maximum number of windows.
         rng (random.Random): Generator.
         margin (float): Minimum distance to any label, seconds.
         max_tries (int): Random draws per wanted window.
@@ -202,38 +203,38 @@ def noise_windows(labels, rec_len, n, rng, margin, max_tries=200):
     Returns:
         list[float]: Window starts.
     """
-    out = []
+    starts = []
     if rec_len < WIN:
-        return out
-    for _ in range(max_tries * max(n, 1)):
-        if len(out) >= n:
+        return starts
+    for _ in range(max_tries * max(max_n, 1)):
+        if len(starts) >= max_n:
             break
-        w0 = rng.uniform(0, rec_len - WIN)
-        if (all(overlap(w0, w0 + WIN, s - margin, e + margin) == 0
-                for s, e, _ in labels)
-                and all(abs(w0 - o) >= WIN for o in out)):
-            out.append(w0)
-    return out
+        win_start = rng.uniform(0, rec_len - WIN)
+        if (all(overlap(win_start, win_start + WIN, start - margin, end + margin) == 0
+                for start, end, _ in labels)
+            and all(abs(win_start - prev) >= WIN for prev in starts)):
+            starts.append(win_start)
+    return starts
 
 
 # ---------- I/O ----------
-def save_clip(audio_path, sr, w0, folder):
+def save_clip(audio_path, sample_rate, win_start, folder):
     """Write the 3 s window starting at w0 to folder/<recording>_<start>s.wav.
 
     Args:
         audio_path (Path): Source recording.
-        sr (int): Its sample rate.
-        w0 (float): Window start, seconds.
+        sample_rate (int): Its sample rate.
+        win_start (float): Window start, seconds.
         folder (Path): Class folder (created if needed).
 
     Returns:
         Path: The clip written.
     """
-    data, _ = sf.read(audio_path, start=int(round(w0 * sr)),
-                      frames=int(round(WIN * sr)))
+    data, _ = sf.read(audio_path, start=int(round(win_start * sample_rate)),
+                      frames=int(round(WIN * sample_rate)))
     folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"{audio_path.stem}_{w0:07.2f}s.wav"
-    sf.write(path, data, sr)
+    path = folder / f"{audio_path.stem}_{win_start:07.2f}s.wav"
+    sf.write(path, data, sample_rate)
     return path
 
 
@@ -254,105 +255,105 @@ def process(audio_path, label_path, args, rng, writer):
         list[tuple[Path, float]]: (recording, window start) of the noise windows.
     """
     info = sf.info(audio_path)
-    sr, rec_len = info.samplerate, info.frames / info.samplerate
+    sample_rate, rec_len = info.samplerate, info.frames / info.samplerate
     labels = read_labels(label_path)
 
-    def emit(w0, label, src0, src1, kind):
+    def emit(win_start, label, call_start, call_end, kind):
         """Save one call clip and write its metadata row.
 
         Args:
-            w0 (float): Window start, seconds.
+            win_start (float): Window start, seconds.
             label (str): Class name.
-            src0 (float): Call start, seconds.
-            src1 (float): Call end, seconds.
+            call_start (float): Call start, seconds.
+            call_end (float): Call end, seconds.
             kind (str): "short" or "long".
         """
         folder = Path(args.out_dir) / safe(label)
-        clip = save_clip(audio_path, sr, w0, folder)
-        writer.writerow([audio_path.name, label, f"{w0:.3f}", f"{w0 + WIN:.3f}",
-                         f"{src0:.3f}", f"{src1:.3f}", kind, clip])
+        clip = save_clip(audio_path, sample_rate, win_start, folder)
+        writer.writerow([audio_path.name, label, f"{win_start:.3f}", f"{win_start + WIN:.3f}",
+                         f"{call_start:.3f}", f"{call_end:.3f}", kind, clip])
 
-    for idx, (s, e, label) in enumerate(labels):
-        if e <= s:
-            print(f"  skip point label at {s:.2f}s in {audio_path.name} "
+    for idx, (start, end, label) in enumerate(labels):
+        if end <= start:
+            print(f"  skip point label at {start:.2f}s in {audio_path.name} "
                   "(use a region label)")
             continue
         for _ in range(args.class_runs.get(label, args.runs)):
-            if e - s <= WIN:
-                wins, kind = short_window(idx, labels, rec_len, rng,
-                                          args.foreign_tol), "short"
+            if end - start <= WIN:
+                starts, kind = short_window(idx, labels, rec_len, rng,
+                                            args.foreign_tol), "short"
             else:
-                wins, kind = long_windows(idx, labels, rec_len, rng, args.tau,
-                                          args.max_overlap,
-                                          args.foreign_tol), "long"
-            for w0 in wins:
-                emit(w0, label, s, e, kind)
+                starts, kind = long_windows(idx, labels, rec_len, rng, args.tau,
+                                            args.max_overlap,
+                                            args.foreign_tol), "long"
+            for win_start in starts:
+                emit(win_start, label, start, end, kind)
 
-    return [(audio_path, w0) for w0 in
+    return [(audio_path, win_start) for win_start in
             noise_windows(labels, rec_len, args.noise_per_file, rng, args.noise_margin)]
 
 
 def main():
     """CLI entry point: process every labelled recording, then write the noise clips and a summary."""
-    p = argparse.ArgumentParser(description=__doc__,
-                                formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument("--audio-dir", required=True)
-    p.add_argument("--labels-dir", required=True)
-    p.add_argument("--out-dir", required=True)
-    p.add_argument("--tau", type=float, default=1.0,
-                   help="min seconds of a long call kept in each window")
-    p.add_argument("--max-overlap", type=float, default=1.0,
-                   help="max overlap (s) between consecutive windows of a long call")
-    p.add_argument("--runs", type=int, default=1,
-                   help="random windows generated per call (all from the same file!)")
-    p.add_argument("--class-runs", nargs="*", default=[], metavar="CLASS=N",
-                   help="runs for specific classes, e.g. --class-runs Song=3")
-    p.add_argument("--foreign-tol", type=float, default=0.1,
-                   help="reject window if another call type overlaps more than this (s)")
-    p.add_argument("--noise-per-file", type=int, default=3,
-                   help="MAXIMUM noise windows per recording (fewer if there is no room)")
-    p.add_argument("--noise-total", type=int, default=None,
-                   help="keep at most this many noise windows overall (random subset)")
-    p.add_argument("--noise-margin", type=float, default=0.5)
-    p.add_argument("--seed", type=int, default=42)
-    args = p.parse_args()
-    args.class_runs = {k: int(v) for k, v in (x.split("=", 1) for x in args.class_runs)}
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("--audio-dir", required=True)
+    parser.add_argument("--labels-dir", required=True)
+    parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--tau", type=float, default=1.0,
+                        help="min seconds of a long call kept in each window")
+    parser.add_argument("--max-overlap", type=float, default=1.0,
+                        help="max overlap (s) between consecutive windows of a long call")
+    parser.add_argument("--runs", type=int, default=1,
+                        help="random windows generated per call (all from the same file!)")
+    parser.add_argument("--class-runs", nargs="*", default=[], metavar="CLASS=N",
+                        help="runs for specific classes, e.g. --class-runs Song=3")
+    parser.add_argument("--foreign-tol", type=float, default=0.1,
+                        help="reject window if another call type overlaps more than this (s)")
+    parser.add_argument("--noise-per-file", type=int, default=3,
+                        help="MAXIMUM noise windows per recording (fewer if there is no room)")
+    parser.add_argument("--noise-total", type=int, default=None,
+                        help="keep at most this many noise windows overall (random subset)")
+    parser.add_argument("--noise-margin", type=float, default=0.5)
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+    args.class_runs = {cls: int(runs) for cls, runs in (spec.split("=", 1) for spec in args.class_runs)}
 
     rng = random.Random(args.seed)
-    out = Path(args.out_dir)
-    out.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
     n_files = n_unlabelled = 0
     noise = []
-    with open(out / "metadata.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["recording", "label", "win_start", "win_end",
-                    "call_start", "call_end", "kind", "clip"])
+    with open(out_dir / "metadata.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["recording", "label", "win_start", "win_end",
+                         "call_start", "call_end", "kind", "clip"])
         for audio in sorted(Path(args.audio_dir).iterdir()):
             if audio.suffix.lower() not in AUDIO_EXT:
                 continue
-            lab = Path(args.labels_dir) / f"{audio.stem}.txt"
-            if not lab.exists():
+            label_path = Path(args.labels_dir) / f"{audio.stem}.txt"
+            if not label_path.exists():
                 n_unlabelled += 1
                 continue
             n_files += 1
             print(audio.name)
-            noise += process(audio, lab, args, rng, w)
+            noise += process(audio, label_path, args, rng, writer)
 
         n_found = len(noise)
         if args.noise_total is not None and n_found > args.noise_total:
             noise = rng.sample(noise, args.noise_total)
-        for audio, w0 in sorted(noise, key=lambda x: (x[0].name, x[1])):
-            sr = sf.info(audio).samplerate
-            clip = save_clip(audio, sr, w0, out / "Noise")
-            w.writerow([audio.name, "Noise", f"{w0:.3f}", f"{w0 + WIN:.3f}",
-                        "", "", "noise", clip])
+        for audio, win_start in sorted(noise, key=lambda item: (item[0].name, item[1])):
+            sample_rate = sf.info(audio).samplerate
+            clip = save_clip(audio, sample_rate, win_start, out_dir / "Noise")
+            writer.writerow([audio.name, "Noise", f"{win_start:.3f}", f"{win_start + WIN:.3f}",
+                             "", "", "noise", clip])
 
-    with open(out / "metadata.csv", newline="", encoding="utf-8") as f:
-        counts = Counter(r["label"] for r in csv.DictReader(f))
+    with open(out_dir / "metadata.csv", newline="", encoding="utf-8") as f:
+        counts = Counter(row["label"] for row in csv.DictReader(f))
     print(f"\n{n_files} labelled recordings processed, "
           f"{n_unlabelled} recordings without a label file skipped")
-    for lab, n in sorted(counts.items()):
-        print(f"  {lab:<30} {n:>6} clips")
+    for label, count in sorted(counts.items()):
+        print(f"  {label:<30} {count:>6} clips")
     print(f"noise windows: {n_found} possible with --noise-per-file {args.noise_per_file}, "
           f"{len(noise)} kept")
 
