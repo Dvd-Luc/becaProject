@@ -1,0 +1,26 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+15.0,18.0,Drumming,Drumming,0.1248,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+96.0,99.0,Drumming,Drumming,0.1020,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+156.0,159.0,Call,Call,0.1033,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+237.0,240.0,Drumming,Drumming,0.1163,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+240.0,243.0,Call,Call,0.1393,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+288.0,291.0,Drumming,Drumming,0.1140,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+294.0,297.0,Song,Song,0.1106,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+312.0,315.0,Drumming,Drumming,0.1285,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+318.0,321.0,Drumming,Drumming,0.1022,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+324.0,327.0,Drumming,Drumming,0.1336,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+342.0,345.0,Drumming,Drumming,0.1388,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+420.0,423.0,Drumming,Drumming,0.1515,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+510.0,513.0,Call,Call,0.1144,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+591.0,594.0,Song,Song,0.1081,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+627.0,630.0,Drumming,Drumming,0.1269,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+666.0,669.0,Drumming,Drumming,0.1609,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+669.0,672.0,Call,Call,0.1003,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+675.0,678.0,Drumming,Drumming,0.1034,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+774.0,777.0,Drumming,Drumming,0.1225,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+885.0,888.0,Drumming,Drumming,0.1249,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+924.0,927.0,Drumming,Drumming,0.1189,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+933.0,936.0,Drumming,Drumming,0.1051,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+987.0,990.0,Song,Song,0.1168,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+1146.0,1149.0,Drumming,Drumming,0.1369,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav
+1197.0,1200.0,Call,Call,0.1075,/tmp/detect_8l9i1djc/BECA_SMMICRO_030_15_Ségur-les-Villas_20260427_194900_926.wav

@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+522.0,525.0,Drumming,Drumming,0.1322,/tmp/detect_8l9i1djc/BECA_SMMICRO_002_48_Recoules-d'Aubrac_20260411_192700_758.wav
+525.0,528.0,Drumming,Drumming,0.1497,/tmp/detect_8l9i1djc/BECA_SMMICRO_002_48_Recoules-d'Aubrac_20260411_192700_758.wav
+564.0,567.0,Call,Call,0.1694,/tmp/detect_8l9i1djc/BECA_SMMICRO_002_48_Recoules-d'Aubrac_20260411_192700_758.wav
+651.0,654.0,Call,Call,0.1184,/tmp/detect_8l9i1djc/BECA_SMMICRO_002_48_Recoules-d'Aubrac_20260411_192700_758.wav
