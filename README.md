@@ -103,6 +103,7 @@ code/
 | `generations` | `make_generation.py`, `evaluate.py`, `detect.py --gen` | training seed, evaluation thresholds |
 | `xc_test` | `annotation_tools.py sample-test`, `evaluate.py --testset xc`, `make_generation.py` | XC test sample: seed, strata, caps |
 | `annotator_xc_test` | `annotator.py --section annotator_xc_test` | annotating the XC test sample (own labels folder) |
+| `drive_detection` | `detect_drive.py` | generation, output folder, thresholds, threads, batch size |
 
 The training scripts (Part 1) don't read the YAML: they take everything as
 command-line options. Paths in the YAML are relative to `code/`, which is why every
@@ -248,7 +249,7 @@ and `manifest.csv` are rebuilt from all frozen drives, and the clips go to
 python src/survey/detect.py --dry-run            # how many clips would be analysed
 python src/survey/detect.py                      # analyse new clips + rebuild the tables
 python src/survey/detect.py --min-conf 0.35      # other event threshold for this run
-python src/survey/detect.py --post-only --min-conf 0.4   # re-threshold, no BirdNET
+python src/survey/detect.py --post-only --min-conf 0.4   # new threshold on the saved scores, model not re-run
 python src/survey/detect.py --split heldout      # one split only
 ```
 
@@ -384,6 +385,37 @@ python src/survey/evaluate.py --gens 0 1 --testset xc       # compare generation
   recordists**, not precision in the field. The survey test set stays the reference
   for that.
 
+### 11. Detect on every recording, straight from the drives
+
+Steps 6–7 only analyse the sampled 20 min clips. `detect_drive.py` runs a generation
+(`drive_detection.gen`, gen 2 by default) on **every** recording of a drive. BirdNET reads
+the WAV files on the plugged-in drive, and only CSVs are written to the computer:
+
+```bash
+python src/survey/detect_drive.py --drive D1 --dry-run     # files, hours per site, done / to do
+python src/survey/detect_drive.py --drive D1 --limit 20    # speed test
+python src/survey/detect_drive.py --drive D1               # whole drive, with a progress bar
+python src/survey/detect_drive.py --post-only --min-conf 0.35   # new threshold on the saved scores, model not re-run
+```
+
+- **One drive per run**, as in step 6. The drive's file list is frozen on the first run
+  (`files/<drive>_files.csv`, with each file's duration and split). If the sites found
+  belong to another drive in `sites.csv`, the run stops.
+- **Resumable file by file:** stop at any time (Ctrl-C, unplug) and run the same
+  command again. There are about 16 200 one-hour files in all, so a drive takes several
+  nights.
+- **Speed:** BirdNET runs the custom model on the CPU only (TFLite, no GPU). Tune
+  `threads` and `batch_size` in the config after the `--limit 20` test. WSL gets only
+  part of the RAM by default: raise it in `C:\Users\<you>\.wslconfig` (`[wsl2]`
+  `memory=12GB`), then run `wsl --shutdown`.
+- **Output** (`drive_detection.dir`, `data/survey/full/gen_2/`):
+  - `events.csv` gives each event's absolute `event_time`.
+  - `file_summary.csv` gives one row per file and class, with zeros and the file
+    duration, for detection rates per hour, site or date.
+  - Both are rebuilt from every drive done so far.
+- This is inference, not an experiment. The `split` column is kept so that any later
+  review of these detections for training uses train sites only.
+
 ---
 
 ## Script reference
@@ -405,6 +437,7 @@ All paths relative to `code/`.
 | `src/training/plot_learning_curve.py` | 5 learning curve | `models/lc/`, `outputs/lc/` | `results/lc/` |
 | `src/survey/sample_clips.py` | 6 sample | a survey drive | `data/survey/{plan,clips}/`, `sites.csv`, `manifest.csv` |
 | `src/survey/detect.py` | 7 detect | manifest, clips, model | `data/survey/detections/` (or `generations/gen_K/detections/`) |
+| `src/survey/detect_drive.py` | 11 full survey | a survey drive, `sites.csv`, a generation | `data/survey/full/gen_K/` (`files/`, `raw/`, `events.csv`, `file_summary.csv`) |
 | `src/survey/review.py` | 8 review | detections, manifest, clips | `data/survey/review/` |
 | `src/survey/make_generation.py` | 9 train | train judgments, XC clips | `generations/gen_K/` |
 | `src/survey/evaluate.py` | 9, 10 compare | test judgments or XC test labels, generations | `results/survey/`, `gen_K/{test,xc}_scores.csv` |
