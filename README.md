@@ -271,8 +271,9 @@ python src/survey/review.py --queue train --n 30   # judge the next 30 items
 python src/survey/review.py --queue test           # blind heldout test set
 ```
 
-There are two queues, each frozen on first use in `data/survey/review/<queue>_queue.csv`
-(delete it to resample):
+There are two main queues, each frozen on first use in `data/survey/review/<queue>_queue.csv`
+(delete it to resample). For later generations, `--queue train --gen K` builds a further
+train queue (`train_gen<K>`) from generation K's own detections (see step 9).
 
 | Queue | Sites | Content | Purpose |
 |---|---|---|---|
@@ -323,14 +324,29 @@ python src/survey/detect.py --gen 1                      # whole survey with gen
 - For each newer generation it adds the paired difference to the first one listed.
 - Each window is weighted by the population of its score stratum, which corrects for
   the stratified sampling.
+- **False alarms per hour** (`false_alarms_per_h@t`): windows judged *not* to be a
+  class that score ≥ t for it, per hour of heldout audio (~22 h). This needs no snipe
+  at the sites, so it measures field false alarms even for classes too rare in the
+  field for recall to be measured (Song and Drumming).
 - Output: `results/survey/compare.csv` and `pr_<class>.png`.
 
 **Reading the result:** look at the `diff_vs_gen0` column and its interval. If the
 interval excludes 0, the change is probably real. Adding a generation later only means
 one more value after `--gens`: no new labelling is needed.
 
-**The loop:** review more train items → `make_generation.py --gen 2` →
-`evaluate.py --gens 0 1 2` → `detect.py --gen 2` once it is the best.
+**The loop (each generation learns from the previous one's own errors):**
+
+```bash
+python src/survey/detect.py --gen 1 --split train           # gen 1 on the train sites
+python src/survey/review.py --queue train --gen 1 --list    # freeze queue train_gen1
+python src/survey/review.py --queue train --gen 1           # judge it
+python src/survey/make_generation.py --gen 2                # train + train_gen1 verdicts
+python src/survey/evaluate.py --gens 0 1 2                  # and --testset xc
+```
+
+The `train_gen<K>` queue skips anything already judged in the earlier train queues, and
+generation K is trained on every train queue judged before it (gen 2: `train` +
+`train_gen1`). See `HISTORY.md` for what each generation was trained on.
 
 ### 10. XC test set (recordists never used for training)
 
