@@ -18,6 +18,11 @@ Every generation scores exactly the same 3 s windows, so the numbers are compara
   population / n_judged windows of its stratum (test_strata.csv); without weights, rare
   high-score windows would be over-represented. Bootstrap: windows resampled within
   strata. Unsure verdicts are left out; Noise windows are negatives for every class.
+  Also false_alarms_per_h@t: windows judged NOT of a class that score >= t for it (for
+  "any": Noise windows whose best score is >= t), weighted, per hour of heldout audio
+  (all stratum populations x 3 s). It needs no snipe at the sites, so it measures field
+  false alarms (e.g. a false Drumming = false breeding evidence) even where a class is
+  absent and its recall cannot be measured.
 
 --testset xc: the XC test sample (annotation_tools.py sample-test), recordists never
   used for training, annotated with annotator.py --section annotator_xc_test. Only
@@ -153,10 +158,11 @@ def load_survey(cfg, args):
         """
         return np.concatenate([rng.choice(indices, len(indices)) for indices in groups])
 
+    hours = sum(population.values()) * WIN / 3600       # all heldout windows, judged or not
     return {"ids": [item["item_id"] for item in items], "wavs": wavs,
             "positives": [set() if verdict == NOISE else {verdict} for verdict in verdicts],
             "ambiguous": [set() for _ in items], "weights": weights, "resample": resample,
-            "cache": "test_scores", "legacy": "test_scores", "suffix": ""}
+            "cache": "test_scores", "legacy": "test_scores", "suffix": "", "hours": hours}
 
 
 def load_xc(cfg, args):
@@ -248,7 +254,7 @@ def load_xc(cfg, args):
 
     return {"ids": ids, "wavs": wavs, "positives": positives, "ambiguous": ambiguous,
             "weights": np.ones(len(ids)), "resample": resample,
-            "cache": "xc_scores", "legacy": None, "suffix": "_xc"}
+            "cache": "xc_scores", "legacy": None, "suffix": "_xc", "hours": None}
 
 
 # ---------- scoring ----------
@@ -445,6 +451,8 @@ def main():
     rng = np.random.default_rng(0)
     boots = [test["resample"](rng) for _ in range(args.boot)]
 
+    hours = test["hours"]
+
     def metrics(y, scores, weights):
         """All metrics of one resample, flattened in the order of `names`.
 
@@ -454,13 +462,20 @@ def main():
             weights (numpy.ndarray): Weights.
 
         Returns:
-            list[float]: [AP, precision@t1, recall@t1, precision@t2, ...].
+            list[float]: [AP, precision@t1, recall@t1, precision@t2, ...], then (survey
+                test set only) false alarms per hour of heldout audio at each threshold.
         """
         ap, pr_points = ap_pr(y, scores, weights, thresholds)
-        return [ap] + [value for point in pr_points for value in point]
+        values = [ap] + [value for point in pr_points for value in point]
+        if hours:
+            values += [(weights * (1 - y) * (scores >= threshold)).sum() / hours
+                       for threshold in thresholds]
+        return values
 
     names = ["AP"] + [f"{metric}@{threshold:g}"
                       for threshold in thresholds for metric in ("precision", "recall")]
+    if hours:
+        names += [f"false_alarms_per_h@{threshold:g}" for threshold in thresholds]
     rows = []
     for class_name, (y, kept, scores_by_gen) in targets.items():
         weights = test["weights"] * kept
@@ -508,6 +523,20 @@ def main():
             diff = row[f"diff_vs_gen{args.gens[0]}"]
             print(f"  {row['class']}: gen_{row['gen']} - gen_{args.gens[0]} AP = {diff:+.3f} "
                   f"[{row['diff_lo']:+.3f}, {row['diff_hi']:+.3f}]{sig}")
+
+    if hours:
+        print(f"\nfalse alarms per hour of heldout audio ({hours:.1f} h), windows not of the class "
+              f"scoring >= t [95% CI]")
+        for threshold in thresholds:
+            name = f"false_alarms_per_h@{threshold:g}"
+            for class_name in targets:
+                cells = []
+                for gen in args.gens:
+                    row = next(row for row in rows if row["gen"] == gen
+                               and row["class"] == class_name and row["metric"] == name)
+                    cell = f"{row['value']:.2f} [{row.get('lo', np.nan):.2f}, {row.get('hi', np.nan):.2f}]"
+                    cells.append(f"gen_{gen} {cell}")
+                print(f"  t={threshold:g} {class_name:9s} " + "   ".join(cells))
 
     import matplotlib
     matplotlib.use("Agg")

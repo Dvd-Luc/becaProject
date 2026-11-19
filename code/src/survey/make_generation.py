@@ -3,16 +3,21 @@
     python src/survey/make_generation.py --gen 1 --dry-run   # counts only, write nothing
     python src/survey/make_generation.py --gen 1             # cut clips, link, train
     python src/survey/make_generation.py --gen 1 --no-train  # build the training folder only
+    python src/survey/make_generation.py --gen 2 --dry-run   # + verdicts on gen 1's detections
 
 gen_0 is the existing model (detection.model): it is only linked, never retrained.
-gen_K (K >= 1) uses ALL current verdicts of <review.dir>/train_judgments.csv (last
-verdict per item), from train-split sites only (anything else is an error). The XC
+gen_K (K >= 1) uses ALL current verdicts (last verdict per item) of the train queues
+judged before it: <review.dir>/train_judgments.csv (v0's detections) and
+train_gen<J>_judgments.csv for J < K (gen J's detections, review.py --queue train
+--gen J). So gen 1 = train queue only; gen 2 = train + train_gen1; ...
+Only train-split sites are accepted (anything else is an error). The XC
 clips (--base-clips) must not come from a recordist of the XC test sample
 (<xc_test.dir>/sample.csv), or the run stops.
 Survey verdicts are used as follows:
   * event judged as a class or Noise -> its 3 s grid windows, at most
-    generations.max_windows_per_item of them, the ones v0 scored highest for the
-    predicted class (skips the gap windows bridged by merge_gap_s)
+    generations.max_windows_per_item of them, the ones the detecting model (v0, or
+    gen J for train_gen<J>) scored highest for the predicted class (skips the gap
+    windows bridged by merge_gap_s)
   * background judged Noise (or a class, if a call was hiding there) -> its window
   * Unsure -> nothing
 
@@ -264,18 +269,31 @@ def main():
     gen_cfg, detection_cfg = cfg["generations"], cfg["detection"]
     gens_dir = Path(args.gen_dir or gen_cfg["dir"])
     review_dir = Path(args.review_dir or cfg["review"]["dir"])
-    raw_dir = Path(detection_cfg["dir"]) / "raw"
     max_n = gen_cfg.get("max_windows_per_item", 3)
 
-    queue = {row["item_id"]: row for row in read_dicts(review_dir / "train_queue.csv")}
-    judgments_path = review_dir / "train_judgments.csv"
-    if not judgments_path.exists():
-        raise SystemExit(f"no judgments yet: {judgments_path}")
-    verdicts = {row["item_id"]: row["verdict"] for row in read_dicts(judgments_path)}
-    missing = [item_id for item_id in verdicts if item_id not in queue]
-    if missing:
-        raise SystemExit(f"{len(missing)} judged items are not in {review_dir / 'train_queue.csv'} "
-                         f"(queue rebuilt?), e.g. {missing[:2]}")
+    # train queues judged before gen K: v0's detections, then gen 1 .. gen K-1's own
+    sources = [("train", Path(detection_cfg["dir"]) / "raw")]
+    sources += [(f"train_gen{k}", gens_dir / f"gen_{k}" / "detections" / "raw")
+                for k in range(1, args.gen)]
+    queue, raw_dir_of, verdicts, used_queues = {}, {}, {}, []
+    for queue_name, raw_dir in sources:
+        judgments_path = review_dir / f"{queue_name}_judgments.csv"
+        if not judgments_path.exists():
+            if queue_name == "train":
+                raise SystemExit(f"no judgments yet: {judgments_path}")
+            print(f"warning: no {judgments_path.name} yet: gen {args.gen} gets nothing from it")
+            continue
+        queue_rows = {row["item_id"]: row for row in read_dicts(review_dir / f"{queue_name}_queue.csv")}
+        queue_verdicts = {row["item_id"]: row["verdict"] for row in read_dicts(judgments_path)}
+        missing = [item_id for item_id in queue_verdicts if item_id not in queue_rows]
+        if missing:
+            raise SystemExit(f"{len(missing)} judged items are not in {queue_name}_queue.csv "
+                             f"(queue rebuilt?), e.g. {missing[:2]}")
+        queue.update(queue_rows)
+        verdicts.update(queue_verdicts)
+        raw_dir_of.update({item_id: raw_dir for item_id in queue_rows})
+        used_queues.append(f"{queue_name} ({len(queue_verdicts)})")
+    print("train queues used:", ", ".join(used_queues))
     leak = sorted({queue[item_id]["site"] for item_id in verdicts if queue[item_id]["split"] != "train"})
     if leak:
         raise SystemExit(f"judgments from non-train sites, refusing: {leak[:5]}")
@@ -286,7 +304,7 @@ def main():
         if verdict == UNSURE:
             skipped["unsure"] += 1
             continue
-        for start in windows_of(item, raw_dir, max_n):
+        for start in windows_of(item, raw_dir_of[item_id], max_n):
             name = f"{item['clip_id']}_{start:.0f}s.wav"
             plan.append({"file": f"{verdict}/{name}", "class": verdict, "item_id": item_id,
                          "kind": item["kind"], "predicted": item["predicted"],
@@ -339,7 +357,7 @@ def main():
     print(f"built {train_dir}: {counts}")
     write_dicts(gen_dir / "info.csv", ["key", "value"], [
         {"key": "built", "value": datetime.now().isoformat(timespec="seconds")},
-        {"key": "judgments", "value": str(judgments_path)},
+        {"key": "judgments", "value": "; ".join(used_queues)},
         {"key": "n_judged", "value": len(verdicts)},
         {"key": "base_clips", "value": args.base_clips},
         {"key": "params_from", "value": detection_cfg["model"]},

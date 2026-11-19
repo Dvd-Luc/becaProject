@@ -4,15 +4,21 @@
     python src/survey/review.py --queue train            # judge the items still to do
     python src/survey/review.py --queue train --n 20     # only the next 20 this session
     python src/survey/review.py --queue test             # blind heldout test set
+    python src/survey/review.py --queue train --gen 1 --list   # queue from gen 1's detections
+    python src/survey/review.py --queue train --gen 1          # judge it (feeds gen 2)
 
-Two queues, each frozen on first use to <review.dir>/<queue>_queue.csv (delete the file to
+Queues, each frozen on first use to <review.dir>/<queue>_queue.csv (delete the file to
 re-sample it; existing judgments keep their item_id but may no longer be in the queue):
 
   train  train-split sites only; feeds the next model (make_generation.py)
-         * events from detection.dir/events.csv: review.events_per_class per predicted
-           class, spread evenly over review.conf_bins (max_conf)
+         * events from detection.dir/events.csv (v0): review.events_per_class per
+           predicted class, spread evenly over review.conf_bins (max_conf)
          * background: review.background_per_clip random 3 s windows per analysed clip,
            at least review.context_s away from any event (expected Noise)
+  train_gen<K>  (--queue train --gen K) the same, from generations.dir/gen_K/detections
+         (run detect.py --gen K --split train first), so gen K's own errors get judged
+         for gen K+1. Items overlapping anything judged in the earlier train queues are
+         skipped. Item ids start with gen<K>_. Files: train_gen<K>_{queue,judgments}.csv.
   test   heldout-split sites only; scores every model generation (evaluate.py)
          * 3 s windows on BirdNET's grid (0, 3, 6 s ...), stratified by the best v0
            score in detection.dir/raw over review.test_bins, review.test_per_bin per bin.
@@ -170,8 +176,30 @@ def analysed_clips(manifest, raw_dir, split):
             and (raw_dir / f"{clip['clip_id']}.BirdNET.results.csv").exists()]
 
 
-def build_train(cfg, manifest, rng):
-    """Build the train queue: stratified events plus background windows.
+def judged_spans(review_dir, queues):
+    """Time spans already judged in earlier train queues, per clip.
+
+    Args:
+        review_dir (Path): Review folder.
+        queues (list[str]): Queue names (e.g. ["train"]).
+
+    Returns:
+        dict[str, list[tuple[float, float]]]: clip_id -> [(start s, end s)] of judged items.
+    """
+    spans = defaultdict(list)
+    for queue in queues:
+        queue_path = review_dir / f"{queue}_queue.csv"
+        if not queue_path.exists():
+            continue
+        judged = load_judgments(review_dir / f"{queue}_judgments.csv")
+        for row in read_dicts(queue_path):
+            if row["item_id"] in judged:
+                spans[row["clip_id"]].append((float(row["start_s"]), float(row["end_s"])))
+    return spans
+
+
+def build_train(cfg, manifest, rng, detection_dir=None, id_prefix="", skip_spans=None):
+    """Build a train queue: stratified events plus background windows.
 
     Events (train sites) are drawn per predicted class, evenly over review.conf_bins,
     topped up from other bins when one is short. Background = review.background_per_clip
@@ -181,14 +209,37 @@ def build_train(cfg, manifest, rng):
         cfg (dict): The whole project config.
         manifest (list[dict]): Manifest rows.
         rng (random.Random): Seeded generator.
+        detection_dir (Path | None): Detections to sample from (default detection.dir,
+            i.e. v0; generations.dir/gen_K/detections for --gen K).
+        id_prefix (str): Prefix of the item ids (e.g. "gen1_"), unique across queues.
+        skip_spans (dict | None): clip_id -> judged (start, end) spans; events and
+            background windows overlapping them are not queued again.
 
     Returns:
         tuple[list[dict], None]: (queue rows keyed by QUEUE_HEADER, no strata).
     """
     review_cfg, detection_cfg = cfg["review"], cfg["detection"]
+    detection_dir = Path(detection_dir or detection_cfg["dir"])
+    skip_spans = skip_spans or {}
+
+    def already_judged(clip_id, start, end):
+        """True if [start, end] overlaps an item judged in an earlier queue.
+
+        Args:
+            clip_id (str): Manifest clip id.
+            start (float): Start, seconds.
+            end (float): End, seconds.
+
+        Returns:
+            bool: Whether the span overlaps a judged span of that clip.
+        """
+        return any(start < judged_end and end > judged_start
+                   for judged_start, judged_end in skip_spans.get(clip_id, []))
+
     by_clip = {clip["clip_id"]: clip for clip in manifest}
-    events = [event for event in read_dicts(Path(detection_cfg["dir"]) / "events.csv")
-              if event["split"] == "train"]
+    all_events = [event for event in read_dicts(detection_dir / "events.csv") if event["split"] == "train"]
+    events = [event for event in all_events
+              if not already_judged(event["clip_id"], float(event["start_s"]), float(event["end_s"]))]
     bins = review_cfg["conf_bins"]
     n_bins = len(bins) - 1
     def bin_of(conf):
@@ -224,7 +275,7 @@ def build_train(cfg, manifest, rng):
         for bin_idx in range(n_bins):
             for event in pools[bin_idx][:take[bin_idx]]:
                 clip = by_clip[event["clip_id"]]
-                item_id = f"event_{event['clip_id']}_{event['label']}_{float(event['start_s']):.0f}"
+                item_id = f"{id_prefix}event_{event['clip_id']}_{event['label']}_{float(event['start_s']):.0f}"
                 rows.append({"item_id": item_id,
                              "kind": "event", "clip_id": event["clip_id"], "site": event["site"],
                              "split": event["split"], "period": event["period"],
@@ -233,16 +284,19 @@ def build_train(cfg, manifest, rng):
                              "max_conf": event["max_conf"],
                              "stratum": f"{label}|{bins[bin_idx]}-{bins[bin_idx + 1]}"})
     event_spans = defaultdict(list)
-    for event in events:
+    for event in all_events:                 # background stays away from every event
         event_spans[event["clip_id"]].append((float(event["start_s"]), float(event["end_s"])))
     context_s = review_cfg["context_s"]
-    for clip in analysed_clips(manifest, Path(detection_cfg["dir"]) / "raw", "train"):
+    for clip in analysed_clips(manifest, detection_dir / "raw", "train"):
         n_win = int(float(clip["duration_s"]) // WIN)
         free = [k * WIN for k in range(n_win)
                 if all(k * WIN + WIN <= ev_start - context_s or k * WIN >= ev_end + context_s
-                       for ev_start, ev_end in event_spans[clip["clip_id"]])]
+                       for ev_start, ev_end in event_spans[clip["clip_id"]])
+                and not already_judged(clip["clip_id"], k * WIN, k * WIN + WIN)]
         for start in sorted(rng.sample(free, min(review_cfg["background_per_clip"], len(free)))):
-            rows.append(window_row("background", clip, start, "background", predicted=NOISE))
+            row = window_row("background", clip, start, "background", predicted=NOISE)
+            row["item_id"] = id_prefix + row["item_id"]
+            rows.append(row)
     return rows, None
 
 
@@ -286,23 +340,50 @@ def build_test(cfg, manifest, rng):
     return rows, strata
 
 
-def get_queue(cfg, queue, review_dir):
+def train_queue_names(gen):
+    """Names of the train queues up to generation gen's detections.
+
+    Args:
+        gen (int): 0 for the first queue (v0 detections), K for gen K's detections.
+
+    Returns:
+        list[str]: ["train", "train_gen1", ..., "train_gen<gen>"].
+    """
+    return ["train"] + [f"train_gen{k}" for k in range(1, gen + 1)]
+
+
+def get_queue(cfg, queue, review_dir, gen=0):
     """Return the frozen queue, building and saving it (shuffled) on first use.
 
     Args:
         cfg (dict): The whole project config.
-        queue (str): "train" or "test".
+        queue (str): "train", "train_gen<K>" or "test".
         review_dir (Path): Review folder.
+        gen (int): For train_gen<K>: K, whose detections are sampled; items judged in
+            the earlier train queues are skipped.
 
     Returns:
         list[dict]: Queue rows keyed by QUEUE_HEADER.
+
+    Raises:
+        SystemExit: If gen K's detections do not exist yet.
     """
     path = review_dir / f"{queue}_queue.csv"
     if path.exists():
         return read_dicts(path)
     manifest = read_dicts(Path(cfg["survey"]["dir"]) / "manifest.csv")
     rng = random.Random(f"{cfg['review']['seed']}-{queue}")
-    rows, strata = (build_train if queue == "train" else build_test)(cfg, manifest, rng)
+    if queue == "test":
+        rows, strata = build_test(cfg, manifest, rng)
+    elif gen:
+        detection_dir = Path(cfg["generations"]["dir"]) / f"gen_{gen}" / "detections"
+        if not (detection_dir / "events.csv").exists():
+            raise SystemExit(f"{detection_dir / 'events.csv'} not found: run "
+                             f"detect.py --gen {gen} --split train first")
+        rows, strata = build_train(cfg, manifest, rng, detection_dir, id_prefix=f"gen{gen}_",
+                                   skip_spans=judged_spans(review_dir, train_queue_names(gen - 1)))
+    else:
+        rows, strata = build_train(cfg, manifest, rng)
     rng.shuffle(rows)                       # any session of --n N gets a mix
     write_dicts(path, QUEUE_HEADER, rows)
     if strata:
@@ -554,14 +635,20 @@ def main():
     parser.add_argument("--n", type=int, help="only the next N unjudged items this session")
     parser.add_argument("--dir", help="output folder (default: review.dir)")
     parser.add_argument("--list", action="store_true", help="build/show the queue, no GUI")
+    parser.add_argument("--gen", type=int, default=0,
+                        help="train queue from generation K's detections (train_gen<K>), "
+                             "skipping items judged in earlier train queues")
     args = parser.parse_args()
+    if args.gen and args.queue != "train":
+        raise SystemExit("--gen only applies to --queue train (the test queue is fixed)")
     cfg = load(args.config)
     review_dir = Path(args.dir or cfg["review"]["dir"])
     classes = classes_from(cfg)
-    rows = get_queue(cfg, args.queue, review_dir)
-    judgments_path = review_dir / f"{args.queue}_judgments.csv"
+    queue = f"train_gen{args.gen}" if args.gen else args.queue
+    rows = get_queue(cfg, queue, review_dir, args.gen)
+    judgments_path = review_dir / f"{queue}_judgments.csv"
     judged = load_judgments(judgments_path)
-    describe(args.queue, rows, judged)
+    describe(queue, rows, judged)
     todo = [row for row in rows if row["item_id"] not in judged][:args.n]
     if args.list:
         return
