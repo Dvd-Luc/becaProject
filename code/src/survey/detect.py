@@ -3,7 +3,7 @@
     python src/survey/detect.py --dry-run          # what would be analysed, run nothing
     python src/survey/detect.py                    # analyse new clips + rebuild tables
     python src/survey/detect.py --split train      # only clips of one split
-    python src/survey/detect.py --post-only        # re-threshold / re-merge, no BirdNET
+    python src/survey/detect.py --post-only        # new threshold on the saved scores, model not re-run
     python src/survey/detect.py --min-conf 0.35    # other event threshold than the config
     python src/survey/detect.py --gen 1            # model generation 1 -> generations/gen_1/detections
 
@@ -112,6 +112,43 @@ def check_params(raw_dir, params, force):
     write_rows(params_path, PARAM_KEYS, [[params[key] for key in PARAM_KEYS]])
 
 
+def link_audio(rows, folder, id_key="clip_id", path_key="clip_path"):
+    """Fill a folder with links named <id>.wav, so BirdNET sees only these files.
+
+    Args:
+        rows (list[dict]): Rows with an id and an audio path.
+        folder (Path): Empty folder to fill.
+        id_key (str): Column holding the id (becomes the raw result's name).
+        path_key (str): Column holding the audio path.
+    """
+    for row in rows:
+        (Path(folder) / f"{row[id_key]}.wav").symlink_to(Path(row[path_key]).resolve())
+
+
+def birdnet_command(folder, raw_dir, detection_cfg, threads, batch_size=None):
+    """BirdNET analyze command line for one folder of audio.
+
+    Args:
+        folder (Path): Folder of audio files (or links).
+        raw_dir (Path): Output folder for BirdNET's CSVs.
+        detection_cfg (dict): Detection settings (model, raw_min_conf, overlap).
+        threads (int | None): BirdNET CPU threads (None: BirdNET's default).
+        batch_size (int | None): BirdNET batch size (None: BirdNET's default).
+
+    Returns:
+        list[str]: The command, for subprocess.
+    """
+    cmd = [sys.executable, "-m", "birdnet_analyzer.analyze", str(folder),
+           "-o", str(raw_dir), "-c", detection_cfg["model"],
+           "--min_conf", str(detection_cfg["raw_min_conf"]), "--overlap", str(detection_cfg["overlap"]),
+           "--rtype", "csv"]
+    if threads:
+        cmd += ["-t", str(threads)]
+    if batch_size:
+        cmd += ["-b", str(batch_size)]
+    return cmd
+
+
 def run_birdnet(todo, raw_dir, detection_cfg, threads):
     """Analyse the clips through a folder of links, so only manifest clips are seen.
 
@@ -125,14 +162,8 @@ def run_birdnet(todo, raw_dir, detection_cfg, threads):
         subprocess.CalledProcessError: If BirdNET fails.
     """
     with tempfile.TemporaryDirectory(prefix="detect_") as tmp:
-        for clip in todo:
-            (Path(tmp) / f"{clip['clip_id']}.wav").symlink_to(Path(clip["clip_path"]).resolve())
-        cmd = [sys.executable, "-m", "birdnet_analyzer.analyze", tmp,
-               "-o", str(raw_dir), "-c", detection_cfg["model"],
-               "--min_conf", str(detection_cfg["raw_min_conf"]), "--overlap", str(detection_cfg["overlap"]),
-               "--rtype", "csv"]
-        if threads:
-            cmd += ["-t", str(threads)]
+        link_audio(todo, tmp)
+        cmd = birdnet_command(tmp, raw_dir, detection_cfg, threads)
         print(" ".join(cmd))
         subprocess.run(cmd, check=True)
 
@@ -158,28 +189,31 @@ def merge_windows(windows, gap):
     return events
 
 
-def post(clips, raw_dir, detection_cfg, labels):
+def post(clips, raw_dir, detection_cfg, labels, keys=MANIFEST_KEYS):
     """Turn raw BirdNET windows into events and per-clip summaries.
 
     Keeps windows >= detection.min_conf, merges them per clip and label when the gap is
     <= merge_gap_s, optionally caps the events per clip (highest confidence kept).
 
     Args:
-        clips (list[dict]): Manifest rows of the analysed clips.
+        clips (list[dict]): Manifest rows of the analysed clips (or files).
         raw_dir (Path): detection.dir/raw.
         detection_cfg (dict): The detection config section (min_conf, merge_gap_s, max_events_per_clip).
         labels (list[str]): Model classes; each gets a summary row per clip.
+        keys (list[str]): Columns copied from each row to the front of its output rows;
+            the first one is the id of the raw result file.
 
     Returns:
-        tuple[list[list], list[list]]: (event rows in EVENT_HEADER order,
-            summary rows in SUMMARY_HEADER order, zeros included).
+        tuple[list[list], list[list]]: (event rows: keys + label, start_s, end_s,
+            n_windows, max_conf, mean_conf; summary rows: keys + label, n_events,
+            n_windows, max_conf, zeros included).
     """
     min_conf, gap = detection_cfg["min_conf"], detection_cfg["merge_gap_s"]
     max_events = detection_cfg.get("max_events_per_clip")
     events_out, summary_out = [], []
     for clip in clips:
         windows = defaultdict(list)
-        for window in read_dicts(raw_path(raw_dir, clip["clip_id"])):
+        for window in read_dicts(raw_path(raw_dir, clip[keys[0]])):
             conf = float(window["Confidence"])
             if conf >= min_conf:
                 label = window["Common name"] or window["Scientific name"]
@@ -190,7 +224,7 @@ def post(clips, raw_dir, detection_cfg, labels):
                 clip_events.append((label, event))
         if max_events:
             clip_events = sorted(clip_events, key=lambda item: -max(item[1]["confs"]))[:max_events]
-        key = [clip[col] for col in MANIFEST_KEYS]
+        key = [clip[col] for col in keys]
         for label, event in sorted(clip_events, key=lambda item: item[1]["start"]):
             confs = event["confs"]
             events_out.append(key + [label, f"{event['start']:.1f}", f"{event['end']:.1f}",
@@ -216,7 +250,7 @@ def main():
     parser.add_argument("--min-conf", type=float,
                         help="event threshold for this run (default: detection.min_conf)")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--post-only", action="store_true", help="skip BirdNET, rebuild tables")
+    parser.add_argument("--post-only", action="store_true", help="model not re-run: rebuild the tables from the saved scores")
     parser.add_argument("--force", action="store_true",
                         help="re-run all clips if model/overlap/raw_min_conf changed")
     args = parser.parse_args()

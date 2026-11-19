@@ -106,8 +106,18 @@ detection:
   merge_gap_s: 3.0
   max_events_per_clip: null               # optional cap, to test later
 
+drive_detection:                          # detect_drive.py: every recording, read on the drive
+  gen: 2                                  # model = generations.dir/gen_K/model.tflite
+  dir: data/survey/full/gen_2             # files/, raw/, events.csv, file_summary.csv
+  raw_min_conf: 0.1
+  min_conf: 0.5
+  overlap: 0.0
+  merge_gap_s: 3.0
+  threads: 12                             # of 14 cores; BirdNET's default is 8
+  batch_size: 8                           # BirdNET -b; raise after the speed test (needs RAM)
+
 review:
-  dir: data/survey/review                 # <queue>_queue.csv (frozen), <queue>_judgments.csv
+  dir: data/survey/review                # <queue>_queue.csv (frozen), <queue>_judgments.csv
   seed: 11
   context_s: 10                           # seconds shown on each side of the item
   events_per_class: 100                   # train queue: events per predicted class...
