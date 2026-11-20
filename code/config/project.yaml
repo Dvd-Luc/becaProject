@@ -113,8 +113,10 @@ drive_detection:                          # detect_drive.py: every recording, re
   min_conf: 0.5
   overlap: 0.0
   merge_gap_s: 3.0
-  threads: 12                             # of 14 cores; BirdNET's default is 8
-  batch_size: 8                           # BirdNET -b; raise after the speed test (needs RAM)
+  threads: 10                            # files analysed at once, ~1 GB RAM each: 12 ran out
+                                          # of memory with WSL's 7.5 GB (try 8 with 11 GB)
+  batch_size: 16                           # BirdNET -b; raise after the speed test (needs RAM)
+  stall_min: 15                           # stop BirdNET if no file finishes for this long
 
 review:
   dir: data/survey/review                # <queue>_queue.csv (frozen), <queue>_judgments.csv
