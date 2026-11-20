@@ -18,6 +18,9 @@
 *.tflite
 *.log
 
+# Slurm job logs (cluster)
+code/logs/
+
 # Python cache
 __pycache__/
 *.pyc

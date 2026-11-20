@@ -5,9 +5,13 @@
     python src/survey/detect_drive.py --drive D1                  # the whole drive (resumable)
     python src/survey/detect_drive.py --drive D2 --root /mnt/e --threads 12 --batch-size 16
     python src/survey/detect_drive.py --post-only --min-conf 0.35 # new threshold on the saved scores, model not re-run
+    python src/survey/detect_drive.py --drive D4 --root $SCRATCH/beca/audio/D4 --threads 64   # cluster copy
 
 Plug one drive, run it with that drive's name (a key of survey.drives). Nothing is
 copied: BirdNET reads the WAV files on the drive and only CSVs are written here.
+--root can also point to a copy of the drive (same folder layout), e.g. on the MeSU
+cluster, where cluster/detect_drive.sbatch runs this script as a Slurm job. The
+progress bars are off when the output is not a terminal (Slurm logs).
 
 1. File list: on the first run of a drive, its recordings are listed with the same
    survey.audio_globs / filename_pattern as sample_clips.py, with the duration read from
@@ -96,7 +100,7 @@ def build_file_list(survey_cfg, drive, root, sites):
     if unknown:
         print(f"warning: {len(unknown)} sites are not in sites.csv (skipped): {unknown}")
     rows, unreadable = [], []
-    for rec in tqdm(recordings, desc="reading file headers", unit="file", leave=False):
+    for rec in tqdm(recordings, desc="reading file headers", unit="file", leave=False, disable=None):
         if rec["site"] not in sites:
             continue
         try:
@@ -329,7 +333,7 @@ def main():
             by_site[row["site"]].append(row)
         print(f"analysing {len(todo)} files with gen_{detection_cfg['gen']} "
               f"(threads {threads}, batch size {batch_size}); BirdNET log: {raw_dir / f'birdnet_{args.drive}.log'}")
-        bar = tqdm(total=len(todo), unit="file", dynamic_ncols=True)
+        bar = tqdm(total=len(todo), unit="file", dynamic_ncols=True, disable=None)
         for site, site_todo in by_site.items():
             analyse_site(site, site_todo, raw_dir, detection_cfg, threads, batch_size,
                          raw_dir / f"birdnet_{args.drive}.log", bar, detection_cfg.get("stall_min", 15))
