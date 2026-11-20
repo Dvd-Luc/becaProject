@@ -18,7 +18,10 @@ copied: BirdNET reads the WAV files on the drive and only CSVs are written here.
    site. A file with a raw result is skipped, so stop any time (Ctrl-C, unplug) and run
    again to continue. Files without a result after BirdNET are listed and retried on
    the next run. A progress bar shows the files done and the time left; BirdNET's own
-   output goes to raw/birdnet_<drive>.log.
+   output goes to raw/birdnet_<drive>.log. BirdNET runs up to `threads` files at once,
+   so the bar moves in jumps. Each worker needs about 1 GB of RAM: if one is killed for
+   lack of memory, BirdNET waits forever, so after drive_detection.stall_min minutes
+   without a finished file the run is stopped (lower --threads and run again).
 3. Tables are rebuilt from every drive done so far: windows >= drive_detection.min_conf
    are merged per file and label into events (gap <= merge_gap_s).
 
@@ -38,6 +41,8 @@ script stops; use --force (re-runs every file) or another drive_detection.dir.
 Run from code/.
 """
 import argparse
+import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -111,8 +116,27 @@ def build_file_list(survey_cfg, drive, root, sites):
     return sorted(rows, key=lambda row: (row[1], row[4]))
 
 
-def analyse_site(site, todo, raw_dir, detection_cfg, threads, batch_size, log_path, bar):
+def stop_group(process):
+    """Stop a BirdNET run and all its worker processes, then wait for it.
+
+    Args:
+        process (subprocess.Popen): BirdNET, started with start_new_session=True.
+    """
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+        process.wait(timeout=30)
+    except ProcessLookupError:
+        return
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+
+
+def analyse_site(site, todo, raw_dir, detection_cfg, threads, batch_size, log_path, bar, stall_min):
     """Run BirdNET on one site's files and advance the progress bar as results appear.
+
+    If no file finishes for stall_min minutes (typically a worker killed for lack of
+    memory, which leaves BirdNET waiting forever), BirdNET is stopped.
 
     Args:
         site (str): Site name (shown on the bar).
@@ -123,9 +147,10 @@ def analyse_site(site, todo, raw_dir, detection_cfg, threads, batch_size, log_pa
         batch_size (int | None): BirdNET batch size.
         log_path (Path): BirdNET's console output is appended here.
         bar (tqdm): Progress bar over files.
+        stall_min (float): Minutes without a finished file before BirdNET is stopped.
 
     Raises:
-        SystemExit: If BirdNET fails (the end of its log is shown).
+        SystemExit: If BirdNET fails (the end of its log is shown), stalls, or Ctrl-C.
     """
     bar.set_postfix_str(site[:40])
     with tempfile.TemporaryDirectory(prefix="detect_drive_") as tmp:
@@ -134,8 +159,10 @@ def analyse_site(site, todo, raw_dir, detection_cfg, threads, batch_size, log_pa
         with open(log_path, "a", encoding="utf-8") as log:
             log.write(f"\n# {datetime.now():{TIME_FORMAT}} {site}: {len(todo)} files\n# {' '.join(cmd)}\n")
             log.flush()
-            process = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT)
+            # own process group: stopping it also stops BirdNET's worker processes
+            process = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             pending = list(todo)
+            last_progress = time.time()
             try:
                 while True:
                     finished = process.poll() is not None
@@ -144,12 +171,18 @@ def analyse_site(site, todo, raw_dir, detection_cfg, threads, batch_size, log_pa
                         bar.update(len(done_now))
                         done_ids = {row["file_id"] for row in done_now}
                         pending = [row for row in pending if row["file_id"] not in done_ids]
+                        last_progress = time.time()
                     if finished:
                         break
+                    if time.time() - last_progress > stall_min * 60:
+                        stop_group(process)
+                        bar.close()
+                        raise SystemExit(f"BirdNET stalled: no file finished in {stall_min} min (a worker killed "
+                                         f"for lack of memory?). Lower --threads (or give it more memory), then "
+                                         f"run again: the {len(pending)} unfinished files of {site} are redone.")
                     time.sleep(POLL_S)
             except KeyboardInterrupt:
-                process.terminate()
-                process.wait()
+                stop_group(process)
                 bar.close()
                 raise SystemExit("stopped: run the same command again to continue") from None
     if process.returncode != 0:
@@ -299,7 +332,7 @@ def main():
         bar = tqdm(total=len(todo), unit="file", dynamic_ncols=True)
         for site, site_todo in by_site.items():
             analyse_site(site, site_todo, raw_dir, detection_cfg, threads, batch_size,
-                         raw_dir / f"birdnet_{args.drive}.log", bar)
+                         raw_dir / f"birdnet_{args.drive}.log", bar, detection_cfg.get("stall_min", 15))
         bar.close()
     elapsed = time.time() - started
 
