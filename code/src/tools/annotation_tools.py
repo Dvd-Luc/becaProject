@@ -1,11 +1,13 @@
 """Organise recordings and track Audacity annotation progress.
 
 Folder layout expected
+
     metadata.csv            CSV with one row per recording
     recordings/             all audio files (names given by the CSV)
     labels/                 Audacity label exports, <recording stem>.txt
 
 Commands
+
     split   copy/move/symlink recordings into one subfolder per quality
     status  rebuild annotation_status.csv from the labels/ folder and print a summary
     next    list the next recordings still to annotate; with --queue-dir, also
@@ -17,11 +19,13 @@ Commands
             the strata; the truth comes from annotating the sample later.
 
 A recording counts as
+
     todo      no labels/<stem>.txt yet
     done      labels/<stem>.txt exists and contains at least one label
     no_calls  labels/<stem>.txt exists but is empty (listened to, nothing to label)
 
 Examples
+
     python annotation_tools.py split  --csv metadata.csv --audio-dir recordings --out-dir by_quality
     python annotation_tools.py status --csv metadata.csv --labels-dir labels
     python annotation_tools.py next   --csv metadata.csv --labels-dir labels --n 10 --type drum
@@ -35,6 +39,7 @@ Examples
 (the subcommand comes first, then all the options)
 
 Writes:
+
     status       <--status-file> (default annotation_status.csv)
     next         <--queue-dir>/ copies + .queue_manifest.txt
     sample-test  <xc_test.dir>/sample.csv (frozen: reused as is, --force to redraw)
