@@ -416,6 +416,67 @@ python src/survey/detect_drive.py --post-only --min-conf 0.35   # new threshold 
 - This is inference, not an experiment. The `split` column is kept so that any later
   review of these detections for training uses train sites only.
 
+#### Running on the MeSU cluster
+
+On the laptop a drive takes days. The Sorbonne MeSU cluster
+([docs](https://sacado.sorbonne-universite.fr/documentation-mcmesu/), Slurm) runs a drive
+in a few hours on one 64-core node. The whole survey uses about 1 300 of the 30 000 yearly core-hours.
+The cluster is a separate computer, so it needs its own copy of the code (git), the model
+(scp), a Python environment (pip) and the audio (rsync). The whole survey is run there
+from scratch, so all results come from one machine and one environment.
+
+| What | How | Where on the cluster |
+|---|---|---|
+| scripts, config, `sites.csv`, model labels | `git clone` | `$HOME/becaProject/` |
+| `generations/gen_2/model.tflite` (gitignored) | `scp` from the laptop | same path in the clone |
+| Python packages | `pip install -r cluster/requirements.txt` | `$HOME/becavenv/` |
+| audio of one drive | `rsync` from the laptop | `$SCRATCH/beca/audio/<drive>/` |
+
+Commands are typed on the login node (setup, copies, submitting only: heavy processes
+there are killed). The detection runs as a Slurm job (`cluster/detect_drive.sbatch`).
+
+```bash
+# 1. once, on the laptop: SSH key, then log in
+ssh-keygen                                              # if you have no key yet
+ssh-copy-id <user>@login.mesu.sorbonne-universite.fr
+ssh <user>@login.mesu.sorbonne-universite.fr
+
+# 2. once, on the cluster: project + environment
+git clone https://github.com/Dvd-Luc/becaProject.git $HOME/becaProject
+module avail python                                     # set the exact name in cluster/detect_drive.sbatch
+module load python/3.12
+python -m venv $HOME/becavenv && source $HOME/becavenv/bin/activate
+pip install -r $HOME/becaProject/code/cluster/requirements.txt
+mkdir -p $HOME/becaProject/code/logs $SCRATCH/beca/audio
+#    and from the laptop (in code/):
+scp generations/gen_2/model.tflite <user>@login.mesu.sorbonne-universite.fr:becaProject/code/generations/gen_2/
+
+# 3. per drive, on the laptop with the drive plugged in (resumable: re-run if cut)
+rsync -av --partial --prune-empty-dirs --include='*/' --include='*.wav' --exclude='*' \
+    /mnt/d/2026_Becacoustic_LPO_BFC_part1/ <user>@login.mesu.sorbonne-universite.fr:/scratch/<user>/beca/audio/D4/
+
+# 4. per drive, on the cluster (in $HOME/becaProject/code)
+srun -p std -c 4 --time=1:0:0 --pty bash                # short interactive job: reads every WAV header
+python src/survey/detect_drive.py --drive D4 --root $SCRATCH/beca/audio/D4 --dry-run
+exit
+sbatch --export=ALL,DRIVE=D4,EXTRA="--limit 64" cluster/detect_drive.sbatch   # test job: speed line in logs/
+sbatch --export=ALL,DRIVE=D4 cluster/detect_drive.sbatch                      # the whole drive
+myqueue; tail -f logs/beca_detect_<jobid>.out           # follow; scancel <jobid> to stop
+
+# 5. on the laptop: fetch the results, rebuild the tables, then commit [DATA]
+rsync -av <user>@login.mesu.sorbonne-universite.fr:becaProject/code/data/survey/full/gen_2/ data/survey/full/gen_2/
+python src/survey/detect_drive.py --post-only
+```
+
+- The source of the rsync is the folder that holds the site folders (the `rel_path`
+  column of `files/<drive>_files.csv` is relative to it).
+- Files not uploaded yet are skipped with a warning, so a job can start before the upload ends.
+  A job that hits the walltime can be submitted again. Both resume where they stopped.
+- Code changes: commit and push on the laptop, then `git pull` on the cluster. The job
+  log prints the commit it ran.
+- `$SCRATCH` is purged after 3 months and is not backed up. Delete
+  `$SCRATCH/beca/audio/<drive>` once its results are back; the originals stay on the drives.
+
 ---
 
 ## Script reference
