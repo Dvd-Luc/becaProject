@@ -99,7 +99,7 @@ code/
 | `learning_curve` | reference | the values used for the learning curve |
 | `survey` | `sample_clips.py`, `detect.py` | drives, file patterns, sampling, train/heldout split |
 | `detection` | `detect.py`, `review.py`, `make_generation.py`, `evaluate.py` | model, thresholds, event merging |
-| `review` | `review.py`, `make_generation.py`, `evaluate.py` | review queues |
+| `review` | `review.py`, `make_generation.py`, `evaluate.py`, `audit_events.py` | review queues, audit sample |
 | `generations` | `make_generation.py`, `evaluate.py`, `detect.py --gen` | training seed, evaluation thresholds |
 | `xc_test` | `annotation_tools.py sample-test`, `evaluate.py --testset xc`, `make_generation.py` | XC test sample: seed, strata, caps |
 | `annotator_xc_test` | `annotator.py --section annotator_xc_test` | annotating the XC test sample (own labels folder) |
@@ -477,6 +477,44 @@ python src/survey/detect_drive.py --post-only
 - `$SCRATCH` is purged after 3 months and is not backed up. Delete
   `$SCRATCH/beca/audio/<drive>` once its results are back; the originals stay on the drives.
 
+### 12. Audit the full-survey events
+
+Step 11 gives thousands of events per drive. The test sets don't say how many of them are
+right, because they hold too few field Song and Drumming events. `audit_events.py` draws a random
+sample of the events, you judge it blind, and the verdicts give the **precision of all the
+events**, with confidence intervals. Do this one drive at a time, as soon as its events exist:
+
+```bash
+python src/survey/audit_events.py sample --drive D4 --dry-run   # strata and their populations
+python src/survey/audit_events.py sample --drive D4             # draw and freeze the sample
+python src/survey/audit_events.py cut --drive D4 --root /mnt/d/2026_Becacoustic_LPO_BFC_part1
+python src/survey/review.py --queue audit --drive D4            # judge (blind), in several sessions if needed
+python src/survey/audit_events.py report                        # precision, every drive judged so far
+```
+
+- **sample**: each event goes in a stratum: predicted class × `max_conf` bin
+  (`review.audit_bins`: 0.5–0.7, 0.7–0.9, 0.9–1.0). It then draws
+  `review.audit_per_stratum` (30) events per stratum, seeded by `review.seed` and the
+  drive. A plain random draw would be mostly high-score Call; the strata make sure the
+  doubtful, low-score events of every class get judged. The sample and the
+  population of each stratum are frozen in `data/survey/review/audit_<drive>_{queue,strata}.csv`.
+  `--force` redraws, and only while nothing is judged yet.
+- **cut**: writes the audio of each sampled event, with 10 s on each side, as a snippet in
+  `data/survey/full/gen_2/audit/snippets/` (gitignored WAVs). It reads from the plugged-in drive
+  or from the cluster copy (`--root $SCRATCH/beca/audio/<drive>`). Once it's done, the
+  drive can be unplugged.
+- **review**: the queue is **blind**, so neither the predicted class nor the score is shown. You
+  say what each event really is (class, Noise or Unsure).
+- **report**: an event is correct when the verdict is its predicted class (Unsure left
+  out). Precision is given per class × bin, per class and overall, each stratum weighted
+  by its population. The 95 % CI comes from a bootstrap that resamples sites, because events
+  cluster by site. A confusion table (predicted → verdict, judged and estimated
+  events) shows what the errors are → `results/survey/audit_full_gen2.csv`,
+  `audit_full_gen2_confusion.csv`. Run it any time; strata not judged yet are flagged.
+- The sample covers train and heldout sites, which is fine for measuring the frozen model.
+  Only train-site verdicts may ever be used to train a later generation.
+- The audit gives precision only. Recall still comes from the XC test set.
+
 ---
 
 ## Script reference
@@ -499,7 +537,8 @@ All paths relative to `code/`.
 | `src/survey/sample_clips.py` | 6 sample | a survey drive | `data/survey/{plan,clips}/`, `sites.csv`, `manifest.csv` |
 | `src/survey/detect.py` | 7 detect | manifest, clips, model | `data/survey/detections/` (or `generations/gen_K/detections/`) |
 | `src/survey/detect_drive.py` | 11 full survey | a survey drive, `sites.csv`, a generation | `data/survey/full/gen_K/` (`files/`, `raw/`, `events.csv`, `file_summary.csv`) |
-| `src/survey/review.py` | 8 review | detections, manifest, clips | `data/survey/review/` |
+| `src/survey/audit_events.py` | 12 audit | full-survey `events.csv` + `files/`, a drive, audit judgments | `data/survey/review/audit_<drive>_{queue,strata}.csv`, `data/survey/full/gen_K/audit/snippets/`, `results/survey/audit_full_gen<K>*.csv` |
+| `src/survey/review.py` | 8 review, 12 audit | detections, manifest, clips (or audit snippets) | `data/survey/review/` |
 | `src/survey/make_generation.py` | 9 train | train judgments, XC clips | `generations/gen_K/` |
 | `src/survey/evaluate.py` | 9, 10 compare | test judgments or XC test labels, generations | `results/survey/`, `gen_K/{test,xc}_scores.csv` |
 | `src/common/config.py` | all | `config/project.yaml` | – |
