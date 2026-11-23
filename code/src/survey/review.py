@@ -7,6 +7,7 @@
     python src/survey/review.py --queue train --gen 1 --list   # queue from gen 1's detections
     python src/survey/review.py --queue train --gen 1          # judge it (feeds gen 2)
     python src/survey/review.py --queue audit --drive D4       # blind audit of full-survey events
+    python src/survey/review.py --queue presence --drive D4    # blind site-by-site presence check
 
 Queues, each frozen on first use to <review.dir>/<queue>_queue.csv (delete the file to
 re-sample it; existing judgments keep their item_id but may no longer be in the queue):
@@ -29,6 +30,9 @@ re-sample it; existing judgments keep their item_id but may no longer be in the 
          (detect_drive.py), drawn, frozen and cut into snippets by audit_events.py
          (sample, cut); not built here. BLIND like the test queue. The verdicts give the
          precision of all the events (audit_events.py report).
+  presence_<drive>  (--queue presence --drive D4) the best events of each site x class
+         not confirmed yet (audit_events.py presence, then cut). BLIND. The verdicts say
+         at which sites each class is confirmed (audit_events.py report).
 
 Each judgment is appended to <review.dir>/<queue>_judgments.csv at once; the last one per
 item wins, so `b` + another key corrects it. Items with a judgment are skipped next time.
@@ -376,8 +380,10 @@ def get_queue(cfg, queue, review_dir, gen=0):
     path = review_dir / f"{queue}_queue.csv"
     if path.exists():
         return read_dicts(path)
-    if queue.startswith("audit_"):
-        raise SystemExit(f"{path} not found: run audit_events.py sample --drive {queue[len('audit_'):]} first")
+    if queue.startswith(("audit_", "presence_")):
+        kind, drive = queue.split("_", 1)
+        command = "sample" if kind == "audit" else "presence"
+        raise SystemExit(f"{path} not found: run audit_events.py {command} --drive {drive} first")
     manifest = read_dicts(Path(cfg["survey"]["dir"]) / "manifest.csv")
     rng = random.Random(f"{cfg['review']['seed']}-{queue}")
     if queue == "test":
@@ -447,7 +453,7 @@ class Reviewer:
         self.viewer_cfg = cfg.get("viewer", {})
         self.context_s = cfg["review"]["context_s"]
         self.queue, self.items, self.judged, self.judgments_path = queue, items, judged, judgments_path
-        self.classes, self.blind = classes, queue in ("test", "audit")
+        self.classes, self.blind = classes, queue in ("test", "audit", "presence")
         self.index, self._playing, self._timer = 0, False, None
         self.fig = plt.figure(figsize=(13, 6))
         self.ax = self.fig.add_axes([0.06, 0.12, 0.9, 0.76])
@@ -638,8 +644,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default="config/project.yaml")
-    parser.add_argument("--queue", choices=["train", "test", "audit"], required=True)
-    parser.add_argument("--drive", help="audit queue: the drive whose sample to judge (audit_<drive>)")
+    parser.add_argument("--queue", choices=["train", "test", "audit", "presence"], required=True)
+    parser.add_argument("--drive", help="audit / presence queue: the drive to judge (audit_<drive>, presence_<drive>)")
     parser.add_argument("--n", type=int, help="only the next N unjudged items this session")
     parser.add_argument("--dir", help="output folder (default: review.dir)")
     parser.add_argument("--list", action="store_true", help="build/show the queue, no GUI")
@@ -649,12 +655,12 @@ def main():
     args = parser.parse_args()
     if args.gen and args.queue != "train":
         raise SystemExit("--gen only applies to --queue train (the test queue is fixed)")
-    if (args.queue == "audit") != bool(args.drive):
-        raise SystemExit("--drive goes with --queue audit (and only with it)")
+    if (args.queue in ("audit", "presence")) != bool(args.drive):
+        raise SystemExit("--drive goes with --queue audit or presence (and only with them)")
     cfg = load(args.config)
     review_dir = Path(args.dir or cfg["review"]["dir"])
     classes = classes_from(cfg)
-    queue = f"train_gen{args.gen}" if args.gen else f"audit_{args.drive}" if args.drive else args.queue
+    queue = f"train_gen{args.gen}" if args.gen else f"{args.queue}_{args.drive}" if args.drive else args.queue
     rows = get_queue(cfg, queue, review_dir, args.gen)
     judgments_path = review_dir / f"{queue}_judgments.csv"
     judged = load_judgments(judgments_path)

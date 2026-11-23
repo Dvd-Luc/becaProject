@@ -116,7 +116,7 @@ drive_detection:                          # detect_drive.py: every recording, re
   min_event_conf:                         # class: an event is kept only if its best window
     Call: 0.9                             # reaches this (D4 audit: Call precision 0.46 / 0.65
                                           # in the 0.5-0.7 / 0.7-0.9 bins, 0.97 at >= 0.9)
-  threads: 10                            # files analysed at once, ~1 GB RAM each: 12 ran out
+  threads: 10                         # files analysed at once, ~1 GB RAM each: 12 ran out
                                           # of memory with WSL's 7.5 GB (try 8 with 11 GB)
   batch_size: 16                           # BirdNET -b; raise after the speed test (needs RAM)
   stall_min: 15                           # stop BirdNET if no file finishes for this long
@@ -130,9 +130,14 @@ review:
   background_per_clip: 1                  # train queue: random 3 s windows away from events
   test_bins: [0.0, 0.1, 0.35, 0.5, 0.7, 1.0]   # test queue: v0 best-score bins (heldout)
   test_per_bin: 80
-  audit_bins: [0.5, 0.7, 0.9, 1.0]        # audit_events.py: max_conf bins of the full-survey events
-  audit_per_stratum: 30                   # events drawn per class x bin (frozen per drive)
+  audit_strata: site                      # audit_events.py sample: "site" (class x site) or "bin"
+                                          # (class x max_conf bin, used for D4); frozen per drive
+  audit_per_site: 5                       # site strata: events drawn per class x site
+  audit_bins: [0.5, 0.7, 0.9, 1.0]        # bin strata: max_conf bins of the full-survey events
+  audit_per_stratum: 30                   # bin strata: events drawn per class x bin
   audit_boot: 1000                        # bootstrap replicates (sites resampled) for the CIs
+  presence_labels: [Drumming, Song]       # audit_events.py presence: classes checked site by site
+  presence_per_site: 5                    # best events judged per site x class with no confirmed one
 
 generations:
   dir: generations
