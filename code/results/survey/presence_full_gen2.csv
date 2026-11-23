@@ -1,0 +1,43 @@
+drive,site,split,label,events,max_conf,judged,confirmed,status
+D4,2026_Beca_SMMICRO_043_25_Granges_Narboz,heldout,Drumming,2,0.752,0,0,not judged
+D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Drumming,256,0.945,26,26,present
+D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Song,130,0.985,15,15,present
+D4,2026_Beca_SMMICRO_045_25_Granges_Narboz,heldout,Drumming,148,0.963,19,19,present
+D4,2026_Beca_SMMICRO_045_25_Granges_Narboz,heldout,Song,138,0.957,6,6,present
+D4,2026_Beca_SMMICRO_046_25_Granges_Narboz,train,Drumming,276,0.960,40,40,present
+D4,2026_Beca_SMMICRO_046_25_Granges_Narboz,train,Song,562,0.982,54,54,present
+D4,2026_Beca_SMMICRO_047_25_Houtaud,train,Drumming,7,0.667,0,0,not judged
+D4,2026_Beca_SMMICRO_047_25_Houtaud,train,Song,4,0.730,0,0,not judged
+D4,2026_Beca_SMMICRO_048_25_Houtaud,train,Song,4,0.553,0,0,not judged
+D4,2026_Beca_SMMICRO_049_25_Houtaud,heldout,Drumming,2,0.586,0,0,not judged
+D4,2026_Beca_SMMICRO_049_25_Houtaud,heldout,Song,3,0.660,0,0,not judged
+D4,2026_Beca_SMMICRO_050_25_Houtaud,train,Song,1,0.675,0,0,not judged
+D4,2026_Beca_SMMICRO_051_25_Chaffois,train,Drumming,6,0.830,0,0,not judged
+D4,2026_Beca_SMMICRO_051_25_Chaffois,train,Song,7,0.862,2,1,present
+D4,2026_Beca_SMMICRO_052_25_Bannans,heldout,Song,1,0.811,0,0,not judged
+D4,2026_Beca_SMMICRO_053_25_Chaffois,train,Drumming,1,0.653,0,0,not judged
+D4,2026_Beca_SMMICRO_053_25_Chaffois,train,Song,1,0.598,0,0,not judged
+D4,2026_Beca_SMMICRO_054_25_Bannans,train,Song,2,0.597,0,0,not judged
+D4,2026_Beca_SMMICRO_055_25_Sainte_Colombe,train,Drumming,7,0.858,0,0,not judged
+D4,2026_Beca_SMMICRO_055_25_Sainte_Colombe,train,Song,8,0.943,1,1,present
+D4,2026_Beca_SMMICRO_056_25_Sainte_Colombe,train,Song,8,0.652,0,0,not judged
+D4,2026_Beca_SMMICRO_057_25_Sainte_Colombe,train,Drumming,1,0.620,0,0,not judged
+D4,2026_Beca_SMMICRO_057_25_Sainte_Colombe,train,Song,80,0.934,6,6,present
+D4,2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon,train,Drumming,1,0.572,0,0,not judged
+D4,2026_Beca_SMMICRO_059_25_Bannans,train,Song,27,0.857,1,1,present
+D4,2026_Beca_SMMICRO_060_25_Bannans,train,Drumming,9,0.956,2,1,present
+D4,2026_Beca_SMMICRO_060_25_Bannans,train,Song,17,0.902,2,2,present
+D4,2026_Beca_SMMICRO_061_25_Bannans,heldout,Song,25,0.888,3,3,present
+D4,2026_Beca_SMMICRO_062_25_Bannans,train,Drumming,2,0.512,0,0,not judged
+D4,2026_Beca_SMMICRO_062_25_Bannans,train,Song,4,0.542,0,0,not judged
+D4,2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon,train,Song,1,0.663,0,0,not judged
+D4,2026_Beca_SMMICRO_064_25_Bannans,train,Song,1,0.719,0,0,not judged
+D4,2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon,train,Drumming,1,0.572,0,0,not judged
+D4,2026_Beca_SMMICRO_066_25_Dompierre_les_Tilleuls,train,Drumming,16,0.796,2,0,not confirmed
+D4,2026_Beca_SMMICRO_066_25_Dompierre_les_Tilleuls,train,Song,18,0.864,0,0,not judged
+D4,2026_Beca_SMMICRO_067_25_La_Rivière_Drugeon,train,Drumming,3,0.618,0,0,not judged
+D4,2026_Beca_SMMICRO_067_25_La_Rivière_Drugeon,train,Song,1,0.510,0,0,not judged
+D4,2026_Beca_SMMICRO_068_25_Bouverans,train,Drumming,3,0.558,0,0,not judged
+D4,2026_Beca_SMMICRO_068_25_Bouverans,train,Song,1,0.558,0,0,not judged
+D4,2026_Beca_SMMICRO_069_25_Frasne,train,Drumming,14,0.919,1,1,present
+D4,2026_Beca_SMMICRO_069_25_Frasne,train,Song,4,0.724,0,0,not judged
