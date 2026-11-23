@@ -18,6 +18,12 @@
 *.tflite
 *.log
 
+# Microphone locations are sensitive (snipe breeding sites): never in git.
+# Only the public département outlines are kept. The viz page embeds positions.
+code/data/geo/*
+!code/data/geo/departements.geojson
+code/results/survey/viz/
+
 # Slurm job logs (cluster)
 code/logs/
 

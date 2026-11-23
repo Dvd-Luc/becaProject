@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snipe Survey Explorer</title>
+<!-- Built by src/survey/build_viz.py. Holds microphone positions: keep this file on your computer. -->
+<style>
+/* Layout: header + one control row, then a two-column grid of panels (map + site detail on top). */
+:root {
+  color-scheme: light;
+  --bg: #f6f6f3;
+  --surface: #fcfcfb;
+  --surface-2: #efeeea;
+  --line: #dcdbd5;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-3: #85847e;
+  --land: #f0efea;
+  --dept: #c9c8c1;
+  --accent: #2a78d6;
+  --c0: #2a78d6;   /* Drumming  (categorical slot 1) */
+  --c1: #eb6834;   /* Song      (slot 2) */
+  --c2: #1baf7a;   /* Call      (slot 3) */
+  --call-all: #52514e;
+  --hatch: #c9c8c1;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --surface-2: #242422;
+    --line: #383835;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #8f8e86;
+    --land: #20201e;
+    --dept: #4a4a46;
+    --accent: #3987e5;
+    --c0: #3987e5;
+    --c1: #d95926;
+    --c2: #199e70;
+    --call-all: #c3c2b7;
+    --hatch: #4a4a46;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); }
+.wrap { max-width: 1500px; margin: 0 auto; padding-block: 20px 40px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; text-wrap: balance; }
+.meta { color: var(--ink-2); font-size: 13px; }
+.private { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--ink-2);
+           border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; background: var(--surface); }
+.precision { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; }
+.precision .chip { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.precision .key { width: 10px; height: 10px; border-radius: 2px; align-self: center; }
+.precision strong { color: var(--ink); font-variant-numeric: tabular-nums; font-size: 15px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; margin: 18px 0 14px;
+            padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.controls label { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--ink-2);
+              padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+.seg button:focus-visible, select:focus-visible, .tools button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line);
+         background: var(--surface); color: var(--ink); max-width: 100%; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 1100px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; min-width: 0; }
+.panel.wide { grid-column: 1 / -1; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.panel h2 { font-size: 15px; margin: 0; }
+.panel .sub { font-size: 12px; color: var(--ink-2); margin: 2px 0 8px; max-width: 75ch; }
+.tools { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.tools button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface);
+                color: var(--ink-2); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.tools button:hover { color: var(--ink); border-color: var(--ink-3); }
+.tools .warn { font-size: 11px; color: var(--ink-3); }
+.scroll { overflow-x: auto; }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { font-family: var(--font); fill: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); margin-top: 8px; align-items: center; }
+.legend .item { display: inline-flex; align-items: center; gap: 6px; }
+.site-card { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; margin-bottom: 8px; }
+.site-card dt { color: var(--ink-3); }
+.site-card dd { margin: 0; font-variant-numeric: tabular-nums; }
+.note { font-size: 12px; color: var(--ink-3); margin-top: 6px; max-width: 80ch; }
+#tooltip { position: fixed; pointer-events: none; z-index: 20; background: var(--surface); color: var(--ink);
+           border: 1px solid var(--line); border-radius: 5px; padding: 6px 9px; font-size: 12px;
+           box-shadow: 0 2px 8px rgba(0,0,0,.12); max-width: 280px; }
+#tooltip .v { font-weight: 650; font-variant-numeric: tabular-nums; }
+#tooltip .row { display: flex; gap: 6px; align-items: center; }
+#tooltip .k { width: 10px; height: 2px; display: inline-block; }
+#tooltip .l { color: var(--ink-2); }
+@media (prefers-reduced-motion: no-preference) { .mapg { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Snipe Survey Explorer</h1>
+    <div class="meta" id="meta"></div>
+    <div class="private">Contains microphone positions (sensitive): keep this file and map exports on this computer.</div>
+    <div class="precision" id="precision"></div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Filters">
+    <label for="cls">Class</label><div class="seg" id="cls"></div>
+    <label>Region</label><div class="seg" id="regions"></div>
+    <label for="site">Site</label><select id="site"></select>
+  </div>
+
+  <div class="grid">
+    <section class="panel" id="p-map">
+      <div class="panel-head"><h2 id="map-title">Detections per hour</h2>
+        <div class="tools" data-panel="map"><span class="warn">exports hold positions</span></div></div>
+      <p class="sub">Bubble area = kept events per hour of recording. Fill = presence status from your verdicts. Scroll to zoom, drag to pan, click a site.</p>
+      <div id="map"></div>
+      <div class="legend" id="map-legend"></div>
+    </section>
+
+    <section class="panel" id="p-site">
+      <div class="panel-head"><h2 id="site-title">Site</h2><div class="tools" data-panel="season"></div></div>
+      <dl class="site-card" id="site-card"></dl>
+      <p class="sub">Events per hour, evening by evening. Hatched: evenings with no recording.</p>
+      <div class="scroll" id="season"></div>
+    </section>
+
+    <section class="panel" id="p-presence">
+      <div class="panel-head"><h2>Presence by site</h2>
+        <div class="tools" data-panel="presence"><div class="seg" id="presence-mode"></div></div></div>
+      <p class="sub" id="presence-sub"></p>
+      <div class="scroll" id="presence"></div>
+      <div class="legend" id="presence-legend"></div>
+    </section>
+
+    <section class="panel" id="p-night">
+      <div class="panel-head"><h2 id="night-title">Time from sunset</h2>
+        <div class="tools" data-panel="night"><div class="seg" id="night-scope"></div></div></div>
+      <p class="sub">Events in 5-minute bins. Time is read from the recorders' schedule (recording starts 60 min before sunset), not from the clock.</p>
+      <div id="night"></div>
+    </section>
+
+    <section class="panel wide" id="p-heat">
+      <div class="panel-head"><h2 id="heat-title">Weekly activity, all sites</h2><div class="tools" data-panel="heat"></div></div>
+      <p class="sub">Events per hour recorded, by site and week (weeks start on Monday). Hatched: no recording that week.</p>
+      <div class="scroll" id="heat"></div>
+      <div class="legend" id="heat-legend"></div>
+    </section>
+  </div>
+  <p class="note" id="footnote"></p>
+</div>
+<div id="tooltip" hidden></div>
+
+<script>/*__D3__*/</script>
+<script>
+const DATA = /*__DATA__*/;
+const DEPTS = /*__DEPTS__*/;
+</script>
+<script>
+(function () {
+  "use strict";
+  const CLASSES = DATA.classes;
+  const SITES = DATA.sites;
+  const STATUS_TEXT = {"present": "present (confirmed)", "not confirmed": "events, none confirmed",
+                       "not judged": "events, not judged yet", "not checked": "events, not checked", "none": "no events"};
+  const state = {cls: CLASSES.indexOf("Drumming") >= 0 ? CLASSES.indexOf("Drumming") : 0,
+                 region: "All", site: null, presenceMode: "status", nightScope: "all"};
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const classColor = (i) => i < 0 ? css("--call-all") : css("--c" + i);
+  const fmt1 = d3.format(".2f");
+
+  // ---------------------------------------------------------------- derived tables
+  const evenings = DATA.evenings.map(r => ({site: r[0], date: r[1], hours: r[2], ev: r.slice(3)}));
+  const bySite = d3.group(evenings, d => d.site);
+  const parseDay = d3.utcParse("%Y-%m-%d");
+  const allDates = evenings.map(d => parseDay(d.date));
+  const dateExtent = d3.extent(allDates);
+  const weekOf = d => d3.utcMonday.floor(parseDay(d));
+  const weeks = d3.utcMonday.range(d3.utcMonday.floor(dateExtent[0]), d3.utcDay.offset(dateExtent[1], 1));
+  const regions = Array.from(new Set(SITES.map(s => s.region)));
+  const siteOrder = d3.range(SITES.length).sort((a, b) =>
+      d3.ascending(regions.indexOf(SITES[a].region), regions.indexOf(SITES[b].region)) ||
+      d3.descending(SITES[a].lat, SITES[b].lat));
+
+  function rate(site, cls) {
+    const s = SITES[site];
+    const n = cls < 0 ? d3.sum(s.events) : s.events[cls];
+    return s.hours ? n / s.hours : 0;
+  }
+  function status(site, cls) {
+    const st = SITES[site].status;
+    if (cls >= 0) return st[cls];
+    for (const k of ["present", "not judged", "not checked", "not confirmed"]) if (st.includes(k)) return k;
+    return "none";
+  }
+  function className(cls) { return cls < 0 ? "All classes" : CLASSES[cls]; }
+
+  // ---------------------------------------------------------------- header
+  const meta = DATA.meta;
+  document.getElementById("meta").textContent =
+    `Full survey, model gen ${meta.gen} · drives ${meta.drives.join(", ")} · ${SITES.length} sites · ` +
+    `${d3.format(",.0f")(meta.hours)} h recorded · kept events: ${meta.detection} · built ${meta.built}` +
+    (meta.rounded ? ` · positions rounded to ${meta.rounded}°` : "");
+  const prec = document.getElementById("precision");
+  CLASSES.forEach((c, i) => {
+    const p = meta.precision[c];
+    const chip = document.createElement("div"); chip.className = "chip";
+    const key = document.createElement("span"); key.className = "key"; key.style.background = classColor(i);
+    const name = document.createElement("span"); name.textContent = c;
+    const val = document.createElement("strong");
+    const total = d3.sum(SITES, s => s.events[i]);
+    const extra = document.createElement("span");
+    if (p) {
+      val.textContent = d3.format(".2f")(p.precision);
+      extra.textContent = `precision [${fmt1(p.low)}, ${fmt1(p.high)}]${p.scope === "kept" ? " (events " + p.bin + ")" : ""}, ` +
+        `${p.judged} judged, audit ${p.drives.join("+")} · ${d3.format(",")(total)} events`;
+    } else {
+      val.textContent = d3.format(",")(total);
+      extra.textContent = "events (no audit yet)";
+    }
+    chip.append(key, name, val, extra); prec.append(chip);
+  });
+  document.getElementById("footnote").textContent =
+    "Events: BirdNET windows merged per file and class (gap ≤ 3 s); counts are of kept events only. Presence: 'present' = at least one event of " +
+    "the class at that site judged correct (blind audit or presence check); 'none confirmed' = the best events judged were something else, " +
+    "which is not proof of absence. Rates are per hour recorded, so sites with different recording effort compare fairly.";
+
+  // ---------------------------------------------------------------- controls
+  function segmented(el, items, current, onPick) {
+    el.replaceChildren();
+    items.forEach(it => {
+      const b = document.createElement("button"); b.type = "button";
+      b.setAttribute("aria-pressed", String(it.value === current()));
+      if (it.color) { const s = document.createElement("span"); s.className = "swatch"; s.style.background = it.color; b.append(s); }
+      b.append(document.createTextNode(it.label));
+      b.addEventListener("click", () => { onPick(it.value); el.querySelectorAll("button").forEach((x, j) =>
+        x.setAttribute("aria-pressed", String(items[j].value === current()))); });
+      el.append(b);
+    });
+  }
+  segmented(document.getElementById("cls"),
+    CLASSES.map((c, i) => ({label: c, value: i, color: classColor(i)})).concat([{label: "All", value: -1}]),
+    () => state.cls, v => { state.cls = v; renderAll(); });
+  segmented(document.getElementById("regions"), ["All"].concat(regions).map(r => ({label: r, value: r})),
+    () => state.region, v => { state.region = v; zoomToRegion(); });
+  const siteSelect = document.getElementById("site");
+  const none = document.createElement("option"); none.value = ""; none.textContent = "— click a bubble or pick —"; siteSelect.append(none);
+  siteOrder.forEach(i => { const o = document.createElement("option"); o.value = i; o.textContent = `${SITES[i].short} (${SITES[i].region})`; siteSelect.append(o); });
+  siteSelect.addEventListener("change", () => selectSite(siteSelect.value === "" ? null : +siteSelect.value));
+  segmented(document.getElementById("presence-mode"), [{label: "Status", value: "status"}, {label: "By month", value: "month"}],
+    () => state.presenceMode, v => { state.presenceMode = v; renderPresence(); });
+  segmented(document.getElementById("night-scope"), [{label: "All sites", value: "all"}, {label: "Selected site", value: "site"}],
+    () => state.nightScope, v => { state.nightScope = v; renderNight(); });
+
+  function selectSite(i) {
+    state.site = i; siteSelect.value = i === null ? "" : String(i);
+    if (i !== null && state.nightScope === "all") { /* keep scope */ }
+    renderMarks(); renderSite(); renderPresence(); renderNight(); renderHeat();
+  }
+
+  // ---------------------------------------------------------------- tooltip
+  const tip = document.getElementById("tooltip");
+  function showTip(event, rows) {
+    tip.replaceChildren();
+    rows.forEach(r => {
+      const line = document.createElement("div"); line.className = "row";
+      if (r.color) { const k = document.createElement("span"); k.className = "k"; k.style.background = r.color; line.append(k); }
+      if (r.value !== undefined) { const v = document.createElement("span"); v.className = "v"; v.textContent = r.value; line.append(v); }
+      const l = document.createElement("span"); l.className = r.value !== undefined ? "l" : "v"; l.textContent = r.label; line.append(l);
+      tip.append(line);
+    });
+    tip.hidden = false;
+    const x = Math.min(event.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+    const y = Math.min(event.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+
+  // ---------------------------------------------------------------- shared svg helpers
+  function hatchDefs(svg, id) {
+    const p = svg.append("defs").append("pattern").attr("id", id).attr("patternUnits", "userSpaceOnUse")
+      .attr("width", 6).attr("height", 6).attr("patternTransform", "rotate(45)");
+    p.append("rect").attr("width", 6).attr("height", 6).attr("fill", "var(--surface)");
+    p.append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 6).attr("stroke", "var(--hatch)").attr("stroke-width", 2);
+  }
+  function statusStyle(sel, cls, st) {
+    const color = classColor(cls);
+    if (st === "present") sel.attr("fill", color).attr("fill-opacity", 0.85).attr("stroke", "var(--surface)").attr("stroke-width", 1.5).attr("stroke-dasharray", null);
+    else if (st === "not confirmed") sel.attr("fill", "var(--surface)").attr("fill-opacity", 0.6).attr("stroke", color).attr("stroke-width", 1.6).attr("stroke-dasharray", "3 2");
+    else if (st === "not judged" || st === "not checked") sel.attr("fill", color).attr("fill-opacity", 0.3).attr("stroke", color).attr("stroke-width", 1.2).attr("stroke-dasharray", null);
+    else sel.attr("fill", "none").attr("fill-opacity", 1).attr("stroke", "var(--ink-3)").attr("stroke-width", 1).attr("stroke-dasharray", null);
+  }
+  function statusLegend(el, cls) {
+    el.replaceChildren();
+    ["present", "not confirmed", cls >= 0 && !meta.presence_labels.includes(CLASSES[cls]) ? "not checked" : "not judged", "none"].forEach(st => {
+      const item = document.createElement("span"); item.className = "item";
+      const svg = d3.select(item).append("svg").attr("width", 14).attr("height", 14);
+      statusStyle(svg.append("circle").attr("cx", 7).attr("cy", 7).attr("r", st === "none" ? 3 : 5.5), cls, st);
+      item.append(document.createTextNode(STATUS_TEXT[st])); el.append(item);
+    });
+  }
+
+  // ---------------------------------------------------------------- map
+  const MAP_W = 760, MAP_H = 560;
+  const mapSvg = d3.select("#map").append("svg").attr("viewBox", `0 0 ${MAP_W} ${MAP_H}`).attr("role", "img")
+    .attr("aria-label", "Map of microphone sites, bubbles sized by detections per hour");
+  mapSvg.append("rect").attr("width", MAP_W).attr("height", MAP_H).attr("fill", "var(--surface)");
+  const sitesGeo = {type: "FeatureCollection", features: SITES.map(s => ({type: "Feature", geometry: {type: "Point", coordinates: [s.lon, s.lat]}}))};
+  const projection = d3.geoConicConformal().parallels([44, 49]).rotate([-3, 0]).fitExtent([[30, 30], [MAP_W - 30, MAP_H - 30]], DEPTS);
+  const geoPath = d3.geoPath(projection);
+  const mapG = mapSvg.append("g").attr("class", "mapg");
+  mapG.append("g").selectAll("path").data(DEPTS.features).join("path").attr("d", geoPath)
+    .attr("fill", "var(--land)").attr("stroke", "var(--dept)").attr("stroke-width", 0.6).attr("vector-effect", "non-scaling-stroke");
+  const marksG = mapG.append("g");
+  const labelG = mapG.append("g");
+  SITES.forEach(s => { [s.x, s.y] = projection([s.lon, s.lat]); });
+  let zoomK = 1;
+  const zoom = d3.zoom().scaleExtent([1, 60]).on("zoom", (e) => { zoomK = e.transform.k; mapG.attr("transform", e.transform); renderMarks(); });
+  mapSvg.call(zoom);
+
+  function zoomToRegion() {
+    const idx = SITES.map((_, i) => i).filter(i => state.region === "All" || SITES[i].region === state.region);
+    let [x0, x1] = d3.extent(idx, i => SITES[i].x), [y0, y1] = d3.extent(idx, i => SITES[i].y);
+    if (state.region === "All") { [[x0, y0], [x1, y1]] = geoPath.bounds(sitesGeo); }
+    const pad = 40, w = Math.max(x1 - x0, 20), h = Math.max(y1 - y0, 20);
+    const k = Math.min(60, 0.85 / Math.max(w / (MAP_W - 2 * pad), h / (MAP_H - 2 * pad)));
+    const t = d3.zoomIdentity.translate(MAP_W / 2, MAP_H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+    mapSvg.transition().duration(matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500).call(zoom.transform, t);
+  }
+
+  function renderMarks() {
+    const cls = state.cls;
+    const rates = SITES.map((_, i) => rate(i, cls));
+    const rMax = 22 / zoomK, r = d3.scaleSqrt().domain([0, d3.max(rates) || 1]).range([0, rMax]);
+    const order = d3.range(SITES.length).sort((a, b) => d3.descending(rates[a], rates[b]));
+    marksG.selectAll("circle").data(order, i => i).join("circle")
+      .attr("cx", i => SITES[i].x).attr("cy", i => SITES[i].y)
+      .attr("r", i => rates[i] > 0 ? Math.max(r(rates[i]), 3.2 / zoomK) : 2.6 / zoomK)
+      .each(function (i) { statusStyle(d3.select(this), cls, status(i, cls)); })
+      .attr("stroke-width", function () { return (+d3.select(this).attr("stroke-width")) / zoomK; })
+      .style("cursor", "pointer")
+      .on("pointermove", (e, i) => {
+        const s = SITES[i];
+        showTip(e, [{label: `${s.short} · ${s.region} · ${s.split}`}, {value: d3.format(".2f")(rates[i]), label: `${className(cls)} events / h`},
+                    {value: d3.format(",.0f")(s.hours), label: "hours recorded"}]
+          .concat(CLASSES.map((c, j) => ({color: classColor(j), value: d3.format(",")(s.events[j]), label: `${c} · ${STATUS_TEXT[s.status[j]]}`}))));
+      })
+      .on("pointerleave", hideTip)
+      .on("click", (e, i) => selectSite(i));
+    marksG.selectAll("circle").filter(i => i === state.site).raise()
+      .attr("stroke", "var(--ink)").attr("stroke-width", 2.2 / zoomK).attr("stroke-dasharray", null);
+    labelG.selectAll("text").data(state.site === null ? [] : [state.site]).join("text")
+      .attr("x", i => SITES[i].x + (r(rates[i]) || 3 / zoomK) + 4 / zoomK).attr("y", i => SITES[i].y + 4 / zoomK)
+      .attr("font-size", 12 / zoomK).attr("font-weight", 600).style("fill", "var(--ink)")
+      .attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3 / zoomK)
+      .text(i => SITES[i].short);
+    document.getElementById("map-title").textContent = `${className(cls)}: events per hour`;
+    statusLegend(document.getElementById("map-legend"), cls);
+    const sizeNote = document.createElement("span"); sizeNote.className = "item";
+    sizeNote.textContent = `largest bubble = ${d3.format(".2f")(d3.max(rates) || 0)} events/h`;
+    document.getElementById("map-legend").append(sizeNote);
+  }
+
+  // ---------------------------------------------------------------- site detail + season
+  function renderSite() {
+    const card = document.getElementById("site-card"); card.replaceChildren();
+    const el = document.getElementById("season"); el.replaceChildren();
+    if (state.site === null) {
+      document.getElementById("site-title").textContent = "Site";
+      const p = document.createElement("p"); p.className = "sub";
+      p.textContent = "Click a bubble on the map, a row of the presence grid, or pick a site above."; el.append(p);
+      return;
+    }
+    const s = SITES[state.site];
+    document.getElementById("site-title").textContent = s.short;
+    const rows = [["Region", `${s.region} (dept ${s.dept})`], ["Drive · split", `${s.drive} · ${s.split}`],
+                  ["Recorded", `${d3.format(",.0f")(s.hours)} h over ${(bySite.get(state.site) || []).length} evenings`]]
+      .concat(CLASSES.map((c, j) => [c, `${d3.format(",")(s.events[j])} events · ${d3.format(".2f")(rate(state.site, j))}/h · ${STATUS_TEXT[s.status[j]]}`]));
+    rows.forEach(([k, v]) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; card.append(dt, dd); });
+
+    const W = 600, rowH = 70, M = {l: 70, r: 10, t: 6, b: 24}, H = M.t + rowH * CLASSES.length + M.b;
+    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
+      .attr("aria-label", `Events per hour by evening at ${s.short}`);
+    svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
+    hatchDefs(svg, "hatch-season");
+    const x = d3.scaleUtc().domain([dateExtent[0], d3.utcDay.offset(dateExtent[1], 1)]).range([M.l, W - M.r]);
+    const dayW = Math.max(1, x(d3.utcDay.offset(dateExtent[0], 1)) - x(dateExtent[0]));
+    const recs = new Map((bySite.get(state.site) || []).map(d => [d.date, d]));
+    const days = d3.utcDay.range(dateExtent[0], d3.utcDay.offset(dateExtent[1], 1));
+    const yMax = d3.max(CLASSES.map((_, j) => d3.max(recs.values(), d => d.hours ? d.ev[j] / d.hours : 0))) || 1;
+    CLASSES.forEach((c, j) => {
+      const top = M.t + j * rowH, y = d3.scaleLinear().domain([0, yMax]).range([top + rowH - 10, top + 8]);
+      const g = svg.append("g");
+      g.selectAll("rect.gap").data(days.filter(d => !recs.has(d3.utcFormat("%Y-%m-%d")(d)))).join("rect")
+        .attr("x", d => x(d)).attr("width", dayW).attr("y", top + 8).attr("height", rowH - 18).attr("fill", "url(#hatch-season)");
+      g.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "var(--line)");
+      g.append("text").attr("x", M.l - 8).attr("y", top + rowH / 2).attr("text-anchor", "end").attr("dominant-baseline", "middle")
+        .attr("font-size", 12).style("fill", "var(--ink)").text(c);
+      g.append("text").attr("x", M.l - 8).attr("y", y(yMax) + 4).attr("text-anchor", "end").attr("font-size", 10).text(d3.format(".1f")(yMax));
+      const vals = Array.from(recs.values()).filter(d => d.ev[j] > 0);
+      g.selectAll("rect.bar").data(vals).join("rect").attr("class", "bar")
+        .attr("x", d => x(parseDay(d.date)) + 0.5).attr("width", Math.max(1, dayW - 1))
+        .attr("y", d => y(d.ev[j] / d.hours)).attr("height", d => y(0) - y(d.ev[j] / d.hours))
+        .attr("rx", Math.min(2, dayW / 3)).attr("fill", classColor(j))
+        .on("pointermove", (e, d) => showTip(e, [{label: d.date}, {color: classColor(j), value: d3.format(".2f")(d.ev[j] / d.hours), label: `${c} events / h`},
+                                                 {value: d.ev[j], label: "events"}, {value: d3.format(".1f")(d.hours), label: "hours recorded"}]))
+        .on("pointerleave", hideTip);
+    });
+    svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`)
+      .call(d3.axisBottom(x).ticks(d3.utcWeek.every(2)).tickFormat(d3.utcFormat("%d %b")).tickSizeOuter(0))
+      .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
+    svg.append("text").attr("x", 4).attr("y", 12).attr("font-size", 10).text("events / h");
+  }
+
+  // ---------------------------------------------------------------- presence grid
+  function monthsOf() { return d3.utcMonth.range(d3.utcMonth.floor(dateExtent[0]), d3.utcDay.offset(dateExtent[1], 1)); }
+  function renderPresence() {
+    const el = document.getElementById("presence"); el.replaceChildren();
+    const month = state.presenceMode === "month";
+    const cls = state.cls < 0 ? 0 : state.cls;
+    const months = monthsOf();
+    const cols = month ? months.map(m => ({key: d3.utcFormat("%Y-%m")(m), label: d3.utcFormat("%b")(m)}))
+                       : CLASSES.map((c, j) => ({key: j, label: c}));
+    document.getElementById("presence-sub").textContent = month
+      ? `${CLASSES[cls]}: was the class detected at the site that month? Detection, not confirmation (see the status view).`
+      : "Status per site and class, from your blind verdicts (audit + presence check).";
+    const rowH = 15, M = {l: 150, t: 26, r: 6, b: 6}, colW = month ? 54 : 74;
+    const groups = d3.groups(siteOrder, i => SITES[i].region);
+    const H = M.t + siteOrder.length * rowH + groups.length * 16 + M.b, W = M.l + cols.length * colW + M.r;
+    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("role", "img")
+      .attr("aria-label", month ? "Detections by site and month" : "Presence status by site and class");
+    svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
+    hatchDefs(svg, "hatch-presence");
+    cols.forEach((c, k) => svg.append("text").attr("x", M.l + k * colW + colW / 2).attr("y", 16).attr("text-anchor", "middle")
+      .attr("font-size", 11).style("fill", "var(--ink)").text(c.label));
+    const monthly = new Map();
+    if (month) evenings.forEach(d => { const key = `${d.site}|${d.date.slice(0, 7)}`; const v = monthly.get(key) || {hours: 0, ev: 0};
+                                       v.hours += d.hours; v.ev += d.ev[cls]; monthly.set(key, v); });
+    let y = M.t;
+    groups.forEach(([region, idx]) => {
+      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(region);
+      y += 16;
+      idx.forEach(i => {
+        const row = svg.append("g").attr("transform", `translate(0,${y})`).style("cursor", "pointer").on("click", () => selectSite(i));
+        if (i === state.site) row.append("rect").attr("x", 0).attr("width", W).attr("height", rowH).attr("fill", "var(--surface-2)");
+        row.append("text").attr("x", 10).attr("y", rowH - 4).attr("font-size", 11).text(SITES[i].short.slice(0, 24));
+        cols.forEach((c, k) => {
+          const cx = M.l + k * colW + colW / 2, cy = rowH / 2;
+          if (month) {
+            const v = monthly.get(`${i}|${c.key}`);
+            const cell = row.append("rect").attr("x", cx - colW / 2 + 3).attr("y", 2).attr("width", colW - 6).attr("height", rowH - 4).attr("rx", 2);
+            if (!v || v.hours === 0) cell.attr("fill", "url(#hatch-presence)");
+            else if (v.ev > 0) cell.attr("fill", classColor(cls));
+            else cell.attr("fill", "var(--surface-2)").attr("stroke", "var(--line)");
+            cell.on("pointermove", e => showTip(e, [{label: `${SITES[i].short} · ${c.label}`},
+                {value: v ? d3.format(".0f")(v.hours) : "0", label: "hours recorded"}, {color: classColor(cls), value: v ? v.ev : 0, label: `${CLASSES[cls]} events`}]))
+              .on("pointerleave", hideTip);
+          } else {
+            const st = SITES[i].status[c.key];
+            const mark = row.append("circle").attr("cx", cx).attr("cy", cy).attr("r", st === "none" ? 2.5 : 5.5);
+            statusStyle(mark, c.key, st);
+            mark.on("pointermove", e => showTip(e, [{label: `${SITES[i].short} · ${c.label}`}, {color: classColor(c.key), value: d3.format(",")(SITES[i].events[c.key]), label: "events"},
+                                                    {label: STATUS_TEXT[st]}])).on("pointerleave", hideTip);
+          }
+        });
+        y += rowH;
+      });
+    });
+    const leg = document.getElementById("presence-legend");
+    if (month) {
+      leg.replaceChildren();
+      [["detected", classColor(cls), null], ["recorded, nothing detected", "var(--surface-2)", "var(--line)"], ["not recorded", "url(#hatch-legend)", null]].forEach(([t, fill, stroke]) => {
+        const item = document.createElement("span"); item.className = "item";
+        const s = d3.select(item).append("svg").attr("width", 18).attr("height", 12);
+        hatchDefs(s, "hatch-legend");
+        s.append("rect").attr("x", 1).attr("y", 1).attr("width", 16).attr("height", 10).attr("rx", 2).attr("fill", fill).attr("stroke", stroke);
+        item.append(document.createTextNode(t)); leg.append(item);
+      });
+    } else statusLegend(leg, state.cls < 0 ? 0 : state.cls);
+  }
+
+  // ---------------------------------------------------------------- time from sunset
+  function renderNight() {
+    const el = document.getElementById("night"); el.replaceChildren();
+    const useSite = state.nightScope === "site" && state.site !== null;
+    document.getElementById("night-title").textContent = `Time from sunset · ${useSite ? SITES[state.site].short : "all sites"}`;
+    const bins = d3.range(-60, 60, 5);
+    const W = 520, rowH = 92, M = {l: 70, r: 10, t: 8, b: 30}, H = M.t + rowH * CLASSES.length + M.b;
+    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Events by minutes from sunset");
+    svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
+    const x = d3.scaleLinear().domain([-60, 60]).range([M.l, W - M.r]);
+    const counts = CLASSES.map((_, j) => {
+      const c = new Array(bins.length).fill(0);
+      DATA.events.forEach(e => { if (e[1] === j && (!useSite || e[0] === state.site)) { const b = Math.min(bins.length - 1, Math.max(0, Math.floor((e[3] + 60) / 5))); c[b]++; } });
+      return c;
+    });
+    CLASSES.forEach((c, j) => {
+      const top = M.t + j * rowH, yMax = d3.max(counts[j]) || 1;
+      const y = d3.scaleLinear().domain([0, yMax]).range([top + rowH - 12, top + 10]);
+      svg.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "var(--line)");
+      svg.append("text").attr("x", M.l - 8).attr("y", top + rowH / 2).attr("text-anchor", "end").attr("dominant-baseline", "middle")
+        .attr("font-size", 12).style("fill", "var(--ink)").text(c);
+      svg.append("text").attr("x", M.l - 8).attr("y", y(yMax) + 4).attr("text-anchor", "end").attr("font-size", 10).text(yMax);
+      svg.append("g").selectAll("rect").data(bins).join("rect")
+        .attr("x", b => x(b) + 1).attr("width", x(5) - x(0) - 2).attr("y", (b, k) => y(counts[j][k]))
+        .attr("height", (b, k) => y(0) - y(counts[j][k])).attr("rx", 2).attr("fill", classColor(j))
+        .on("pointermove", (e, b) => showTip(e, [{label: `${b} to ${b + 5} min from sunset`}, {color: classColor(j), value: counts[j][bins.indexOf(b)], label: `${c} events`}]))
+        .on("pointerleave", hideTip);
+    });
+    svg.append("line").attr("x1", x(0)).attr("x2", x(0)).attr("y1", M.t).attr("y2", H - M.b).attr("stroke", "var(--ink-3)").attr("stroke-dasharray", "3 3");
+    svg.append("text").attr("x", x(0) + 4).attr("y", M.t + 8).attr("font-size", 10).text("sunset (schedule)");
+    svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`).call(d3.axisBottom(x).tickValues(d3.range(-60, 61, 15)).tickSizeOuter(0))
+      .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
+    svg.append("text").attr("x", (M.l + W - M.r) / 2).attr("y", H - 2).attr("text-anchor", "middle").attr("font-size", 10).text("minutes from sunset");
+    el._counts = {bins, counts};
+  }
+
+  // ---------------------------------------------------------------- weekly heatmap
+  function renderHeat() {
+    const el = document.getElementById("heat"); el.replaceChildren();
+    const cls = state.cls;
+    document.getElementById("heat-title").textContent = `Weekly activity, all sites · ${className(cls)}`;
+    const cellW = 22, rowH = 14, M = {l: 160, t: 34, r: 8, b: 8};
+    const groups = d3.groups(siteOrder, i => SITES[i].region);
+    const W = M.l + weeks.length * cellW + M.r, H = M.t + siteOrder.length * rowH + groups.length * 16 + M.b;
+    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("role", "img").attr("aria-label", "Events per hour by site and week");
+    svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
+    hatchDefs(svg, "hatch-heat");
+    const cells = new Map();
+    evenings.forEach(d => { const key = `${d.site}|${+weekOf(d.date)}`; const v = cells.get(key) || {hours: 0, ev: 0};
+      v.hours += d.hours; v.ev += cls < 0 ? d3.sum(d.ev) : d.ev[cls]; cells.set(key, v); });
+    const vmax = d3.max(cells.values(), v => v.hours ? v.ev / v.hours : 0) || 1;
+    const ramp = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"];
+    const color = d3.scaleSequentialSqrt(d3.interpolateRgbBasis(ramp)).domain([0, vmax]);
+    weeks.forEach((w, k) => { if (k % 2 === 0) svg.append("text").attr("x", M.l + k * cellW + 1).attr("y", M.t - 10).attr("font-size", 10).text(d3.utcFormat("%d %b")(w)); });
+    let y = M.t;
+    groups.forEach(([region, idx]) => {
+      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(region);
+      y += 16;
+      idx.forEach(i => {
+        const row = svg.append("g").attr("transform", `translate(0,${y})`).style("cursor", "pointer").on("click", () => selectSite(i));
+        row.append("text").attr("x", 10).attr("y", rowH - 3).attr("font-size", 10.5)
+          .style("fill", i === state.site ? "var(--ink)" : null).attr("font-weight", i === state.site ? 700 : null).text(SITES[i].short.slice(0, 26));
+        weeks.forEach((w, k) => {
+          const v = cells.get(`${i}|${+w}`);
+          const r = row.append("rect").attr("x", M.l + k * cellW + 1).attr("y", 1).attr("width", cellW - 2).attr("height", rowH - 2).attr("rx", 2);
+          if (!v || !v.hours) r.attr("fill", "url(#hatch-heat)");
+          else r.attr("fill", v.ev ? color(v.ev / v.hours) : "var(--surface-2)");
+          r.on("pointermove", e => showTip(e, [{label: `${SITES[i].short} · week of ${d3.utcFormat("%d %b")(w)}`},
+              {value: v && v.hours ? d3.format(".2f")(v.ev / v.hours) : "–", label: `${className(cls)} events / h`},
+              {value: v ? v.ev : 0, label: "events"}, {value: v ? d3.format(".1f")(v.hours) : 0, label: "hours recorded"}])).on("pointerleave", hideTip);
+        });
+        y += rowH;
+      });
+    });
+    const leg = document.getElementById("heat-legend"); leg.replaceChildren();
+    const item = document.createElement("span"); item.className = "item";
+    const ls = d3.select(item).append("svg").attr("width", 230).attr("height", 30);
+    const grad = ls.append("defs").append("linearGradient").attr("id", "heat-grad");
+    d3.range(0, 1.01, 0.1).forEach(t => grad.append("stop").attr("offset", t).attr("stop-color", color(t * t * vmax)));
+    ls.append("rect").attr("x", 6).attr("y", 2).attr("width", 200).attr("height", 10).attr("rx", 2).attr("fill", "url(#heat-grad)");
+    [0, vmax / 4, vmax].forEach(v => ls.append("text").attr("x", 6 + 200 * Math.sqrt(v / vmax)).attr("y", 26).attr("font-size", 10)
+      .attr("text-anchor", "middle").text(d3.format(".1f")(v)));
+    item.append(document.createTextNode("events / h (square-root scale)")); leg.append(item);
+    const z = document.createElement("span"); z.className = "item";
+    const zs = d3.select(z).append("svg").attr("width", 16).attr("height", 12);
+    zs.append("rect").attr("x", 1).attr("y", 1).attr("width", 14).attr("height", 10).attr("rx", 2).attr("fill", "var(--surface-2)");
+    z.append(document.createTextNode("recorded, no events")); leg.append(z);
+  }
+
+  // ---------------------------------------------------------------- export (SVG / PNG / CSV)
+  const VARS = ["--bg", "--surface", "--surface-2", "--line", "--ink", "--ink-2", "--ink-3", "--land", "--dept", "--c0", "--c1", "--c2", "--call-all", "--hatch", "--accent"];
+  function standalone(svgEl) {
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    let text = new XMLSerializer().serializeToString(clone);
+    VARS.forEach(v => { text = text.split(`var(${v})`).join(css(v)); });
+    const style = `<style>text{font-family:${css("--font").replace(/"/g, "'")};fill:${css("--ink-2")}}</style>`;
+    return text.replace(/^<svg([^>]*)>/, `<svg$1>${style}`);
+  }
+  function download(name, blob) {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  function exportSvg(svgEl, name) { download(name + ".svg", new Blob([standalone(svgEl)], {type: "image/svg+xml"})); }
+  function exportPng(svgEl, name) {
+    const vb = svgEl.viewBox.baseVal, w = vb.width * 2, h = vb.height * 2;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d"); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => download(name + ".png", b), "image/png");
+    };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(standalone(svgEl));
+  }
+  function csvText(header, rows) {
+    const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    return [header.map(q).join(",")].concat(rows.map(r => r.map(q).join(","))).join("\n") + "\n";
+  }
+  const tables = {
+    map: () => [["site", "region", "split", "lat", "lon", "hours"].concat(CLASSES.flatMap(c => [c + "_events", c + "_per_h", c + "_status"])),
+                SITES.map((s, i) => [s.site, s.region, s.split, s.lat, s.lon, s.hours].concat(CLASSES.flatMap((c, j) => [s.events[j], d3.format(".4f")(rate(i, j)), s.status[j]])))],
+    season: () => state.site === null ? [["date"], []] : [["date", "hours"].concat(CLASSES),
+                (bySite.get(state.site) || []).map(d => [d.date, d.hours].concat(d.ev))],
+    presence: () => [["site", "region"].concat(CLASSES.map(c => c + "_status")), siteOrder.map(i => [SITES[i].site, SITES[i].region].concat(SITES[i].status))],
+    night: () => { const n = document.getElementById("night")._counts; return [["bin_start_min"].concat(CLASSES), n.bins.map((b, k) => [b].concat(n.counts.map(c => c[k])))]; },
+    heat: () => { const rows = []; siteOrder.forEach(i => weeks.forEach(w => {
+                  const v = (bySite.get(i) || []).filter(d => +weekOf(d.date) === +w);
+                  if (v.length) rows.push([SITES[i].site, d3.utcFormat("%Y-%m-%d")(w), d3.sum(v, d => d.hours).toFixed(2)].concat(CLASSES.map((_, j) => d3.sum(v, d => d.ev[j])))); }));
+                  return [["site", "week_start", "hours"].concat(CLASSES), rows]; }
+  };
+  const panelSvg = {map: "#map svg", season: "#season svg", presence: "#presence svg", night: "#night svg", heat: "#heat svg"};
+  document.querySelectorAll(".tools[data-panel]").forEach(box => {
+    const panel = box.dataset.panel;
+    [["SVG", () => exportSvg(document.querySelector(panelSvg[panel]), `snipe_${panel}`)],
+     ["PNG", () => exportPng(document.querySelector(panelSvg[panel]), `snipe_${panel}`)],
+     ["CSV", () => { const [h, r] = tables[panel](); download(`snipe_${panel}.csv`, new Blob([csvText(h, r)], {type: "text/csv"})); }]]
+      .forEach(([label, fn]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+        b.addEventListener("click", () => { if (document.querySelector(panelSvg[panel]) || label === "CSV") fn(); }); box.append(b); });
+  });
+
+  // ---------------------------------------------------------------- go
+  function renderAll() { renderMarks(); renderSite(); renderPresence(); renderNight(); renderHeat(); }
+  renderAll();
+  zoomToRegion();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+})();
+</script>
+</body>
+</html>

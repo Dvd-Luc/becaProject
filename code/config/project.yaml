@@ -139,6 +139,25 @@ review:
   presence_labels: [Drumming, Song]       # audit_events.py presence: classes checked site by site
   presence_per_site: 5                    # best events judged per site x class with no confirmed one
 
+viz:                                      # build_viz.py: local page of the full survey
+  sources:                                # microphone positions (gitignored, never shared)
+    - path: data/geo/micros_massif_central_2026.gpkg
+      layer: to-gpkg
+      name_column: Station                # = site name in sites.csv
+      number_column: num_micro            # "MIC011"
+    - path: data/geo/micros_lpo_bfc_2026.gpkg
+      layer: deploiement_enregistreurs_2026_vf
+      name_column: null
+      number_column: Num micro            # "Mic049" -> SMMICRO_049
+  departements: data/geo/departements.geojson   # public outlines (committed)
+  template: src/survey/viz_assets/viz_page.html
+  d3: src/survey/viz_assets/d3.v7.9.0.min.js
+  schedule_start_min: -60                 # recorders run from 1 h before to 1 h after sunset:
+                                          # first file start = sunset - 60 min
+  min_files_per_evening: 2                # evenings with fewer files: left out of the sunset view
+  round_coords: null                      # degrees, e.g. 0.1 to blur positions in the page
+  out: results/survey/viz/full_gen2.html  # gitignored: holds positions
+
 generations:
   dir: generations
   train_seed: 1                           # BirdNET RANDOM_SEED for gen >= 1
