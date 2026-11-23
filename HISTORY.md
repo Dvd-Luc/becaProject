@@ -69,6 +69,24 @@ mostly measures that place. Outside it, 3 of the 5 Drumming events judged were N
 Decisions: Call threshold raised to 0.9; site-by-site presence check of Drumming and
 Song outside the hotspot; next audits sampled per site; gen 3 decided after D1–D3.
 
+**Presence per site, D4** (`results/survey/presence_full_gen2.csv`; audit verdicts + 72
+blind verdicts on the best events of each site not yet confirmed, up to 5 per site × class):
+
+| Class | Sites with events | Present | Not confirmed |
+|---|---|---|---|
+| Drumming | 18 / 29 | 12 | 6 (047, 053, 058, 062, 065, 067) |
+| Song | 24 / 29 | 21 | 3 (053, 056, 062) |
+
+Snipe are far more widespread than the 20-min clips showed (drumming then confirmed at
+2 of 66 train sites). Many sites rest on one or two low-score events (best score 0.5–0.65),
+which supports keeping 0.5 for Drumming and Song. "Not confirmed" means that the best events
+were something else, not that the class is absent. Site-level maps should filter
+`events.csv` with this table.
+
+Data note: D1 site 032 Cussac holds two extra folders (`Porzana porzana` 186,
+`Zapornia pusilla` 63 WAVs): 16–30 s clips from an earlier BirdNET crake extraction,
+cut from the site's own recordings. The survey globs skip them, as they should.
+
 **Reading:** training on field verdicts (gen_1) removed almost all field false alarms
 (about 60× fewer at 0.5) without losing recognition on unseen XC recordists, and
 improved Song. Gen_1 is much more conservative: on the train sites it gives 81 events
