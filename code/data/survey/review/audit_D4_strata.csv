@@ -1,0 +1,10 @@
+drive,stratum,population,sampled,n_sites
+D4,Call|0.5-0.7,698,30,28
+D4,Call|0.7-0.9,681,30,29
+D4,Call|0.9-1.0,1226,30,28
+D4,Drumming|0.5-0.7,396,30,18
+D4,Drumming|0.7-0.9,322,30,9
+D4,Drumming|0.9-1.0,37,30,5
+D4,Song|0.5-0.7,404,30,22
+D4,Song|0.7-0.9,504,30,14
+D4,Song|0.9-1.0,140,30,6
