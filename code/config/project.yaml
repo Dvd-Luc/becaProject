@@ -127,6 +127,9 @@ review:
   background_per_clip: 1                  # train queue: random 3 s windows away from events
   test_bins: [0.0, 0.1, 0.35, 0.5, 0.7, 1.0]   # test queue: v0 best-score bins (heldout)
   test_per_bin: 80
+  audit_bins: [0.5, 0.7, 0.9, 1.0]        # audit_events.py: max_conf bins of the full-survey events
+  audit_per_stratum: 30                   # events drawn per class x bin (frozen per drive)
+  audit_boot: 1000                        # bootstrap replicates (sites resampled) for the CIs
 
 generations:
   dir: generations

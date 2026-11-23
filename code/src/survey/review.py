@@ -6,6 +6,7 @@
     python src/survey/review.py --queue test             # blind heldout test set
     python src/survey/review.py --queue train --gen 1 --list   # queue from gen 1's detections
     python src/survey/review.py --queue train --gen 1          # judge it (feeds gen 2)
+    python src/survey/review.py --queue audit --drive D4       # blind audit of full-survey events
 
 Queues, each frozen on first use to <review.dir>/<queue>_queue.csv (delete the file to
 re-sample it; existing judgments keep their item_id but may no longer be in the queue):
@@ -24,6 +25,10 @@ re-sample it; existing judgments keep their item_id but may no longer be in the 
            score in detection.dir/raw over review.test_bins, review.test_per_bin per bin.
            <review.dir>/test_strata.csv keeps each bin's population for re-weighting.
          * BLIND: the prediction is never shown.
+  audit_<drive>  (--queue audit --drive D4) a random sample of the full-survey events
+         (detect_drive.py), drawn, frozen and cut into snippets by audit_events.py
+         (sample, cut); not built here. BLIND like the test queue. The verdicts give the
+         precision of all the events (audit_events.py report).
 
 Each judgment is appended to <review.dir>/<queue>_judgments.csv at once; the last one per
 item wins, so `b` + another key corrects it. Items with a judgment are skipped next time.
@@ -371,6 +376,8 @@ def get_queue(cfg, queue, review_dir, gen=0):
     path = review_dir / f"{queue}_queue.csv"
     if path.exists():
         return read_dicts(path)
+    if queue.startswith("audit_"):
+        raise SystemExit(f"{path} not found: run audit_events.py sample --drive {queue[len('audit_'):]} first")
     manifest = read_dicts(Path(cfg["survey"]["dir"]) / "manifest.csv")
     rng = random.Random(f"{cfg['review']['seed']}-{queue}")
     if queue == "test":
@@ -440,7 +447,7 @@ class Reviewer:
         self.viewer_cfg = cfg.get("viewer", {})
         self.context_s = cfg["review"]["context_s"]
         self.queue, self.items, self.judged, self.judgments_path = queue, items, judged, judgments_path
-        self.classes, self.blind = classes, queue == "test"
+        self.classes, self.blind = classes, queue in ("test", "audit")
         self.index, self._playing, self._timer = 0, False, None
         self.fig = plt.figure(figsize=(13, 6))
         self.ax = self.fig.add_axes([0.06, 0.12, 0.9, 0.76])
@@ -606,7 +613,7 @@ class Reviewer:
             self.judge(NOISE)
         elif key in ("y", "enter"):
             if self.blind:
-                self._msg("test queue is blind: choose the class (1-3) or Noise (0)")
+                self._msg(f"{self.queue} queue is blind: choose the class (1-3) or Noise (0)")
             else:
                 self.judge(self.item()["predicted"])
         elif key == "u":
@@ -631,7 +638,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default="config/project.yaml")
-    parser.add_argument("--queue", choices=["train", "test"], required=True)
+    parser.add_argument("--queue", choices=["train", "test", "audit"], required=True)
+    parser.add_argument("--drive", help="audit queue: the drive whose sample to judge (audit_<drive>)")
     parser.add_argument("--n", type=int, help="only the next N unjudged items this session")
     parser.add_argument("--dir", help="output folder (default: review.dir)")
     parser.add_argument("--list", action="store_true", help="build/show the queue, no GUI")
@@ -641,10 +649,12 @@ def main():
     args = parser.parse_args()
     if args.gen and args.queue != "train":
         raise SystemExit("--gen only applies to --queue train (the test queue is fixed)")
+    if (args.queue == "audit") != bool(args.drive):
+        raise SystemExit("--drive goes with --queue audit (and only with it)")
     cfg = load(args.config)
     review_dir = Path(args.dir or cfg["review"]["dir"])
     classes = classes_from(cfg)
-    queue = f"train_gen{args.gen}" if args.gen else args.queue
+    queue = f"train_gen{args.gen}" if args.gen else f"audit_{args.drive}" if args.drive else args.queue
     rows = get_queue(cfg, queue, review_dir, args.gen)
     judgments_path = review_dir / f"{queue}_judgments.csv"
     judged = load_judgments(judgments_path)
@@ -655,6 +665,11 @@ def main():
     if not todo:
         print("nothing left to judge in this queue")
         return
+    no_audio = [row for row in todo if not Path(row["clip_path"]).exists()]
+    if no_audio:
+        fix = (f"run audit_events.py cut --drive {args.drive} first" if args.drive
+               else "check the clips (survey.dir)")
+        raise SystemExit(f"{len(no_audio)} items have no audio file, e.g. {no_audio[0]['clip_path']}: {fix}")
     import matplotlib
     if cfg.get("viewer", {}).get("backend"):
         matplotlib.use(cfg["viewer"]["backend"])
