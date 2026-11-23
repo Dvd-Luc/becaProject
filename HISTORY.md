@@ -54,6 +54,21 @@ false alarms (which need no snipe present).
 | Drumming | 0.934 | 0.930 | 0.937 | −0.004 [−0.017, +0.009] | +0.007 [−0.006, +0.021] |
 | Song | 0.903 | 0.942 | 0.916 | +0.039 [+0.004, +0.105] | −0.026 [−0.088, +0.004] |
 
+**Full-survey audit, D4, gen_2 events at ≥ 0.5** (`results/survey/audit_full_gen2.csv`; 270 blind verdicts, 8 Unsure; precision weighted by stratum population, 95 % CI from a site bootstrap):
+
+| Class | Events | Precision | 0.5–0.7 | 0.7–0.9 | 0.9–1.0 |
+|---|---|---|---|---|---|
+| Call | 2 605 | 0.750 [0.612, 0.912] | 0.462 | 0.654 | 0.967 |
+| Drumming | 755 | 0.951 [0.751, 1.000] | 0.933 | 0.967 | 1.000 |
+| Song | 1 048 | 0.987 [0.923, 1.000] | 0.967 | 1.000 | 1.000 |
+
+All errors were events judged Noise (no confusion between snipe classes). 13 of the 24
+Call errors came from one recorder (068 Bouverans). 90 % of Drumming and 79 % of Song
+events are at Granges-Narboz (recorders 044 and 046 train, 045 heldout), so the sample
+mostly measures that place. Outside it, 3 of the 5 Drumming events judged were Noise.
+Decisions: Call threshold raised to 0.9; site-by-site presence check of Drumming and
+Song outside the hotspot; next audits sampled per site; gen 3 decided after D1–D3.
+
 **Reading:** training on field verdicts (gen_1) removed almost all field false alarms
 (about 60× fewer at 0.5) without losing recognition on unseen XC recordists, and
 improved Song. Gen_1 is much more conservative: on the train sites it gives 81 events
