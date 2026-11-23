@@ -193,12 +193,15 @@ def post(clips, raw_dir, detection_cfg, labels, keys=MANIFEST_KEYS):
     """Turn raw BirdNET windows into events and per-clip summaries.
 
     Keeps windows >= detection.min_conf, merges them per clip and label when the gap is
-    <= merge_gap_s, optionally caps the events per clip (highest confidence kept).
+    <= merge_gap_s, drops the events of a class listed in min_event_conf whose best window
+    is below that class's value, then optionally caps the events per clip (highest
+    confidence kept).
 
     Args:
         clips (list[dict]): Manifest rows of the analysed clips (or files).
         raw_dir (Path): detection.dir/raw.
-        detection_cfg (dict): The detection config section (min_conf, merge_gap_s, max_events_per_clip).
+        detection_cfg (dict): The detection config section (min_conf, merge_gap_s;
+            optional max_events_per_clip, min_event_conf {class: score}).
         labels (list[str]): Model classes; each gets a summary row per clip.
         keys (list[str]): Columns copied from each row to the front of its output rows;
             the first one is the id of the raw result file.
@@ -210,6 +213,7 @@ def post(clips, raw_dir, detection_cfg, labels, keys=MANIFEST_KEYS):
     """
     min_conf, gap = detection_cfg["min_conf"], detection_cfg["merge_gap_s"]
     max_events = detection_cfg.get("max_events_per_clip")
+    min_event_conf = detection_cfg.get("min_event_conf") or {}
     events_out, summary_out = [], []
     for clip in clips:
         windows = defaultdict(list)
@@ -221,7 +225,8 @@ def post(clips, raw_dir, detection_cfg, labels, keys=MANIFEST_KEYS):
         clip_events = []
         for label, label_windows in windows.items():
             for event in merge_windows(label_windows, gap):
-                clip_events.append((label, event))
+                if max(event["confs"]) >= min_event_conf.get(label, min_conf):
+                    clip_events.append((label, event))
         if max_events:
             clip_events = sorted(clip_events, key=lambda item: -max(item[1]["confs"]))[:max_events]
         key = [clip[col] for col in keys]

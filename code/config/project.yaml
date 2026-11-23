@@ -113,6 +113,9 @@ drive_detection:                          # detect_drive.py: every recording, re
   min_conf: 0.5
   overlap: 0.0
   merge_gap_s: 3.0
+  min_event_conf:                         # class: an event is kept only if its best window
+    Call: 0.9                             # reaches this (D4 audit: Call precision 0.46 / 0.65
+                                          # in the 0.5-0.7 / 0.7-0.9 bins, 0.97 at >= 0.9)
   threads: 10                            # files analysed at once, ~1 GB RAM each: 12 ran out
                                           # of memory with WSL's 7.5 GB (try 8 with 11 GB)
   batch_size: 16                           # BirdNET -b; raise after the speed test (needs RAM)

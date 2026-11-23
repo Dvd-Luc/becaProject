@@ -27,7 +27,9 @@ progress bars are off when the output is not a terminal (Slurm logs).
    lack of memory, BirdNET waits forever, so after drive_detection.stall_min minutes
    without a finished file the run is stopped (lower --threads and run again).
 3. Tables are rebuilt from every drive done so far: windows >= drive_detection.min_conf
-   are merged per file and label into events (gap <= merge_gap_s).
+   are merged per file and label into events (gap <= merge_gap_s). Events of a class
+   listed in drive_detection.min_event_conf are kept only if their best window reaches
+   that score (Call: 0.9, from the D4 audit).
 
 Writes, under drive_detection.dir:
     files/<drive>_files.csv             frozen file list: file_id, site, split, drive,
@@ -260,12 +262,14 @@ def main():
     raw_dir = out_dir / "raw"
     threads = args.threads or detection_cfg.get("threads")
     batch_size = args.batch_size or detection_cfg.get("batch_size")
+    thresholds = f"min_conf {detection_cfg['min_conf']}" + (
+        f", best window >= {detection_cfg['min_event_conf']}" if detection_cfg.get("min_event_conf") else "")
 
     if args.post_only:
         done, events, _summary = build_tables(out_dir, raw_dir, detection_cfg, labels)
         hours = sum(float(row["duration_s"]) for row in done) / 3600
-        print(f"{len(done)} files ({hours:.0f} h) analysed, {len(events)} events at min_conf "
-              f"{detection_cfg['min_conf']}: {dict(Counter(row[5] for row in events))}")
+        print(f"{len(done)} files ({hours:.0f} h) analysed, {len(events)} events at {thresholds}: "
+              f"{dict(Counter(row[5] for row in events))}")
         print(f"wrote {out_dir / 'events.csv'}, {out_dir / 'file_summary.csv'}")
         return
 
@@ -356,8 +360,8 @@ def main():
 
     done, events, _summary = build_tables(out_dir, raw_dir, detection_cfg, labels)
     hours = sum(float(row["duration_s"]) for row in done) / 3600
-    print(f"all drives: {len(done)} files ({hours:.0f} h) analysed, {len(events)} events at min_conf "
-          f"{detection_cfg['min_conf']}: {dict(Counter(row[5] for row in events))}")
+    print(f"all drives: {len(done)} files ({hours:.0f} h) analysed, {len(events)} events at {thresholds}: "
+          f"{dict(Counter(row[5] for row in events))}")
     print(f"wrote {out_dir / 'events.csv'}, {out_dir / 'file_summary.csv'}")
 
 
