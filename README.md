@@ -103,6 +103,7 @@ code/
 | `generations` | `make_generation.py`, `evaluate.py`, `detect.py --gen` | training seed, evaluation thresholds |
 | `xc_test` | `annotation_tools.py sample-test`, `evaluate.py --testset xc`, `make_generation.py` | XC test sample: seed, strata, caps |
 | `annotator_xc_test` | `annotator.py --section annotator_xc_test` | annotating the XC test sample (own labels folder) |
+| `viz` | `build_viz.py` | microphone GeoPackages, schedule offset, output page |
 | `drive_detection` | `detect_drive.py` | generation, output folder, thresholds, threads, batch size |
 
 The training scripts (Part 1) don't read the YAML: they take everything as
@@ -535,6 +536,35 @@ python src/survey/audit_events.py report                        # precision + pr
   Only train-site verdicts may ever be used to train a later generation.
 - The audit gives precision only. Recall still comes from the XC test set.
 
+### 13. Visualise the full survey (local page)
+
+```bash
+python src/survey/build_viz.py --dry-run   # matched positions, counts, status (prints no position)
+python src/survey/build_viz.py             # writes results/survey/viz/full_gen2.html
+```
+
+This writes **one self-contained HTML file**. Open it by double-click: no server, no network.
+Data, d3 and the département outlines are inlined. It has five linked views:
+- **Map:** bubble area = kept events per hour recorded. Fill = presence status from
+  your verdicts. Zoom and pan, buttons per region.
+- **Selected site:** events per hour evening by evening; hatched evenings had no recording.
+- **Presence grid:** status per site × class, or detection per month.
+- **Time from sunset:** 5-min bins. Read from the recorders' schedule (start = sunset − 60
+  min, `viz.schedule_start_min`), not from the clock.
+- **Weekly heatmap:** events per hour, by site and week.
+
+Each view has **SVG / PNG / CSV** buttons. Re-run the script after each new drive or audit.
+
+- **Microphone positions are sensitive** (snipe breeding sites) **and never leave this computer.**
+  - The GeoPackages (`viz.sources`, copied to `code/data/geo/`) and the page are gitignored.
+  - The script never prints a position.
+  - Don't upload the page or map exports anywhere. `viz.round_coords` can blur the positions written into the page.
+  - Only `data/geo/departements.geojson` (public outlines, france-geojson / Etalab
+    Licence Ouverte, rounded to 0.001°) is committed.
+- Positions are matched to `sites.csv` by the exact site name (`Station` column), or else
+  by the recorder number (`MIC011`, `Mic049`).
+- Needs `pyproj` (Lambert-93 → WGS84) in `.becavenv`.
+
 ---
 
 ## Script reference
@@ -558,6 +588,7 @@ All paths relative to `code/`.
 | `src/survey/detect.py` | 7 detect | manifest, clips, model | `data/survey/detections/` (or `generations/gen_K/detections/`) |
 | `src/survey/detect_drive.py` | 11 full survey | a survey drive, `sites.csv`, a generation | `data/survey/full/gen_K/` (`files/`, `raw/`, `events.csv`, `file_summary.csv`) |
 | `src/survey/audit_events.py` | 12 audit | full-survey `events.csv` + `files/`, a drive, audit judgments | `data/survey/review/audit_<drive>_{queue,strata}.csv`, `data/survey/full/gen_K/audit/snippets/`, `results/survey/audit_full_gen<K>*.csv` |
+| `src/survey/build_viz.py` | 13 visualise | full-survey tables, audit/presence results, microphone GeoPackages | `results/survey/viz/full_gen2.html` (local only) |
 | `src/survey/review.py` | 8 review, 12 audit | detections, manifest, clips (or audit snippets) | `data/survey/review/` |
 | `src/survey/make_generation.py` | 9 train | train judgments, XC clips | `generations/gen_K/` |
 | `src/survey/evaluate.py` | 9, 10 compare | test judgments or XC test labels, generations | `results/survey/`, `gen_K/{test,xc}_scores.csv` |
