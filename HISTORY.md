@@ -24,6 +24,8 @@ changes (the `/wrap-up` routine does this).
 | Train queue | v0 detections (events over confidence bins) + 1 random background window per clip, train sites | 496 verdicts | **training** (gen_1, later gens) | `data/survey/review/train_*` |
 | Survey test set | blind 3 s windows from heldout sites, stratified by v0 score, prediction hidden | 361 judged (16 Call, 2 Song, 0 Drumming) | **test only**: field AP, false alarms per hour | `data/survey/review/test_*` |
 | XC test set | not-yet-annotated XC recordings by 60 recordists absent from all training data, annotated blind (no name or tag shown) | 78 recordings, 727 windows (250 Drumming, 216 Song, 75 Call) | **test only**: recall/AP on unseen recordists | `data/xc_test/` |
+| Full survey, gen_2 | gen_2 on **every** recording, drive by drive (MeSU cluster, commit `7fd9141`, 64 cores, 2 s per audio-hour) | D4: 29 sites, 5 752 files (5 749 h), 4 408 events at ≥ 0.5 (Call 2 605, Drumming 755, Song 1 048); D1–D3 to do | **result** (detections) | `data/survey/full/gen_2/` |
+| Audit sample D4 | random sample of D4's full-survey events, 30 per class × `max_conf` bin (0.5 / 0.7 / 0.9 / 1.0), judged blind; train and heldout sites | 270 events | **precision of the full-survey events**; only train-site verdicts may ever train | `data/survey/review/audit_D4_*` |
 
 Snipe song and drumming are rare at the survey sites: drumming was confirmed at 2 of
 66 train sites and song at 4. Field recall for these classes therefore cannot be
@@ -69,3 +71,4 @@ signal from field verdicts is nearly exhausted at these sites.
 - **2026-11-17**: training pipeline (clips, recordist-grouped folds, learning curve) → v0. Survey sampling of 88 sites (66 train / 22 heldout), v0 detections, review GUI; 361 test and 496 train verdicts; gen_1 trained.
 - **2026-11-18**: gen_0 vs gen_1 on the survey test set (too few positives to conclude). XC test set drawn, annotated blind and evaluated. Output cleanup (old learning-curve models deleted).
 - **2026-11-19**: field false-alarm metric added (gen_1: about 60× fewer). gen_1 run on the train sites; review queue `train_gen1` rebuilt at gen_0's settings (events ≥ 0.35) and judged (250); gen_2 trained and evaluated on both test sets.
+- **2026-11-20 → 11-23**: full survey moved to the MeSU cluster (Slurm job per drive). D4 done with gen_2 (5 752 files, 4 408 events at ≥ 0.5). Audit tool added and the D4 audit sample frozen (270 events, snippets cut).
