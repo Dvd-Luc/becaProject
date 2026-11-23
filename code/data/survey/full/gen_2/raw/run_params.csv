@@ -1,0 +1,2 @@
+model,overlap,raw_min_conf
+generations/gen_2/model.tflite,0.0,0.1

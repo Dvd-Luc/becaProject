@@ -1,0 +1,16 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Song,Song,0.1630,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+3.0,6.0,Song,Song,0.2288,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+72.0,75.0,Call,Call,0.1073,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+648.0,651.0,Call,Call,0.1462,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+660.0,663.0,Drumming,Drumming,0.1112,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+672.0,675.0,Call,Call,0.1249,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+744.0,747.0,Drumming,Drumming,0.1247,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+1158.0,1161.0,Drumming,Drumming,0.1065,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+1977.0,1980.0,Call,Call,0.1269,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+1980.0,1983.0,Call,Call,0.1053,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+2409.0,2412.0,Drumming,Drumming,0.1023,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+2433.0,2436.0,Call,Call,0.1822,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+2436.0,2439.0,Call,Call,0.3070,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+2727.0,2730.0,Call,Call,0.1105,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav
+3177.0,3180.0,Call,Call,0.1597,/tmp/detect_drive_3hbl1h9x/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260427_203902.wav

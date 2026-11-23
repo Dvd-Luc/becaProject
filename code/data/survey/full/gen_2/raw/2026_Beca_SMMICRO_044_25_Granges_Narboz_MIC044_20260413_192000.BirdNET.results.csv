@@ -1,0 +1,11 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+501.0,504.0,Drumming,Drumming,0.1102,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+636.0,639.0,Drumming,Drumming,0.1192,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+1299.0,1302.0,Drumming,Drumming,0.1080,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+1494.0,1497.0,Call,Call,0.8690,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+1497.0,1500.0,Call,Call,0.8157,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+2178.0,2181.0,Song,Song,0.3450,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+2181.0,2184.0,Song,Song,0.4039,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+2250.0,2253.0,Drumming,Drumming,0.1863,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+2253.0,2256.0,Song,Song,0.1821,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav
+2256.0,2259.0,Song,Song,0.3579,/tmp/detect_drive_qyqe4nhn/2026_Beca_SMMICRO_044_25_Granges_Narboz_MIC044_20260413_192000.wav

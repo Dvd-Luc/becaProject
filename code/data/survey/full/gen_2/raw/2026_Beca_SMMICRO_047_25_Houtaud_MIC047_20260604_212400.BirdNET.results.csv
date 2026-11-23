@@ -1,0 +1,17 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+105.0,108.0,Drumming,Drumming,0.1002,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+186.0,189.0,Drumming,Drumming,0.1143,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+300.0,303.0,Drumming,Drumming,0.1486,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+309.0,312.0,Drumming,Drumming,0.1002,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+498.0,501.0,Call,Call,0.1056,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+564.0,567.0,Drumming,Drumming,0.1242,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+636.0,639.0,Drumming,Drumming,0.1886,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+666.0,669.0,Drumming,Drumming,0.1069,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+1164.0,1167.0,Song,Song,0.1451,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+1767.0,1770.0,Drumming,Drumming,0.1072,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+1878.0,1881.0,Drumming,Drumming,0.1246,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+2457.0,2460.0,Drumming,Drumming,0.1142,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+2466.0,2469.0,Drumming,Drumming,0.1133,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+2472.0,2475.0,Drumming,Drumming,0.1166,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+3297.0,3300.0,Drumming,Drumming,0.1336,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav
+3315.0,3318.0,Drumming,Drumming,0.1181,/tmp/detect_drive_00ay4714/2026_Beca_SMMICRO_047_25_Houtaud_MIC047_20260604_212400.wav

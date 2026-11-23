@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+36.0,39.0,Drumming,Drumming,0.1046,/tmp/detect_drive_wav698i5/2026_Beca_SMMICRO_059_25_Bannans_MIC059_20260615_213100.wav
+585.0,588.0,Drumming,Drumming,0.1139,/tmp/detect_drive_wav698i5/2026_Beca_SMMICRO_059_25_Bannans_MIC059_20260615_213100.wav
+1170.0,1173.0,Call,Call,0.1099,/tmp/detect_drive_wav698i5/2026_Beca_SMMICRO_059_25_Bannans_MIC059_20260615_213100.wav
+2433.0,2436.0,Song,Song,0.1146,/tmp/detect_drive_wav698i5/2026_Beca_SMMICRO_059_25_Bannans_MIC059_20260615_213100.wav

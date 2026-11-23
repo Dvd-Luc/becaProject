@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+297.0,300.0,Drumming,Drumming,0.1314,/tmp/detect_drive_xu6lken6/2026_Beca_SMMICRO_042_25_Granges_Narboz_MIC042_20260327_195702.wav
+300.0,303.0,Drumming,Drumming,0.1400,/tmp/detect_drive_xu6lken6/2026_Beca_SMMICRO_042_25_Granges_Narboz_MIC042_20260327_195702.wav
+1113.0,1116.0,Call,Call,0.1819,/tmp/detect_drive_xu6lken6/2026_Beca_SMMICRO_042_25_Granges_Narboz_MIC042_20260327_195702.wav
+2019.0,2022.0,Call,Call,0.1226,/tmp/detect_drive_xu6lken6/2026_Beca_SMMICRO_042_25_Granges_Narboz_MIC042_20260327_195702.wav

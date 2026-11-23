@@ -1,0 +1,16 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+45.0,48.0,Drumming,Drumming,0.1052,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+153.0,156.0,Drumming,Drumming,0.1369,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+525.0,528.0,Drumming,Drumming,0.1122,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+873.0,876.0,Drumming,Drumming,0.1021,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+969.0,972.0,Drumming,Drumming,0.1407,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+1632.0,1635.0,Call,Call,0.9781,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+1635.0,1638.0,Call,Call,0.9526,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2457.0,2460.0,Call,Call,0.5645,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2460.0,2463.0,Call,Call,0.9847,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2463.0,2466.0,Call,Call,0.9857,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2466.0,2469.0,Call,Call,0.9729,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2469.0,2472.0,Call,Call,0.9920,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2472.0,2475.0,Call,Call,0.9133,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2475.0,2478.0,Call,Call,0.9683,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav
+2763.0,2766.0,Drumming,Drumming,0.1572,/tmp/detect_drive__v28gr_v/2026_Beca_SMMICRO_058_25_La_Rivière_Drugeon_MIC058_20260405_190900.wav

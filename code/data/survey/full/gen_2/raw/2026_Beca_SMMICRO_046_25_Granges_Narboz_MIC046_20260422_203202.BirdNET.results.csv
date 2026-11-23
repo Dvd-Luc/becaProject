@@ -1,0 +1,17 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+78.0,81.0,Drumming,Drumming,0.2016,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+90.0,93.0,Drumming,Drumming,0.5667,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+105.0,108.0,Song,Song,0.8061,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+108.0,111.0,Song,Song,0.7320,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+111.0,114.0,Drumming,Drumming,0.3958,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+114.0,117.0,Song,Song,0.4797,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+117.0,120.0,Song,Song,0.7602,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+120.0,123.0,Drumming,Drumming,0.2236,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+120.0,123.0,Song,Song,0.1555,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+123.0,126.0,Song,Song,0.4629,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+126.0,129.0,Song,Song,0.6961,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+192.0,195.0,Drumming,Drumming,0.1122,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+2001.0,2004.0,Call,Call,0.1257,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+2478.0,2481.0,Drumming,Drumming,0.1102,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+3111.0,3114.0,Song,Song,0.1278,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
+3141.0,3144.0,Song,Song,0.1139,/tmp/detect_drive_bf5bcaa6/2026_Beca_SMMICRO_046_25_Granges_Narboz_MIC046_20260422_203202.wav
