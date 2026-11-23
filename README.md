@@ -485,32 +485,52 @@ sample of the events, you judge it blind, and the verdicts give the **precision 
 events**, with confidence intervals. Do this one drive at a time, as soon as its events exist:
 
 ```bash
-python src/survey/audit_events.py sample --drive D4 --dry-run   # strata and their populations
-python src/survey/audit_events.py sample --drive D4             # draw and freeze the sample
-python src/survey/audit_events.py cut --drive D4 --root /mnt/d/2026_Becacoustic_LPO_BFC_part1
-python src/survey/review.py --queue audit --drive D4            # judge (blind), in several sessions if needed
-python src/survey/audit_events.py report                        # precision, every drive judged so far
+python src/survey/audit_events.py sample --drive D1 --dry-run   # strata and their populations
+python src/survey/audit_events.py sample --drive D1             # draw and freeze the sample
+python src/survey/audit_events.py cut --drive D1 --root /mnt/d  # snippets of every queued event
+python src/survey/review.py --queue audit --drive D1            # judge (blind), in several sessions if needed
+python src/survey/audit_events.py presence --drive D1           # after the audit: sites still to confirm
+python src/survey/audit_events.py cut --drive D1 --root /mnt/d  # their snippets
+python src/survey/review.py --queue presence --drive D1         # judge them (blind)
+python src/survey/audit_events.py report                        # precision + presence, every drive so far
 ```
 
-- **sample**: each event goes in a stratum: predicted class × `max_conf` bin
-  (`review.audit_bins`: 0.5–0.7, 0.7–0.9, 0.9–1.0). It then draws
-  `review.audit_per_stratum` (30) events per stratum, seeded by `review.seed` and the
-  drive. A plain random draw would be mostly high-score Call; the strata make sure the
-  doubtful, low-score events of every class get judged. The sample and the
-  population of each stratum are frozen in `data/survey/review/audit_<drive>_{queue,strata}.csv`.
-  `--force` redraws, and only while nothing is judged yet.
-- **cut**: writes the audio of each sampled event, with 10 s on each side, as a snippet in
-  `data/survey/full/gen_2/audit/snippets/` (gitignored WAVs). It reads from the plugged-in drive
-  or from the cluster copy (`--root $SCRATCH/beca/audio/<drive>`). Once it's done, the
-  drive can be unplugged.
+- **sample**: each event goes in a stratum and a random sample is drawn per stratum,
+  seeded by `review.seed` and the drive. `review.audit_strata` picks the strata:
+  - `site` (default): class × site, `review.audit_per_site` (5) events each. Every site
+    is checked, so precision can be compared between sites and one hotspot can't fill
+    the sample.
+  - `bin`: class × `max_conf` bin (`review.audit_bins`), `review.audit_per_stratum` (30)
+    each. Used for D4, to choose the thresholds.
+
+  The sample, the population of each stratum and the stratum kind are frozen in
+  `data/survey/review/audit_<drive>_{queue,strata}.csv`. `--force` redraws, and only
+  while nothing is judged yet.
+- **presence**: for each class of `review.presence_labels` (Drumming, Song) and each site
+  with events of it: if no verdict confirms the class there yet, the best events not yet
+  judged (highest `max_conf`) are queued, up to `review.presence_per_site` (5) judged per
+  site. The queue is frozen in `presence_<drive>_queue.csv`. Run it after the audit is judged, so
+  sites the audit already confirmed are skipped.
+- **cut**: writes the audio of every queued event (audit and presence), with 10 s on each
+  side, as a snippet in `data/survey/full/gen_2/audit/snippets/` (gitignored WAVs). It
+  reads from the plugged-in drive or from the cluster copy
+  (`--root $SCRATCH/beca/audio/<drive>`). Once it's done, the drive can be unplugged.
 - **review**: the queue is **blind**, so neither the predicted class nor the score is shown. You
   say what each event really is (class, Noise or Unsure).
 - **report**: an event is correct when the verdict is its predicted class (Unsure left
-  out). Precision is given per class × bin, per class and overall, each stratum weighted
-  by its population. The 95 % CI comes from a bootstrap that resamples sites, because events
-  cluster by site. A confusion table (predicted → verdict, judged and estimated
-  events) shows what the errors are → `results/survey/audit_full_gen2.csv`,
-  `audit_full_gen2_confusion.csv`. Run it any time; strata not judged yet are flagged.
+  out). Precision is given per class × bin, per class, over the events still kept by
+  `min_event_conf` ("kept") and overall, each stratum weighted by its population. The 95 %
+  CI comes from a bootstrap that resamples sites, because events cluster by site. It also gives:
+  - correct / judged per class × site, with a Wilson CI
+  - a confusion table (predicted → verdict, judged and estimated events)
+  - each site's presence status per class: present, not confirmed or not judged
+
+  Outputs: `results/survey/audit_full_gen2.csv`, `_sites.csv`, `_confusion.csv`,
+  `presence_full_gen2.csv`. Run it any time; strata not judged yet are flagged.
+- **Call threshold:** the D4 audit gave Call a precision of 0.46 and 0.65 in the 0.5–0.7 and 0.7–0.9 bins, but
+  0.97 at ≥ 0.9. So `drive_detection.min_event_conf: {Call: 0.9}` keeps a Call event
+  only if its best window reaches 0.9. Windows are still merged from 0.5, so the kept
+  events are exactly the audited ≥ 0.9 stratum. Changing it needs only `detect_drive.py --post-only`.
 - The sample covers train and heldout sites, which is fine for measuring the frozen model.
   Only train-site verdicts may ever be used to train a later generation.
 - The audit gives precision only. Recall still comes from the XC test set.
