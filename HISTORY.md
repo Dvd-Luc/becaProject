@@ -24,9 +24,10 @@ changes (the `/wrap-up` routine does this).
 | Train queue | v0 detections (events over confidence bins) + 1 random background window per clip, train sites | 496 verdicts | **training** (gen_1, later gens) | `data/survey/review/train_*` |
 | Survey test set | blind 3 s windows from heldout sites, stratified by v0 score, prediction hidden | 361 judged (16 Call, 2 Song, 0 Drumming) | **test only**: field AP, false alarms per hour | `data/survey/review/test_*` |
 | XC test set | not-yet-annotated XC recordings by 60 recordists absent from all training data, annotated blind (no name or tag shown) | 78 recordings, 727 windows (250 Drumming, 216 Song, 75 Call) | **test only**: recall/AP on unseen recordists | `data/xc_test/` |
-| Full survey, gen_2 | gen_2 on **every** recording, drive by drive (MeSU cluster, commit `7fd9141`, 64 cores, 2 s per audio-hour) | D1 + D2 + D4: 76 sites, 13 896 files (13 881 h), 9 019 kept events (Call ≥ 0.9, others ≥ 0.5). D1: 32 sites, 5 507 files, Call 1 401, Drumming 407, Song 367. D2: 15 sites, 2 637 files, Call 431, Drumming 2 404, Song 980. D4: 29 sites, 5 752 files, Call 1 226, Drumming 755, Song 1 048. D3 (12 sites) running | **result** (detections) | `data/survey/full/gen_2/` |
+| Full survey, gen_2 | gen_2 on **every** recording, drive by drive (MeSU cluster, commit `7fd9141`, 64 cores, 2 s per audio-hour) | D1 + D2 + D4: 76 sites, 13 896 files (13 881 h), 9 019 kept events (Call ≥ 0.9, others ≥ 0.5). D1: 32 sites, 5 507 files, Call 1 401, Drumming 407, Song 367. D2: 15 sites, 2 637 files, Call 431, Drumming 2 404, Song 980. D3: 12 sites, 2 335 files (2 334 h), Call 753, Drumming 51, Song 129. D4: 29 sites, 5 752 files, Call 1 226, Drumming 755, Song 1 048. **All four drives: 88 sites, 16 231 files (16 215 h), 9 952 kept events** | **result** (detections) | `data/survey/full/gen_2/` |
 | Audit sample D4 | random sample of D4's full-survey events, 30 per class × `max_conf` bin (0.5 / 0.7 / 0.9 / 1.0), judged blind; train and heldout sites | 270 events | **precision of the full-survey events**; only train-site verdicts may ever train | `data/survey/review/audit_D4_*` |
-| Audit samples D1, D2 | random sample per class × site × `max_conf` bin (3 per stratum for D1, 5 for D2), judged blind; presence candidates cut at the same time | D1 253 + 4 presence, D2 191 (presence queue empty) | as D4 | `data/survey/review/{audit,presence}_D{1,2}_*` |
+| Audit samples D1, D2, D3 | random sample per class × site × `max_conf` bin (3 per stratum for D1, 5 for D2 and D3), judged blind; presence candidates cut at the same time | D1 253 + 4 presence, D2 191, D3 143 (presence queues of D2, D3 empty) | as D4 | `data/survey/review/{audit,presence}_D{1,2,3}_*` |
+| Heldout audit events | the audit events of heldout sites that gen_2 keeps (best window ≥ class floor), cut into their 3 s windows | 150 events, 17 sites (Call 50 true / 2 false, Drumming 32 / 20, Song 32 / 14) | **test only**: how a generation filters gen_2's events (`evaluate.py --testset audit`) | `data/survey/review/audit_D*` (heldout rows) |
 
 Snipe song and drumming are rare at the survey sites: drumming was confirmed at 2 of
 66 train sites and song at 4. Field recall for these classes therefore cannot be
@@ -121,6 +122,28 @@ Call → Noise 33. The 19 heldout Drumming errors stay out of training. Plan: de
 the D3 audit; check a gen 3 on the gen_2 events (heldout audit verdicts) and the XC test,
 then re-run the full survey with it.
 
+**Full-survey audit, all four drives** (`audit_full_gen2.csv`; 857 blind verdicts, 25 Unsure):
+kept events 0.927 [0.865, 0.957], Call (≥ 0.9) 0.956 [0.919, 0.985], Drumming 0.894
+[0.713, 0.954], Song 0.931 [0.901, 0.972]. D3 adds Drumming errors at 078 La Planée (0/6),
+072 Bouverans and 075 Frasne, and Song at 074 Bonnevaux (0/10). Presence: Drumming present
+at 33 sites, not confirmed at 29; Song present at 52, not confirmed at 9.
+
+**Recording schedule** (checked against computed sunsets at each position): every evening
+is two one-hour files from **sunset to sunset + 2 h**; the first file starts at sunset
+(median +1 min) in the recorder's own clock. Most clocks stayed on UTC+1 after the
+29 March time change, some follow legal time. The page earlier assumed −1 h → +1 h; fixed
+(`viz.schedule_start_min: 0`). Median kept event: Call 33, Song 37, Drumming 45 min after
+sunset. Data note: 027 Anzat-le-Luguet is named `_15_` but lies in Puy-de-Dôme (63).
+
+**Gen 3 plan** (rules fixed before any gen 3 result). Training: every earlier train queue +
+the train-site audit and presence verdicts (694 + 68; 175 heldout left out): Drumming 244
+field windows (gen_2: 37), 227 new Noise windows (mostly horses). Adopt gen 3 for a full
+re-run only if: (1) XC test AP of no class significantly lower than gen_2; (2) survey test
+set false alarms / h not higher; (3) heldout audit events: ≥ 90 % of the true events of
+each class kept, and ≥ half of the 20 false Drumming events removed, at the fixed floors
+(0.5, Call 0.9). Gen_2 reference on (3): keeps all by construction (rescore = survey
+scores), precision of kept Call 0.988, Drumming 0.648 [0.02, 0.98], Song 0.883.
+
 Data note: D1 site 032 Cussac holds two extra folders (`Porzana porzana` 186,
 `Zapornia pusilla` 63 WAVs): 16–30 s clips from an earlier BirdNET crake extraction,
 cut from the site's own recordings. The survey globs skip them, as they should.
@@ -143,4 +166,4 @@ signal from field verdicts is nearly exhausted at these sites.
 - **2026-11-18**: gen_0 vs gen_1 on the survey test set (too few positives to conclude). XC test set drawn, annotated blind and evaluated. Output cleanup (old learning-curve models deleted).
 - **2026-11-19**: field false-alarm metric added (gen_1: about 60× fewer). gen_1 run on the train sites; review queue `train_gen1` rebuilt at gen_0's settings (events ≥ 0.35) and judged (250); gen_2 trained and evaluated on both test sets.
 - **2026-11-20 → 11-23**: full survey moved to the MeSU cluster (Slurm job per drive). D4 done with gen_2 (5 752 files, 4 408 events at ≥ 0.5). Audit tool added and the D4 audit sample frozen (270 events, snippets cut).
-- **2026-11-23 → 11-25**: D4 audit judged; Call threshold raised to 0.9; presence check; local visualisation page. D1 and D2 run on the cluster (13 896 files in all), D3 submitted. Audit sampled per class × site × bin from D1 on; D1/D2 judged (444 + 4). Drumming false alarms, mostly horse neighing, at a few Massif Central sites.
+- **2026-11-23 → 11-25**: D4 audit judged; Call threshold raised to 0.9; presence check; local visualisation page. D1 and D2 run on the cluster (13 896 files in all), D3 submitted. Audit sampled per class × site × bin from D1 on; D1/D2 judged (444 + 4). Drumming false alarms, mostly horse neighing, at a few Massif Central sites. D3 run and audited (143); recording schedule corrected on the page (sunset → +2 h); page: IGN base maps, départements, zoom. Gen 3 material and the heldout audit test set added; gen 3 training started.
