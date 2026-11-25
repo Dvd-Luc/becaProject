@@ -1,0 +1,10 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Drumming,Drumming,0.2843,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+51.0,54.0,Drumming,Drumming,0.1005,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+108.0,111.0,Drumming,Drumming,0.1055,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+690.0,693.0,Call,Call,0.1566,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+1152.0,1155.0,Call,Call,0.1843,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+1410.0,1413.0,Call,Call,0.1144,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+1572.0,1575.0,Call,Call,0.1201,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+1575.0,1578.0,Call,Call,0.1261,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav
+3096.0,3099.0,Call,Call,0.1014,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260505_205002.wav

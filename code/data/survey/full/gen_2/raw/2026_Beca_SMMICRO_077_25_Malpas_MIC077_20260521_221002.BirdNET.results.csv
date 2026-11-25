@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+18.0,21.0,Song,Song,0.1654,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260521_221002.wav
+24.0,27.0,Song,Song,0.1193,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260521_221002.wav
+705.0,708.0,Drumming,Drumming,0.2349,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260521_221002.wav
+3012.0,3015.0,Drumming,Drumming,0.1259,/tmp/detect_drive_mlvw0vbg/2026_Beca_SMMICRO_077_25_Malpas_MIC077_20260521_221002.wav

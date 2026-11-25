@@ -1,0 +1,15 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+123.0,126.0,Drumming,Drumming,0.1036,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+135.0,138.0,Drumming,Drumming,0.1033,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+441.0,444.0,Drumming,Drumming,0.1298,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+534.0,537.0,Drumming,Drumming,0.1206,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+564.0,567.0,Drumming,Drumming,0.1064,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+1305.0,1308.0,Drumming,Drumming,0.1326,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+1314.0,1317.0,Drumming,Drumming,0.1118,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+1338.0,1341.0,Drumming,Drumming,0.1317,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+2805.0,2808.0,Call,Call,0.1714,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+3564.0,3567.0,Song,Song,0.1756,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+3567.0,3570.0,Song,Song,0.2205,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+3570.0,3573.0,Song,Song,0.1041,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+3573.0,3576.0,Song,Song,0.1378,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav
+3576.0,3579.0,Song,Song,0.1365,/tmp/detect_drive_2qiti1ve/2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie_MIC079_20260502_204602.wav

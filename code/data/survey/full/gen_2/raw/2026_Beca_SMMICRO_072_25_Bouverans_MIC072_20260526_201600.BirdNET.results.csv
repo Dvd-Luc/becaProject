@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+123.0,126.0,Drumming,Drumming,0.1279,/tmp/detect_drive_oi1b0o5h/2026_Beca_SMMICRO_072_25_Bouverans_MIC072_20260526_201600.wav
+294.0,297.0,Drumming,Drumming,0.1464,/tmp/detect_drive_oi1b0o5h/2026_Beca_SMMICRO_072_25_Bouverans_MIC072_20260526_201600.wav
+528.0,531.0,Song,Song,0.1021,/tmp/detect_drive_oi1b0o5h/2026_Beca_SMMICRO_072_25_Bouverans_MIC072_20260526_201600.wav
+570.0,573.0,Song,Song,0.1006,/tmp/detect_drive_oi1b0o5h/2026_Beca_SMMICRO_072_25_Bouverans_MIC072_20260526_201600.wav
