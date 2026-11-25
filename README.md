@@ -537,6 +537,15 @@ python src/survey/audit_events.py report                        # precision + pr
   The sample, the population of each stratum and the stratum kind are frozen in
   `data/survey/review/audit_<drive>_{queue,strata}.csv`. `--force` redraws, and only
   while nothing is judged yet.
+- **One audit per generation.** The queues belong to the generation in
+  `drive_detection.gen`: `audit_<drive>` for gen 2, and `audit_gen<K>_<drive>` after it
+  (`review.py --queue audit --drive D` picks the right one). A gen 3 event that gen 2's
+  audit already judged gets that verdict copied, so you never judge the same audio twice:
+  - "Already judged" means same file, same class, start within 1.5 s, and not Unsure.
+  - The copy is marked `copied:<queue>@<time>` in the time column.
+  - The sample stays random. Copied verdicts never block `--force`.
+  - A site × class confirmed by any earlier generation stays **present**, and is never
+    queued for the presence check again.
 - **presence**: for each class of `review.presence_labels` (Drumming, Song) and each site
   with events of it: if no verdict confirms the class there yet, the best events not yet
   judged (highest `max_conf`) are queued, up to `review.presence_per_site` (5) judged per
@@ -551,8 +560,10 @@ python src/survey/audit_events.py report                        # precision + pr
   after `sample` covers both queues and the drive is needed once.
 - **review**: the queue is **blind**, so neither the predicted class nor the score is shown. You
   say what each event really is (class, Noise or Unsure).
-- **report**: an event is correct when the verdict is its predicted class (Unsure left
-  out). Precision is given per class × bin, per class, over the events still kept by
+- **report** (`--split heldout|train` for one split; this needs site strata): an event
+  is correct when the verdict is its predicted class (Unsure left out). For gen 3 and
+  later, **heldout precision is the number to report**. These generations trained on
+  the train sites' audit verdicts, so their train-site precision is optimistic. Precision is given per class × bin, per class, over the events still kept by
   `min_event_conf` ("kept") and overall, each stratum weighted by its population. The 95 %
   CI comes from a bootstrap that resamples sites, because events cluster by site. It also gives:
   - correct / judged per class × site, with a Wilson CI
