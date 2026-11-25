@@ -1,4 +1,69 @@
 drive,site,split,label,events,max_conf,judged,confirmed,status
+D1,BECA_SMMICRO_001_15_Tanavelle,train,Drumming,50,0.853,6,1,present
+D1,BECA_SMMICRO_002_48_Recoules-d'Aubrac,train,Drumming,16,0.670,5,0,not confirmed
+D1,BECA_SMMICRO_003_48_Saint-Laurent-de-Muret,train,Drumming,3,0.810,3,3,present
+D1,BECA_SMMICRO_003_48_Saint-Laurent-de-Muret,train,Song,13,0.657,3,2,present
+D1,BECA_SMMICRO_004_48_Marchastel,heldout,Drumming,2,0.825,2,2,present
+D1,BECA_SMMICRO_006_48_Nasbinals,train,Drumming,3,0.528,3,0,not confirmed
+D1,BECA_SMMICRO_006_48_Nasbinals,train,Song,2,0.617,2,0,not confirmed
+D1,BECA_SMMICRO_009_15_Le Fayet,train,Drumming,1,0.527,1,0,not confirmed
+D1,BECA_SMMICRO_013_63_Saint-Sauves d'Auvergne,heldout,Drumming,1,0.531,1,0,not confirmed
+D1,BECA_SMMICRO_014_63_Olby,train,Drumming,17,0.710,5,0,not confirmed
+D1,BECA_SMMICRO_014_63_Olby,train,Song,1,0.511,1,0,not confirmed
+D1,BECA_SMMICRO_015_15_Murat,heldout,Drumming,3,0.880,3,2,present
+D1,BECA_SMMICRO_015_15_Murat,heldout,Song,18,0.953,9,8,present
+D1,BECA_SMMICRO_016_23_Flayat,train,Drumming,10,0.699,3,1,present
+D1,BECA_SMMICRO_016_23_Flayat,train,Song,1,0.658,1,1,present
+D1,BECA_SMMICRO_017_63_Rentières,train,Drumming,63,0.771,5,0,not confirmed
+D1,BECA_SMMICRO_017_63_Rentières,train,Song,4,0.579,3,1,present
+D1,BECA_SMMICRO_018_15_Ségur-les-Villas,train,Drumming,58,0.811,6,6,present
+D1,BECA_SMMICRO_018_15_Ségur-les-Villas,train,Song,10,0.828,6,6,present
+D1,BECA_SMMICRO_019_15_Dienne,train,Drumming,2,0.726,1,1,present
+D1,BECA_SMMICRO_019_15_Dienne,train,Song,1,0.538,1,1,present
+D1,BECA_SMMICRO_020_15_Vernols,train,Drumming,2,0.590,2,0,not confirmed
+D1,BECA_SMMICRO_021_15_Landeyrat,train,Drumming,8,0.879,4,4,present
+D1,BECA_SMMICRO_021_15_Landeyrat,train,Song,7,0.900,6,6,present
+D1,BECA_SMMICRO_022_15_Landeyrat,train,Song,4,0.873,4,0,not confirmed
+D1,BECA_SMMICRO_023_15_Landeyrat,train,Drumming,3,0.664,3,0,not confirmed
+D1,BECA_SMMICRO_023_15_Landeyrat,train,Song,1,0.516,1,0,not confirmed
+D1,BECA_SMMICRO_024_15_Roffiac,train,Drumming,2,0.581,2,1,present
+D1,BECA_SMMICRO_024_15_Roffiac,train,Song,1,0.523,1,1,present
+D1,BECA_SMMICRO_025_15_Coltines,heldout,Song,21,0.677,1,1,present
+D1,BECA_SMMICRO_026_15_Neuvéglise-sur-Truyère,heldout,Drumming,2,0.517,2,0,not confirmed
+D1,BECA_SMMICRO_028_15_Marcenat,train,Drumming,3,0.596,3,0,not confirmed
+D1,BECA_SMMICRO_029_15_Saint-Amandin,heldout,Drumming,2,0.548,2,0,not confirmed
+D1,BECA_SMMICRO_029_15_Saint-Amandin,heldout,Song,4,0.798,3,2,present
+D1,BECA_SMMICRO_030_15_Ségur-les-Villas,train,Drumming,84,0.951,7,7,present
+D1,BECA_SMMICRO_030_15_Ségur-les-Villas,train,Song,57,0.935,9,9,present
+D1,BECA_SMMICRO_031_15_Talizat,train,Drumming,4,0.582,4,0,not confirmed
+D1,BECA_SMMICRO_031_15_Talizat,train,Song,20,0.815,3,1,present
+D1,BECA_SMMICRO_032_15_Cussac,train,Drumming,25,0.882,6,6,present
+D1,BECA_SMMICRO_032_15_Cussac,train,Song,17,0.940,6,6,present
+D1,BECA_SMMICRO_033_15_Coltines,train,Drumming,1,0.666,1,0,not confirmed
+D1,BECA_SMMINI02_15_Vernols,train,Drumming,2,0.795,2,2,present
+D1,BECA_SMMINI02_15_Vernols,train,Song,1,0.689,1,1,present
+D1,BECA_SMMINI03_15_Tanavelle,train,Song,3,0.808,3,3,present
+D1,BECA_SM_PNRVA_15_Cussac,heldout,Drumming,40,0.951,9,9,present
+D1,BECA_SM_PNRVA_15_Cussac,heldout,Song,181,0.939,7,7,present
+D2,BECA_Plaine Jacquot,train,Song,1,0.576,1,0,not confirmed
+D2,BECA_SMMICRO_007_63_La Godivelle,train,Drumming,4,0.743,4,1,present
+D2,BECA_SMMICRO_007_63_La Godivelle,train,Song,2,0.570,2,1,present
+D2,BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne,train,Drumming,3,0.922,3,3,present
+D2,BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne,train,Song,28,0.864,6,1,present
+D2,BECA_SMMICRO_010_63_Picherande,train,Drumming,2,0.548,2,0,not confirmed
+D2,BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues,train,Drumming,1252,0.973,15,15,present
+D2,BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues,train,Song,440,0.956,15,14,present
+D2,BECA_SMMICRO_034_43_Chaudeyrolles,train,Drumming,1,0.505,1,0,not confirmed
+D2,BECA_SMMICRO_035_43_Champclause,heldout,Drumming,2,0.724,1,0,not confirmed
+D2,BECA_SMMICRO_036_43_Siaugues-Sainte-Marie,heldout,Drumming,1,0.505,1,0,not confirmed
+D2,BECA_SMMICRO_036_43_Siaugues-Sainte-Marie,heldout,Song,3,0.795,2,1,present
+D2,BECA_SMMICRO_037_43_Landos,train,Drumming,26,0.932,7,1,present
+D2,BECA_SMMICRO_037_43_Landos,train,Song,29,0.734,8,2,present
+D2,BECA_SMMICRO_038_43_Costaros,heldout,Drumming,98,0.744,10,0,not confirmed
+D2,BECA_SMMICRO_038_43_Costaros,heldout,Song,16,0.722,5,4,present
+D2,BECA_SMMICRO_039_43_Saint-Jean-Lachalm,train,Drumming,986,0.981,15,15,present
+D2,BECA_SMMICRO_039_43_Saint-Jean-Lachalm,train,Song,461,0.975,15,15,present
+D2,BECA_SMMICRO_040_43_Les Vastres,train,Drumming,29,0.812,10,0,not confirmed
 D4,2026_Beca_SMMICRO_043_25_Granges_Narboz,heldout,Drumming,2,0.752,2,2,present
 D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Drumming,256,0.945,26,26,present
 D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Song,130,0.985,15,15,present

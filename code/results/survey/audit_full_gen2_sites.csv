@@ -1,4 +1,115 @@
 drive,site,split,label,events,judged,correct,share,ci_low,ci_high
+D1,BECA_SMMICRO_001_15_Tanavelle,train,Call,30,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_001_15_Tanavelle,train,Drumming,50,6,1,0.17,0.03,0.56
+D1,BECA_SMMICRO_002_48_Recoules-d'Aubrac,train,Call,2,2,2,1.00,0.34,1.00
+D1,BECA_SMMICRO_002_48_Recoules-d'Aubrac,train,Drumming,16,3,0,0.00,0.00,0.56
+D1,BECA_SMMICRO_003_48_Saint-Laurent-de-Muret,train,Call,80,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_003_48_Saint-Laurent-de-Muret,train,Drumming,3,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_003_48_Saint-Laurent-de-Muret,train,Song,13,3,2,0.67,0.21,0.94
+D1,BECA_SMMICRO_004_48_Marchastel,heldout,Call,26,3,2,0.67,0.21,0.94
+D1,BECA_SMMICRO_004_48_Marchastel,heldout,Drumming,2,2,2,1.00,0.34,1.00
+D1,BECA_SMMICRO_005_63_Egliseneuve-d'Entraigues,heldout,Call,1,1,1,1.00,0.21,1.00
+D1,BECA_SMMICRO_006_48_Nasbinals,train,Call,64,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_006_48_Nasbinals,train,Drumming,3,3,0,0.00,0.00,0.56
+D1,BECA_SMMICRO_006_48_Nasbinals,train,Song,2,2,0,0.00,0.00,0.66
+D1,BECA_SMMICRO_009_15_Le Fayet,train,Call,1,1,1,1.00,0.21,1.00
+D1,BECA_SMMICRO_009_15_Le Fayet,train,Drumming,1,1,0,0.00,0.00,0.79
+D1,BECA_SMMICRO_013_63_Saint-Sauves d'Auvergne,heldout,Call,2,2,1,0.50,0.09,0.91
+D1,BECA_SMMICRO_013_63_Saint-Sauves d'Auvergne,heldout,Drumming,1,1,0,0.00,0.00,0.79
+D1,BECA_SMMICRO_014_63_Olby,train,Call,29,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_014_63_Olby,train,Drumming,17,4,0,0.00,0.00,0.49
+D1,BECA_SMMICRO_014_63_Olby,train,Song,1,1,0,0.00,0.00,0.79
+D1,BECA_SMMICRO_015_15_Murat,heldout,Call,2,2,2,1.00,0.34,1.00
+D1,BECA_SMMICRO_015_15_Murat,heldout,Drumming,3,3,2,0.67,0.21,0.94
+D1,BECA_SMMICRO_015_15_Murat,heldout,Song,18,9,8,0.89,0.56,0.98
+D1,BECA_SMMICRO_016_23_Flayat,train,Call,204,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_016_23_Flayat,train,Drumming,10,3,1,0.33,0.06,0.79
+D1,BECA_SMMICRO_016_23_Flayat,train,Song,1,1,1,1.00,0.21,1.00
+D1,BECA_SMMICRO_017_63_Rentières,train,Call,8,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_017_63_Rentières,train,Drumming,63,5,0,0.00,-0.00,0.43
+D1,BECA_SMMICRO_017_63_Rentières,train,Song,4,3,1,0.33,0.06,0.79
+D1,BECA_SMMICRO_018_15_Ségur-les-Villas,train,Call,8,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_018_15_Ségur-les-Villas,train,Drumming,58,6,6,1.00,0.61,1.00
+D1,BECA_SMMICRO_018_15_Ségur-les-Villas,train,Song,10,6,6,1.00,0.61,1.00
+D1,BECA_SMMICRO_019_15_Dienne,train,Call,12,3,2,0.67,0.21,0.94
+D1,BECA_SMMICRO_019_15_Dienne,train,Drumming,2,1,1,1.00,0.21,1.00
+D1,BECA_SMMICRO_019_15_Dienne,train,Song,1,1,1,1.00,0.21,1.00
+D1,BECA_SMMICRO_020_15_Vernols,train,Call,3,3,2,0.67,0.21,0.94
+D1,BECA_SMMICRO_020_15_Vernols,train,Drumming,2,2,0,0.00,0.00,0.66
+D1,BECA_SMMICRO_021_15_Landeyrat,train,Call,43,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_021_15_Landeyrat,train,Drumming,8,4,4,1.00,0.51,1.00
+D1,BECA_SMMICRO_021_15_Landeyrat,train,Song,7,6,6,1.00,0.61,1.00
+D1,BECA_SMMICRO_022_15_Landeyrat,train,Call,5,2,2,1.00,0.34,1.00
+D1,BECA_SMMICRO_022_15_Landeyrat,train,Song,4,4,0,0.00,0.00,0.49
+D1,BECA_SMMICRO_023_15_Landeyrat,train,Call,38,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_023_15_Landeyrat,train,Drumming,3,3,0,0.00,0.00,0.56
+D1,BECA_SMMICRO_023_15_Landeyrat,train,Song,1,1,0,0.00,0.00,0.79
+D1,BECA_SMMICRO_024_15_Roffiac,train,Call,81,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_024_15_Roffiac,train,Drumming,2,2,1,0.50,0.09,0.91
+D1,BECA_SMMICRO_024_15_Roffiac,train,Song,1,1,1,1.00,0.21,1.00
+D1,BECA_SMMICRO_025_15_Coltines,heldout,Call,43,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_025_15_Coltines,heldout,Song,21,1,1,1.00,0.21,1.00
+D1,BECA_SMMICRO_026_15_Neuvéglise-sur-Truyère,heldout,Call,36,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_026_15_Neuvéglise-sur-Truyère,heldout,Drumming,2,2,0,0.00,0.00,0.66
+D1,BECA_SMMICRO_027_15_Anzat-le-Luguet,train,Call,2,2,2,1.00,0.34,1.00
+D1,BECA_SMMICRO_028_15_Marcenat,train,Call,30,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_028_15_Marcenat,train,Drumming,3,3,0,0.00,0.00,0.56
+D1,BECA_SMMICRO_029_15_Saint-Amandin,heldout,Call,2,2,2,1.00,0.34,1.00
+D1,BECA_SMMICRO_029_15_Saint-Amandin,heldout,Drumming,2,2,0,0.00,0.00,0.66
+D1,BECA_SMMICRO_029_15_Saint-Amandin,heldout,Song,4,3,2,0.67,0.21,0.94
+D1,BECA_SMMICRO_030_15_Ségur-les-Villas,train,Call,72,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_030_15_Ségur-les-Villas,train,Drumming,84,7,7,1.00,0.65,1.00
+D1,BECA_SMMICRO_030_15_Ségur-les-Villas,train,Song,57,9,9,1.00,0.70,1.00
+D1,BECA_SMMICRO_031_15_Talizat,train,Call,29,3,2,0.67,0.21,0.94
+D1,BECA_SMMICRO_031_15_Talizat,train,Drumming,4,3,0,0.00,0.00,0.56
+D1,BECA_SMMICRO_031_15_Talizat,train,Song,20,3,1,0.33,0.06,0.79
+D1,BECA_SMMICRO_032_15_Cussac,train,Call,129,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_032_15_Cussac,train,Drumming,25,6,6,1.00,0.61,1.00
+D1,BECA_SMMICRO_032_15_Cussac,train,Song,17,6,6,1.00,0.61,1.00
+D1,BECA_SMMICRO_033_15_Coltines,train,Call,22,3,3,1.00,0.44,1.00
+D1,BECA_SMMICRO_033_15_Coltines,train,Drumming,1,1,0,0.00,0.00,0.79
+D1,BECA_SMMINI01_15_Coltines,train,Call,20,3,3,1.00,0.44,1.00
+D1,BECA_SMMINI02_15_Vernols,train,Call,52,3,3,1.00,0.44,1.00
+D1,BECA_SMMINI02_15_Vernols,train,Drumming,2,2,2,1.00,0.34,1.00
+D1,BECA_SMMINI02_15_Vernols,train,Song,1,1,1,1.00,0.21,1.00
+D1,BECA_SMMINI03_15_Tanavelle,train,Call,19,3,3,1.00,0.44,1.00
+D1,BECA_SMMINI03_15_Tanavelle,train,Song,3,3,3,1.00,0.44,1.00
+D1,BECA_SM_PNRVA_15_Cussac,heldout,Call,306,3,3,1.00,0.44,1.00
+D1,BECA_SM_PNRVA_15_Cussac,heldout,Drumming,40,9,9,1.00,0.70,1.00
+D1,BECA_SM_PNRVA_15_Cussac,heldout,Song,181,7,7,1.00,0.65,1.00
+D2,BECA_Les Chastelets,train,Call,3,3,3,1.00,0.44,1.00
+D2,BECA_Plaine Jacquot,train,Call,3,3,3,1.00,0.44,1.00
+D2,BECA_Plaine Jacquot,train,Song,1,1,0,0.00,0.00,0.79
+D2,BECA_SMMICRO_007_63_La Godivelle,train,Call,12,5,5,1.00,0.57,1.00
+D2,BECA_SMMICRO_007_63_La Godivelle,train,Drumming,4,4,1,0.25,0.05,0.70
+D2,BECA_SMMICRO_007_63_La Godivelle,train,Song,2,2,1,0.50,0.09,0.91
+D2,BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne,train,Call,104,5,3,0.60,0.23,0.88
+D2,BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne,train,Drumming,3,3,3,1.00,0.44,1.00
+D2,BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne,train,Song,28,6,1,0.17,0.03,0.56
+D2,BECA_SMMICRO_010_63_Picherande,train,Call,4,4,4,1.00,0.51,1.00
+D2,BECA_SMMICRO_010_63_Picherande,train,Drumming,2,2,0,0.00,0.00,0.66
+D2,BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues,train,Call,80,5,3,0.60,0.23,0.88
+D2,BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues,train,Drumming,1252,15,15,1.00,0.80,1.00
+D2,BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues,train,Song,440,15,14,0.93,0.70,0.99
+D2,BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie,train,Call,12,5,4,0.80,0.38,0.96
+D2,BECA_SMMICRO_034_43_Chaudeyrolles,train,Call,5,5,2,0.40,0.12,0.77
+D2,BECA_SMMICRO_034_43_Chaudeyrolles,train,Drumming,1,1,0,0.00,0.00,0.79
+D2,BECA_SMMICRO_035_43_Champclause,heldout,Call,25,5,5,1.00,0.57,1.00
+D2,BECA_SMMICRO_035_43_Champclause,heldout,Drumming,2,1,0,0.00,0.00,0.79
+D2,BECA_SMMICRO_036_43_Siaugues-Sainte-Marie,heldout,Call,52,5,5,1.00,0.57,1.00
+D2,BECA_SMMICRO_036_43_Siaugues-Sainte-Marie,heldout,Drumming,1,1,0,0.00,0.00,0.79
+D2,BECA_SMMICRO_036_43_Siaugues-Sainte-Marie,heldout,Song,3,2,1,0.50,0.09,0.91
+D2,BECA_SMMICRO_037_43_Landos,train,Call,47,5,5,1.00,0.57,1.00
+D2,BECA_SMMICRO_037_43_Landos,train,Drumming,26,7,1,0.14,0.03,0.51
+D2,BECA_SMMICRO_037_43_Landos,train,Song,29,8,2,0.25,0.07,0.59
+D2,BECA_SMMICRO_038_43_Costaros,heldout,Call,7,5,5,1.00,0.57,1.00
+D2,BECA_SMMICRO_038_43_Costaros,heldout,Drumming,98,10,0,0.00,-0.00,0.28
+D2,BECA_SMMICRO_038_43_Costaros,heldout,Song,16,5,4,0.80,0.38,0.96
+D2,BECA_SMMICRO_039_43_Saint-Jean-Lachalm,train,Call,67,5,5,1.00,0.57,1.00
+D2,BECA_SMMICRO_039_43_Saint-Jean-Lachalm,train,Drumming,986,15,15,1.00,0.80,1.00
+D2,BECA_SMMICRO_039_43_Saint-Jean-Lachalm,train,Song,461,15,15,1.00,0.80,1.00
+D2,BECA_SMMICRO_040_43_Les Vastres,train,Call,10,5,4,0.80,0.38,0.96
+D2,BECA_SMMICRO_040_43_Les Vastres,train,Drumming,29,10,0,0.00,-0.00,0.28
 D4,2026_Beca_SMMICRO_043_25_Granges_Narboz,heldout,Call,57,2,2,1.00,0.34,1.00
 D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Drumming,256,26,26,1.00,0.87,1.00
 D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Song,130,15,15,1.00,0.80,1.00
