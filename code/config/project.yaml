@@ -166,4 +166,7 @@ generations:
   dir: generations
   train_seed: 1                           # BirdNET RANDOM_SEED for gen >= 1
   max_windows_per_item: 3                 # 3 s windows taken from one reviewed event
+  audit_gen: 2                            # the audit_<drive> / presence_<drive> verdicts judge
+  audit_raw_dir: data/survey/full/gen_2/raw   # this gen's full-survey events: they train
+                                          # gens > audit_gen, train sites only
   eval_thresholds: [0.35, 0.5, 0.7]       # evaluate.py precision / recall points

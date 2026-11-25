@@ -4,13 +4,19 @@
     python src/survey/make_generation.py --gen 1             # cut clips, link, train
     python src/survey/make_generation.py --gen 1 --no-train  # build the training folder only
     python src/survey/make_generation.py --gen 2 --dry-run   # + verdicts on gen 1's detections
+    python src/survey/make_generation.py --gen 3 --dry-run   # + full-survey audit verdicts (train sites)
 
 gen_0 is the existing model (detection.model): it is only linked, never retrained.
 gen_K (K >= 1) uses ALL current verdicts (last verdict per item) of the train queues
 judged before it: <review.dir>/train_judgments.csv (v0's detections) and
 train_gen<J>_judgments.csv for J < K (gen J's detections, review.py --queue train
 --gen J). So gen 1 = train queue only; gen 2 = train + train_gen1; ...
-Only train-split sites are accepted (anything else is an error). The XC
+Gens after generations.audit_gen (2) also use the full-survey audit and presence
+verdicts (<review.dir>/{audit,presence}_<drive>_judgments.csv, every drive), whose
+events are gen_<audit_gen>'s: their windows are chosen from generations.audit_raw_dir
+on the recording's 3 s grid and cut from the audit snippets. These queues cover train
+and heldout sites by design: their heldout rows are left out (and counted), never
+trained on. Every other queue must hold train-split sites only (else an error). The XC
 clips (--base-clips) must not come from a recordist of the XC test sample
 (<xc_test.dir>/sample.csv), or the run stops.
 Survey verdicts are used as follows:
@@ -50,6 +56,7 @@ from common.config import load
 
 WIN = 3.0
 NOISE, UNSURE = "Noise", "Unsure"
+EVENT_KINDS = ("event", "audit", "presence")    # queue kinds that are detected events
 META_HEADER = ["file", "class", "item_id", "kind", "predicted", "clip_id", "site",
                "start_s"]
 # BirdNET _Params.csv column -> train CLI option (flags: True -> option present)
@@ -179,23 +186,42 @@ def raw_scores(raw_dir, clip_id, label):
 def windows_of(item, raw_dir, max_n):
     """Start times of the 3 s grid windows to cut for one judged item.
 
-    Events longer than max_n windows keep the max_n windows v0 scored highest for the
-    predicted class, so the gap windows bridged by merge_gap_s are dropped.
+    Events longer than max_n windows keep the max_n windows the detecting model scored
+    highest for the predicted class, so the gap windows bridged by merge_gap_s are
+    dropped. Audit and presence items are snippets of a full-survey file: their times
+    are snippet-relative, so the grid is the file's (snippet time + offset_s).
 
     Args:
-        item (dict): Train queue row (kind, clip_id, start_s, end_s, predicted).
-        raw_dir (Path): detection.dir/raw.
+        item (dict): Queue row (kind, clip_id, start_s, end_s, predicted; offset_s for
+            audit / presence items).
+        raw_dir (Path): Raw BirdNET results of the detecting run.
         max_n (int): Maximum windows kept from one event.
 
     Returns:
-        list[float]: Window start times in seconds, sorted.
+        list[float]: Window start times in seconds of the clip / file, sorted.
     """
-    start, end = float(item["start_s"]), float(item["end_s"])
+    offset = float(item.get("offset_s") or 0.0)
+    start, end = float(item["start_s"]) + offset, float(item["end_s"]) + offset
     window_indices = list(range(round(start / WIN), max(round(start / WIN) + 1, round(end / WIN))))
-    if item["kind"] == "event" and len(window_indices) > max_n:
+    if item["kind"] in EVENT_KINDS and len(window_indices) > max_n:
         scores = raw_scores(raw_dir, item["clip_id"], item["predicted"])
         window_indices = sorted(sorted(window_indices, key=lambda index: -scores.get(index, 0.0))[:max_n])
     return [index * WIN for index in window_indices]
+
+
+def audit_sources(review_dir, raw_dir):
+    """Judged audit and presence queues of the full survey (review.dir/{audit,presence}_<drive>).
+
+    Args:
+        review_dir (Path): review.dir.
+        raw_dir (Path): Raw results of the full survey the queues were drawn from.
+
+    Returns:
+        list[tuple[str, Path]]: (queue name, raw_dir) for each queue with judgments.
+    """
+    names = sorted(path.name[:-len("_judgments.csv")] for kind in ("audit", "presence")
+                   for path in review_dir.glob(f"{kind}_D*_judgments.csv"))
+    return [(name, raw_dir) for name in names]
 
 
 def link(src, dst):
@@ -275,7 +301,11 @@ def main():
     sources = [("train", Path(detection_cfg["dir"]) / "raw")]
     sources += [(f"train_gen{k}", gens_dir / f"gen_{k}" / "detections" / "raw")
                 for k in range(1, args.gen)]
-    queue, raw_dir_of, verdicts, used_queues = {}, {}, {}, []
+    # full-survey audit / presence verdicts (on gen_<audit_gen>'s events): train sites only
+    audit_gen = gen_cfg.get("audit_gen")
+    if audit_gen is not None and args.gen > audit_gen:
+        sources += audit_sources(review_dir, Path(gen_cfg["audit_raw_dir"]))
+    queue, raw_dir_of, verdicts, used_queues, heldout_skipped = {}, {}, {}, [], Counter()
     for queue_name, raw_dir in sources:
         judgments_path = review_dir / f"{queue_name}_judgments.csv"
         if not judgments_path.exists():
@@ -289,11 +319,22 @@ def main():
         if missing:
             raise SystemExit(f"{len(missing)} judged items are not in {queue_name}_queue.csv "
                              f"(queue rebuilt?), e.g. {missing[:2]}")
+        if queue_name.startswith(("audit_", "presence_")):   # these mix splits by design
+            heldout = [item_id for item_id in queue_verdicts if queue_rows[item_id]["split"] != "train"]
+            heldout_skipped[queue_name] = len(heldout)
+            queue_verdicts = {item_id: verdict for item_id, verdict in queue_verdicts.items() if item_id not in heldout}
+            absent = [item_id for item_id in queue_verdicts if not Path(queue_rows[item_id]["clip_path"]).exists()]
+            if absent:
+                raise SystemExit(f"{len(absent)} {queue_name} snippets are missing, e.g. "
+                                 f"{queue_rows[absent[0]]['clip_path']}: run audit_events.py cut first")
         queue.update(queue_rows)
         verdicts.update(queue_verdicts)
         raw_dir_of.update({item_id: raw_dir for item_id in queue_rows})
         used_queues.append(f"{queue_name} ({len(queue_verdicts)})")
     print("train queues used:", ", ".join(used_queues))
+    if heldout_skipped:
+        print(f"heldout-site verdicts left out (never trained on): {sum(heldout_skipped.values())} "
+              f"({', '.join(f'{name} {n}' for name, n in sorted(heldout_skipped.items()) if n)})")
     leak = sorted({queue[item_id]["site"] for item_id in verdicts if queue[item_id]["split"] != "train"})
     if leak:
         raise SystemExit(f"judgments from non-train sites, refusing: {leak[:5]}")
@@ -304,12 +345,14 @@ def main():
         if verdict == UNSURE:
             skipped["unsure"] += 1
             continue
+        offset = float(item.get("offset_s") or 0.0)            # snippet start in the file
         for start in windows_of(item, raw_dir_of[item_id], max_n):
             name = f"{item['clip_id']}_{start:.0f}s.wav"
             plan.append({"file": f"{verdict}/{name}", "class": verdict, "item_id": item_id,
                          "kind": item["kind"], "predicted": item["predicted"],
                          "clip_id": item["clip_id"], "site": item["site"],
-                         "start_s": f"{start:.1f}", "_path": item["clip_path"]})
+                         "start_s": f"{start:.1f}", "_path": item["clip_path"],
+                         "_read_s": max(0.0, start - offset)})
     dup_counts = Counter(entry["file"] for entry in plan)               # same window judged twice
     plan = list({entry["file"]: entry for entry in plan}.values())
 
@@ -340,7 +383,7 @@ def main():
         dst = clips_dir / entry["file"]
         dst.parent.mkdir(parents=True, exist_ok=True)
         info = sf.info(entry["_path"])
-        audio, sample_rate = sf.read(entry["_path"], start=int(float(entry["start_s"]) * info.samplerate),
+        audio, sample_rate = sf.read(entry["_path"], start=int(entry["_read_s"] * info.samplerate),
                                      frames=int(WIN * info.samplerate), dtype="float32")
         sf.write(dst, audio, sample_rate, subtype=info.subtype)
     write_dicts(clips_dir / "metadata.csv", META_HEADER,
