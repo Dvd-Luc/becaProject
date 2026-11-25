@@ -64,6 +64,22 @@ D2,BECA_SMMICRO_038_43_Costaros,heldout,Song,16,0.722,5,4,present
 D2,BECA_SMMICRO_039_43_Saint-Jean-Lachalm,train,Drumming,986,0.981,15,15,present
 D2,BECA_SMMICRO_039_43_Saint-Jean-Lachalm,train,Song,461,0.975,15,15,present
 D2,BECA_SMMICRO_040_43_Les Vastres,train,Drumming,29,0.812,10,0,not confirmed
+D3,2026_Beca_SMMICRO_071_25_Bouverans,train,Drumming,27,0.899,10,10,present
+D3,2026_Beca_SMMICRO_071_25_Bouverans,train,Song,20,0.848,10,10,present
+D3,2026_Beca_SMMICRO_072_25_Bouverans,heldout,Drumming,2,0.641,2,0,not confirmed
+D3,2026_Beca_SMMICRO_073_25_Bouverans,train,Drumming,7,0.744,7,5,present
+D3,2026_Beca_SMMICRO_073_25_Bouverans,train,Song,9,0.673,5,4,present
+D3,2026_Beca_SMMICRO_074_25_Bonnevaux,heldout,Song,40,0.784,10,0,not confirmed
+D3,2026_Beca_SMMICRO_075_25_Frasne,train,Drumming,3,0.530,3,0,not confirmed
+D3,2026_Beca_SMMICRO_075_25_Frasne,train,Song,1,0.533,1,1,present
+D3,2026_Beca_SMMICRO_077_25_Malpas,train,Drumming,1,0.566,1,0,not confirmed
+D3,2026_Beca_SMMICRO_077_25_Malpas,train,Song,2,0.638,1,1,present
+D3,2026_Beca_SMMICRO_078_25_La-Planée,train,Drumming,6,0.715,6,0,not confirmed
+D3,2026_Beca_SMMICRO_078_25_La-Planée,train,Song,3,0.568,3,1,present
+D3,2026_Beca_SMMICRO_079_25_Labergement-Sainte-Marie,train,Song,10,0.766,5,5,present
+D3,2026_Beca_SMMICRO_080_25_Labergement-Sainte-Marie,train,Song,22,0.784,5,4,present
+D3,2026_Beca_SMMICRO_081_25_Labergement-Sainte-Marie,train,Drumming,5,0.882,5,4,present
+D3,2026_Beca_SMMICRO_081_25_Labergement-Sainte-Marie,train,Song,22,0.812,7,6,present
 D4,2026_Beca_SMMICRO_043_25_Granges_Narboz,heldout,Drumming,2,0.752,2,2,present
 D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Drumming,256,0.945,26,26,present
 D4,2026_Beca_SMMICRO_044_25_Granges_Narboz,train,Song,130,0.985,15,15,present
