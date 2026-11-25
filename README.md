@@ -350,6 +350,34 @@ The `train_gen<K>` queue skips anything already judged in the earlier train queu
 generation K is trained on every train queue judged before it (gen 2: `train` +
 `train_gen1`). See `HISTORY.md` for what each generation was trained on.
 
+**From gen 3: the full-survey audit verdicts** (step 12) are training material too.
+Generations after `generations.audit_gen` (2) also read every
+`audit_<drive>` / `presence_<drive>` queue. Their **heldout rows are left out**: the
+audit covers both splits by design, and its heldout events become a test set instead.
+Windows are chosen on the recording's 3 s grid from `generations.audit_raw_dir` (gen 2's
+full-survey raw results) and cut from the audit snippets (no drive needed).
+
+```bash
+python src/survey/make_generation.py --gen 3 --dry-run      # counts per class and source
+python src/survey/make_generation.py --gen 3                # cut, build, train
+python src/survey/evaluate.py --gens 2 3 --testset xc       # recall on unseen recordists
+python src/survey/evaluate.py --gens 2 3                    # field false alarms (survey test set)
+python src/survey/evaluate.py --gens 2 3 --testset audit    # heldout audit events
+```
+
+`--testset audit` rescores the **heldout** audit events that gen 2 keeps. They are cut
+into their 3 s windows (`review/audit_windows/`). An event is kept if its best window
+inside the event reaches the class floor (`drive_detection.min_conf` /
+`min_event_conf`). These floors are fixed and never tuned on this set. Per class it
+reports:
+- the share of true events kept (weighted by audit strata)
+- the share of false events removed
+- the precision of the kept events
+
+The bootstrap resamples heldout sites. Gen 2 is the reference: it keeps 100 % by
+construction, and its rescored scores equal the survey's (checked). This measures how a
+generation filters gen 2's events. Recall comes from the XC test.
+
 ### 10. XC test set (recordists never used for training)
 
 The survey test set has few Song and Drumming positives. A second benchmark comes from
@@ -548,17 +576,30 @@ python src/survey/build_viz.py --dry-run   # matched positions, counts, status (
 python src/survey/build_viz.py             # writes results/survey/viz/full_gen2.html
 ```
 
-This writes **one self-contained HTML file**. Open it by double-click: no server, no network.
-Data, d3 and the département outlines are inlined. It has five linked views:
+This writes **one self-contained HTML file**. Open it by double-click: no server.
+Data, d3, d3-tile and the département outlines are inlined. It has five linked views:
 - **Map:** bubble area = kept events per hour recorded. Fill = presence status from
-  your verdicts. Zoom and pan, buttons per region.
-- **Selected site:** events per hour evening by evening; hatched evenings had no recording.
-- **Presence grid:** status per site × class, or detection per month.
-- **Time from sunset:** 5-min bins. Read from the recorders' schedule (start = sunset − 60
-  min, `viz.schedule_start_min`), not from the clock.
+  your verdicts. Zoom and pan, one button per département. **Base map** (off by default):
+  Plan IGN, aerial photo, relief, land cover (CORINE 2018) or wetlands and water
+  (CORINE HR 2015). It is loaded from IGN's Géoplateforme only when chosen, so it needs
+  internet; IGN then sees which tiles are shown, never the site positions.
+- **Selected site:** events per hour evening by evening; hatched evenings had no
+  recording. Scroll to zoom the dates, drag to pan, "Reset zoom".
+- **Presence grid:** status per site × class, or detection per month. Sites are grouped
+  by **département**: the code in the site name (`_25_` = Doubs), or for names without
+  one (the RNNSG sites), the département holding the position. Labels read
+  "commune · recorder" (`Sainte Colombe · 041`).
+- **Time from sunset:** read from the recorders' schedule, not the clock. Each evening is
+  two one-hour files from sunset (`viz.schedule_start_min: 0`): the first file starts at
+  sunset in the recorder's own clock (checked against computed sunsets, median +1 min;
+  most clocks stayed on UTC+1 after the March time change). Events are placed from the
+  evening's first file start. Set-up tests (before noon, shorter than 30 min) are left
+  out; a single-file evening is matched to its neighbours as file 1 or file 2. 5-min
+  bins, 2 or 1 min when zoomed in.
 - **Weekly heatmap:** events per hour, by site and week.
 
-Each view has **SVG / PNG / CSV** buttons. Re-run the script after each new drive or audit.
+Each view has **SVG / PNG / CSV** buttons (map exports embed the base-map tiles, © IGN).
+Re-run the script after each new drive or audit.
 
 - **Microphone positions are sensitive** (snipe breeding sites) **and never leave this computer.**
   - The GeoPackages (`viz.sources`, copied to `code/data/geo/`) and the page are gitignored.
