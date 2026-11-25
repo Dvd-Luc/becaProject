@@ -68,6 +68,23 @@ QUEUE_HEADER = ["item_id", "kind", "clip_id", "site", "split", "period", "clip_p
                 "start_s", "end_s", "predicted", "max_conf", "stratum"]
 JUDGE_HEADER = ["item_id", "clip_id", "start_s", "end_s", "kind", "predicted",
                 "max_conf", "verdict", "time"]
+
+AUDIT_PLAIN_GEN = 2             # the generation whose audit queues are named audit_<drive>
+
+
+def audit_queue_name(kind, drive, gen):
+    """Name of a full-survey audit or presence queue.
+
+    Args:
+        kind (str): "audit" or "presence".
+        drive (str): Drive name.
+        gen (int): Generation whose full-survey events the queue judges (drive_detection.gen).
+
+    Returns:
+        str: "audit_D1" for gen 2 (the first audited generation), "audit_gen3_D1" for later ones.
+    """
+    return f"{kind}_{drive}" if gen == AUDIT_PLAIN_GEN else f"{kind}_gen{gen}_{drive}"
+
 NOISE, UNSURE = "Noise", "Unsure"
 
 
@@ -381,7 +398,7 @@ def get_queue(cfg, queue, review_dir, gen=0):
     if path.exists():
         return read_dicts(path)
     if queue.startswith(("audit_", "presence_")):
-        kind, drive = queue.split("_", 1)
+        kind, drive = queue.split("_", 1)[0], queue.rsplit("_", 1)[1]
         command = "sample" if kind == "audit" else "presence"
         raise SystemExit(f"{path} not found: run audit_events.py {command} --drive {drive} first")
     manifest = read_dicts(Path(cfg["survey"]["dir"]) / "manifest.csv")
@@ -645,7 +662,8 @@ def main():
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default="config/project.yaml")
     parser.add_argument("--queue", choices=["train", "test", "audit", "presence"], required=True)
-    parser.add_argument("--drive", help="audit / presence queue: the drive to judge (audit_<drive>, presence_<drive>)")
+    parser.add_argument("--drive", help="audit / presence queue: the drive to judge (audit_<drive>, presence_<drive>; "
+                             "audit_gen<K>_<drive> when drive_detection.gen K is not 2)")
     parser.add_argument("--n", type=int, help="only the next N unjudged items this session")
     parser.add_argument("--dir", help="output folder (default: review.dir)")
     parser.add_argument("--list", action="store_true", help="build/show the queue, no GUI")
@@ -660,7 +678,12 @@ def main():
     cfg = load(args.config)
     review_dir = Path(args.dir or cfg["review"]["dir"])
     classes = classes_from(cfg)
-    queue = f"train_gen{args.gen}" if args.gen else f"{args.queue}_{args.drive}" if args.drive else args.queue
+    if args.gen:
+        queue = f"train_gen{args.gen}"
+    elif args.drive:                 # the full survey of drive_detection.gen
+        queue = audit_queue_name(args.queue, args.drive, cfg["drive_detection"]["gen"])
+    else:
+        queue = args.queue
     rows = get_queue(cfg, queue, review_dir, args.gen)
     judgments_path = review_dir / f"{queue}_judgments.csv"
     judged = load_judgments(judgments_path)

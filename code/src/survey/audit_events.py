@@ -10,6 +10,7 @@
     python src/survey/audit_events.py presence --drive D1           # freeze it (snippets already cut)
     python src/survey/review.py --queue presence --drive D1         # judge the presence check (blind)
     python src/survey/audit_events.py report                        # precision + presence, all drives
+    python src/survey/audit_events.py report --split heldout        # heldout sites only (unbiased from gen 3)
 
 detect_drive.py gives thousands of events per drive. This script picks a few hundred,
 cuts their audio so review.py can show them, and turns the verdicts into the precision
@@ -30,12 +31,19 @@ sample    Puts each of the drive's events (drive_detection.dir/events.csv) in a 
           what was drawn). A smaller stratum is taken whole. The queue and the stratum
           populations are frozen and reused as they are (the stratum kind too, whatever
           the config says later); --force redraws, and only while nothing is judged yet.
+          Queues belong to the generation of drive_detection.gen: audit_<drive> for
+          gen 2, audit_gen<K>_<drive> after it (review.py picks the same one). From
+          gen 3 on, a sampled event that an earlier generation's audit already judged
+          (same file and class, start within 1.5 s, not Unsure) gets that verdict
+          copied into the new judgments (time column "copied:<queue>@<time>"): the
+          same audio, judged blind. Copied verdicts never block --force.
 presence  For each class of review.presence_labels and each site with events of it: if
           no verdict of the drive's audit or presence queues confirms the class there,
           the best events not judged yet (by max_conf) are queued, so that up to
           review.presence_per_site events per site and class get judged. A site is then
           "present" (at least one confirmed), "not confirmed" (all judged events were
-          something else) or "not judged". Frozen like the sample.
+          something else) or "not judged". A site x class confirmed by an earlier
+          generation's verdicts stays "present" and is never queued again. Frozen like the sample.
 cut       Writes each queued event (audit and presence queues of the drive) with
           review.context_s on each side as a small WAV snippet, read from the drive or any
           copy of it (--root). Existing snippets are skipped. Run it where the audio is:
@@ -50,6 +58,9 @@ report    Precision from every audit queue judged so far: an event is correct wh
           95 % CI from a bootstrap that resamples sites within each drive. Also: judged
           and correct per class x site (unweighted, Wilson 95 % CI), the confusion of
           predicted class x verdict, and the presence status of every site x class.
+          --split heldout (or train) keeps only the strata of those sites (site strata
+          only) and writes audit_full_gen<K>_heldout*.csv: for a generation trained on
+          the train sites' audit verdicts, heldout precision is the unbiased value.
 
 Judging is blind: review.py shows neither the predicted class nor the score. The audit
 covers train and heldout sites; only train-site verdicts may ever train a model.
@@ -72,6 +83,7 @@ Run from code/.
 import argparse
 import math
 import random
+import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -80,7 +92,16 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from review import QUEUE_HEADER, UNSURE, load_judgments, read_dicts, write_dicts
+from review import (
+    AUDIT_PLAIN_GEN,
+    QUEUE_HEADER,
+    UNSURE,
+    append_judgment,
+    audit_queue_name,
+    load_judgments,
+    read_dicts,
+    write_dicts,
+)
 
 from common.config import load
 
@@ -94,6 +115,9 @@ CONFUSION_HEADER = ["predicted", "verdict", "judged", "est_events"]
 PRESENCE_HEADER = ["drive", "site", "split", "label", "events", "max_conf", "judged",
                    "confirmed", "status"]
 QUEUE_KINDS = ("audit", "presence")
+QUEUE_FILE = re.compile(r"^(audit|presence)_(?:gen(\d+)_)?(.+)_queue\.csv$")
+REUSE_S = 1.5                   # an earlier verdict is reused for an event starting this close
+COPIED = "copied:"              # time-column prefix of a reused verdict
 
 
 def bin_names(bins):
@@ -183,8 +207,9 @@ def queue_paths(cfg, kind, drive):
             written for audit queues).
     """
     review_dir = Path(cfg["review"]["dir"])
-    return (review_dir / f"{kind}_{drive}_queue.csv", review_dir / f"{kind}_{drive}_judgments.csv",
-            review_dir / f"{kind}_{drive}_strata.csv")
+    name = audit_queue_name(kind, drive, cfg["drive_detection"]["gen"])
+    return (review_dir / f"{name}_queue.csv", review_dir / f"{name}_judgments.csv",
+            review_dir / f"{name}_strata.csv")
 
 
 def snippet_dir_of(cfg):
@@ -272,7 +297,7 @@ def stratify(events, labels, kind, bins):
     return strata
 
 
-def queue_row(prefix, event, file_row, snippet_dir, context_s, stratum):
+def queue_row(prefix, event, file_row, snippet_dir, context_s, stratum, gen=AUDIT_PLAIN_GEN):
     """Queue row of one event, with its snippet window.
 
     Args:
@@ -282,6 +307,8 @@ def queue_row(prefix, event, file_row, snippet_dir, context_s, stratum):
         snippet_dir (Path): Folder of the snippets.
         context_s (float): Seconds of audio kept on each side of the event.
         stratum (str): Stratum (or site group) stored in the queue.
+        gen (int): Generation of the full-survey events; after AUDIT_PLAIN_GEN it goes
+            into the item id ("audit_gen3_<file>_..."), so ids never collide across gens.
 
     Returns:
         dict[str, str]: Row keyed by AUDIT_HEADER; start_s / end_s are snippet seconds.
@@ -289,7 +316,8 @@ def queue_row(prefix, event, file_row, snippet_dir, context_s, stratum):
     start, end = float(event["start_s"]), float(event["end_s"])
     offset = max(0.0, start - context_s)
     snippet_end = min(float(file_row["duration_s"]), end + context_s)
-    item_id = f"{prefix}_{event['file_id']}_{event['label']}_{start:.0f}"
+    tag = prefix if gen == AUDIT_PLAIN_GEN else f"{prefix}_gen{gen}"
+    item_id = f"{tag}_{event['file_id']}_{event['label']}_{start:.0f}"
     return {"item_id": item_id, "kind": prefix, "clip_id": event["file_id"], "site": event["site"],
             "split": event["split"], "period": "", "clip_path": str(snippet_dir / f"{item_id}.wav"),
             "start_s": f"{start - offset:.1f}", "end_s": f"{end - offset:.1f}",
@@ -370,7 +398,7 @@ def run_sample(cfg, drive, dry_run, force, per_stratum=None):
               f"{len(read_dicts(queue_path))} items, {n_judged} judged)")
         print_strata(frozen)
         return
-    if queue_path.exists() and force and load_judgments(judgments_path):
+    if queue_path.exists() and force and own_judgments(judgments_path):
         raise SystemExit(f"{judgments_path} has verdicts: the {drive} sample can no longer be redrawn")
 
     kind = review_cfg.get("audit_strata", "bin")
@@ -391,9 +419,22 @@ def run_sample(cfg, drive, dry_run, force, per_stratum=None):
         strata_rows.append({"kind": kind, "drive": drive, "stratum": name, "population": len(members),
                             "sampled": len(picked), "n_sites": len({event["site"] for event in members})})
         rows += [queue_row("audit", event, files[event["file_id"]], snippet_dir_of(cfg),
-                           review_cfg["context_s"], name) for event in picked]
+                           review_cfg["context_s"], name, cfg["drive_detection"]["gen"]) for event in picked]
     rng.shuffle(rows)                       # any session of --n N gets a mix
     print_strata(strata_rows)
+    reused = []                             # events an earlier generation's audit already judged
+    if cfg["drive_detection"]["gen"] != AUDIT_PLAIN_GEN:
+        earlier = defaultdict(list)
+        for old in earlier_verdicts(cfg):
+            if old["verdict"] != UNSURE:
+                earlier[(old["file_id"], old["label"])].append(old)
+        for row in rows:
+            start = float(row["offset_s"]) + float(row["start_s"])
+            close = [old for old in earlier[(row["clip_id"], row["predicted"])] if abs(old["start"] - start) <= REUSE_S]
+            if close:
+                reused.append((row, min(close, key=lambda old: abs(old["start"] - start))))
+        print(f"{len(reused)} of {len(rows)} sampled events were judged in an earlier generation's audit "
+              f"(same file and class, start within {REUSE_S} s): their verdicts are reused")
     snippet_min = sum(float(row["snippet_s"]) for row in rows) / 60
     if dry_run:
         print(f"{len(rows)} events would be sampled ({kind} strata, up to {per_stratum} per stratum, "
@@ -402,6 +443,13 @@ def run_sample(cfg, drive, dry_run, force, per_stratum=None):
         return
     write_dicts(queue_path, AUDIT_HEADER, rows)
     write_dicts(strata_path, STRATA_HEADER, strata_rows)
+    if judgments_path.exists():             # only copied verdicts can be there (force guard above)
+        judgments_path.unlink()
+    for row, old in reused:
+        append_judgment(judgments_path, {"item_id": row["item_id"], "clip_id": row["clip_id"],
+                                         "start_s": row["start_s"], "end_s": row["end_s"], "kind": row["kind"],
+                                         "predicted": row["predicted"], "max_conf": row["max_conf"],
+                                         "verdict": old["verdict"], "time": f"{COPIED}{old['queue']}@{old['time']}"})
     print(f"froze {len(rows)} events ({kind} strata, up to {per_stratum} per stratum, "
           f"{snippet_min:.0f} min of snippets): {queue_path}, {strata_path}")
     print(f"next: audit_events.py cut --drive {drive} --root <where the {drive} audio is>")
@@ -476,6 +524,73 @@ def queued_events(cfg, drive, kinds=QUEUE_KINDS):
     return keys
 
 
+def generation_queues(cfg):
+    """Every audit and presence queue file, of every generation.
+
+    Args:
+        cfg (dict): The whole project config.
+
+    Returns:
+        list[tuple[str, int, Path, Path]]: (queue name, generation, queue CSV, judgments CSV).
+    """
+    queues = []
+    for path in sorted(Path(cfg["review"]["dir"]).glob("*_queue.csv")):
+        match = QUEUE_FILE.match(path.name)
+        if match:
+            gen = int(match.group(2)) if match.group(2) else AUDIT_PLAIN_GEN
+            name = path.name[:-len("_queue.csv")]
+            queues.append((name, gen, path, path.with_name(f"{name}_judgments.csv")))
+    return queues
+
+
+def earlier_verdicts(cfg):
+    """Verdicts given on the full-survey events of earlier generations.
+
+    Args:
+        cfg (dict): The whole project config (drive_detection.gen = current generation).
+
+    Returns:
+        list[dict]: queue, file_id, label, site, start (s in the recording), verdict, time.
+    """
+    rows = []
+    for name, gen, queue_path, judgments_path in generation_queues(cfg):
+        if gen >= cfg["drive_detection"]["gen"] or not judgments_path.exists():
+            continue
+        judged = {row["item_id"]: row for row in read_dicts(judgments_path)}     # last one wins
+        for row in read_dicts(queue_path):
+            if row["item_id"] in judged:
+                rows.append({"queue": name, "file_id": row["clip_id"], "label": row["predicted"],
+                             "site": row["site"], "start": float(row["offset_s"]) + float(row["start_s"]),
+                             "verdict": judged[row["item_id"]]["verdict"], "time": judged[row["item_id"]]["time"]})
+    return rows
+
+
+def confirmed_earlier(cfg):
+    """Site x class confirmed by a verdict of an earlier generation's audit or presence check.
+
+    Args:
+        cfg (dict): The whole project config.
+
+    Returns:
+        set[tuple[str, str]]: (label, site) pairs.
+    """
+    return {(row["label"], row["site"]) for row in earlier_verdicts(cfg) if row["verdict"] == row["label"]}
+
+
+def own_judgments(judgments_path):
+    """Verdicts given in this queue, not copied from an earlier generation.
+
+    Args:
+        judgments_path (Path): Judgments CSV (may not exist).
+
+    Returns:
+        list[dict]: Judgment rows.
+    """
+    if not judgments_path.exists():
+        return []
+    return [row for row in read_dicts(judgments_path) if not row["time"].startswith(COPIED)]
+
+
 def presence_candidates(cfg, events, audit_queued):
     """Events that the presence check may queue, per class x site, best first.
 
@@ -528,7 +643,11 @@ def run_presence(cfg, drive, dry_run, force):
     files = {row["file_id"]: row for row in read_dicts(Path(cfg["drive_detection"]["dir"]) / "files" / f"{drive}_files.csv")}
     per_site = review_cfg["presence_per_site"]
     rows, report = [], []
+    earlier = confirmed_earlier(cfg)
     for (label, site), (members, candidates) in presence_candidates(cfg, events, audit_queued).items():
+        if (label, site) in earlier:
+            report.append((label, site, len(members), "confirmed in an earlier generation", 0))
+            continue
         verdicts = [audit_verdicts[event_key(event)] for event in members if event_key(event) in audit_verdicts]
         confirmed = sum(verdict == label for verdict in verdicts)
         judged = sum(verdict != UNSURE for verdict in verdicts)
@@ -537,7 +656,7 @@ def run_presence(cfg, drive, dry_run, force):
             continue
         take = candidates[:max(0, per_site - judged)]
         rows += [queue_row("presence", event, files[event["file_id"]], snippet_dir_of(cfg),
-                           review_cfg["context_s"], label) for event in take]
+                           review_cfg["context_s"], label, cfg["drive_detection"]["gen"]) for event in take]
         report.append((label, site, len(members), f"{judged} judged in the audit, none confirmed", len(take)))
     print(f"    {'class':9s} {'site':38s} {'events':>6s} {'queued':>6s}  status")
     for label, site, n_events, status, n_take in report:
@@ -591,9 +710,10 @@ def run_cut(cfg, drive, root, limit, dry_run, force):
         files = {row["file_id"]: row for row in
                  read_dicts(Path(cfg["drive_detection"]["dir"]) / "files" / f"{drive}_files.csv")}
         cells = presence_candidates(cfg, drive_events(cfg, drive), queued_events(cfg, drive, kinds=("audit",)))
+        earlier = confirmed_earlier(cfg)    # sites already confirmed: never queued for presence
         candidates = [queue_row("presence", event, files[event["file_id"]], snippet_dir,
-                                review_cfg["context_s"], label)
-                      for (label, _site), (_members, best) in cells.items()
+                                review_cfg["context_s"], label, cfg["drive_detection"]["gen"])
+                      for (label, site), (_members, best) in cells.items() if (label, site) not in earlier
                       for event in best[:review_cfg["presence_per_site"]]]
         rows += candidates
         counts["presence candidates"] = len(candidates)
@@ -624,7 +744,7 @@ def run_cut(cfg, drive, root, limit, dry_run, force):
 
 # ---------------------------------------------------------------- report
 def drives_with(cfg, kind):
-    """Drives that have a frozen queue of this kind.
+    """Drives that have a frozen queue of this kind, for the generation of drive_detection.gen.
 
     Args:
         cfg (dict): The whole project config.
@@ -633,8 +753,12 @@ def drives_with(cfg, kind):
     Returns:
         list[str]: Drive names.
     """
+    gen = cfg["drive_detection"]["gen"]
+    pattern = re.compile(rf"^{kind}_(?!gen\d)(.+)_queue\.csv$" if gen == AUDIT_PLAIN_GEN
+                         else rf"^{kind}_gen{gen}_(.+)_queue\.csv$")
     review_dir = Path(cfg["review"]["dir"])
-    return sorted(path.name[len(kind) + 1:-len("_queue.csv")] for path in review_dir.glob(f"{kind}_*_queue.csv"))
+    return sorted(match.group(1) for path in review_dir.glob(f"{kind}_*_queue.csv")
+                  if (match := pattern.match(path.name)))
 
 
 def load_audits(cfg):
@@ -834,7 +958,8 @@ def site_rows(cfg, items):
 def presence_rows(cfg):
     """Presence status of every drive x site x class of review.presence_labels.
 
-    Uses every verdict of the drive (audit and presence queues).
+    Uses every verdict of the drive (audit and presence queues); a site x class confirmed
+    by an earlier generation's verdicts stays "present".
 
     Args:
         cfg (dict): The whole project config.
@@ -843,6 +968,7 @@ def presence_rows(cfg):
         list[dict]: Rows keyed by PRESENCE_HEADER.
     """
     rows = []
+    earlier = confirmed_earlier(cfg)
     for drive in sorted(set(drives_with(cfg, "audit")) | set(drives_with(cfg, "presence"))):
         verdicts = judged_events(cfg, drive)
         cells = defaultdict(list)
@@ -853,26 +979,40 @@ def presence_rows(cfg):
             judged = [verdicts[event_key(event)] for event in members
                       if verdicts.get(event_key(event), UNSURE) != UNSURE]
             confirmed = sum(verdict == label for verdict in judged)
-            status = "present" if confirmed else "not confirmed" if judged else "not judged"
+            status = ("present" if confirmed or (label, site) in earlier
+                      else "not confirmed" if judged else "not judged")
             rows.append({"drive": drive, "site": site, "split": split, "label": label,
                          "events": len(members), "max_conf": f"{max(float(event['max_conf']) for event in members):.3f}",
                          "judged": len(judged), "confirmed": confirmed, "status": status})
     return rows
 
 
-def run_report(cfg, out_dir):
+def run_report(cfg, out_dir, split="all"):
     """Precision of the full-survey events and presence per site, from every verdict so far.
 
     Args:
         cfg (dict): The whole project config.
         out_dir (Path): Folder of the result CSVs.
+        split (str): "all", or "train" / "heldout" to keep only the strata of those sites
+            (needs site strata). Heldout is the unbiased value for a generation trained
+            on the train sites' audit verdicts.
 
     Raises:
-        SystemExit: If no audit sample exists.
+        SystemExit: If no audit sample exists, or --split meets strata without a site.
     """
     items, population, sampled = load_audits(cfg)
     if not population:
         raise SystemExit("no audit sample: run audit_events.py sample --drive <drive> first")
+    if split != "all":
+        bins = cfg["review"]["audit_bins"]
+        split_of = {row["site"]: row["split"] for row in read_dicts(Path(cfg["survey"]["dir"]) / "sites.csv")}
+        site_of = {key: stratum_parts(key[1], bins)[1] for key in population}
+        if not all(site_of.values()):
+            raise SystemExit(f"--split {split} needs site strata (bin strata mix train and heldout sites)")
+        keep = {key for key, site in site_of.items() if split_of.get(site) == split}
+        population = {key: value for key, value in population.items() if key in keep}
+        sampled = {key: value for key, value in sampled.items() if key in keep}
+        items = [item for item in items if (item["drive"], item["stratum"]) in keep]
     rng = np.random.default_rng(cfg["review"]["seed"])
     result_rows = precision_rows(cfg, items, population, sampled, rng)
     per_site = site_rows(cfg, items)
@@ -889,9 +1029,10 @@ def run_report(cfg, out_dir):
     presence = presence_rows(cfg)
 
     gen = cfg["drive_detection"]["gen"]
-    paths = {"precision": out_dir / f"audit_full_gen{gen}.csv",
-             "sites": out_dir / f"audit_full_gen{gen}_sites.csv",
-             "confusion": out_dir / f"audit_full_gen{gen}_confusion.csv",
+    part = "" if split == "all" else f"_{split}"
+    paths = {"precision": out_dir / f"audit_full_gen{gen}{part}.csv",
+             "sites": out_dir / f"audit_full_gen{gen}{part}_sites.csv",
+             "confusion": out_dir / f"audit_full_gen{gen}{part}_confusion.csv",
              "presence": out_dir / f"presence_full_gen{gen}.csv"}
     write_dicts(paths["precision"], RESULT_HEADER, result_rows)
     write_dicts(paths["sites"], SITE_HEADER, per_site)
@@ -899,7 +1040,8 @@ def run_report(cfg, out_dir):
     write_dicts(paths["presence"], PRESENCE_HEADER, presence)
 
     drives = sorted({drive for drive, _stratum in population})
-    print(f"audit of the gen {gen} full-survey events, drives {drives}: {len(items)} judged "
+    scope_text = "" if split == "all" else f" ({split} sites only)"
+    print(f"audit of the gen {gen} full-survey events{scope_text}, drives {drives}: {len(items)} judged "
           f"of {sum(sampled.values())} sampled ({len(items) - len(usable)} Unsure, left out)")
     print(f"    {'scope':10s} {'label':9s} {'bin':8s} {'events':>7s} {'judged':>7s} {'precision':>9s}  95 % CI")
     for row in result_rows:
@@ -936,6 +1078,9 @@ def main():
                         help="sample: events drawn per stratum (overrides review.audit_per_site_bin / "
                              "audit_per_site / audit_per_stratum for this drive)")
     parser.add_argument("--out", default="results/survey", help="report: folder of the result CSVs")
+    parser.add_argument("--split", choices=["all", "train", "heldout"], default="all",
+                        help="report: only the strata of these sites (heldout = unbiased once a "
+                             "generation has trained on the audit)")
     parser.add_argument("--dry-run", action="store_true", help="show what would happen, write nothing")
     parser.add_argument("--force", action="store_true",
                         help="sample / presence: rebuild (only before judging); cut: re-cut existing snippets")
@@ -947,7 +1092,7 @@ def main():
     if absent:
         raise SystemExit(f"review.{absent[0]} missing from {args.config} (needed: {', '.join(needed)})")
     if args.command == "report":
-        run_report(cfg, Path(args.out))
+        run_report(cfg, Path(args.out), args.split)
         return
     drives = cfg["survey"]["drives"]
     if args.drive not in drives:
