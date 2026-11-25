@@ -2,12 +2,13 @@
 
     python src/survey/audit_events.py sample --drive D1 --dry-run   # strata and populations only
     python src/survey/audit_events.py sample --drive D1             # draw and freeze the sample
-    python src/survey/audit_events.py presence --drive D4 --dry-run # site-by-site check, what to judge
-    python src/survey/audit_events.py presence --drive D4           # freeze it
-    python src/survey/audit_events.py cut --drive D4 --root /mnt/d/2026_Becacoustic_LPO_BFC_part1 --limit 3
-    python src/survey/audit_events.py cut --drive D4 --root /mnt/d/2026_Becacoustic_LPO_BFC_part1
+    python src/survey/audit_events.py sample --drive D2 --per-stratum 5   # more events per stratum
+    python src/survey/audit_events.py cut --drive D1 --root /mnt/d --limit 3   # test
+    python src/survey/audit_events.py cut --drive D1 --root /mnt/d  # audit + presence candidates
     python src/survey/review.py --queue audit --drive D1            # judge the sample (blind GUI)
-    python src/survey/review.py --queue presence --drive D4         # judge the presence check (blind)
+    python src/survey/audit_events.py presence --drive D1 --dry-run # site-by-site check, what to judge
+    python src/survey/audit_events.py presence --drive D1           # freeze it (snippets already cut)
+    python src/survey/review.py --queue presence --drive D1         # judge the presence check (blind)
     python src/survey/audit_events.py report                        # precision + presence, all drives
 
 detect_drive.py gives thousands of events per drive. This script picks a few hundred,
@@ -15,15 +16,20 @@ cuts their audio so review.py can show them, and turns the verdicts into the pre
 of all the events and the list of sites where each class is confirmed.
 
 sample    Puts each of the drive's events (drive_detection.dir/events.csv) in a stratum
-          and draws a random sample per stratum, seeded by review.seed and the drive:
-            review.audit_strata: site  class x site, review.audit_per_site per stratum,
-                                       so every site is checked and precision can be
-                                       compared between sites (default)
-            review.audit_strata: bin   class x max_conf bin (review.audit_bins),
-                                       review.audit_per_stratum per stratum (used for D4)
-          A smaller stratum is taken whole. The queue and the stratum populations are
-          frozen and reused as they are (the stratum kind too, whatever the config says
-          later); --force redraws, and only while nothing is judged yet.
+          and draws a random sample per stratum, seeded by review.seed and the drive.
+          review.audit_strata picks the strata:
+            site_bin  class x site x max_conf bin (review.audit_bins),
+                      review.audit_per_site_bin per stratum: every site is heard at
+                      low and high scores, so precision can be compared between
+                      sites and bins (used from D1, D2 on)
+            site      class x site, review.audit_per_site per stratum (scores not
+                      spread: mostly low ones are heard)
+            bin       class x max_conf bin, review.audit_per_stratum per stratum
+                      (used for D4)
+          --per-stratum N overrides the number for one drive (the strata file keeps
+          what was drawn). A smaller stratum is taken whole. The queue and the stratum
+          populations are frozen and reused as they are (the stratum kind too, whatever
+          the config says later); --force redraws, and only while nothing is judged yet.
 presence  For each class of review.presence_labels and each site with events of it: if
           no verdict of the drive's audit or presence queues confirms the class there,
           the best events not judged yet (by max_conf) are queued, so that up to
@@ -34,6 +40,9 @@ cut       Writes each queued event (audit and presence queues of the drive) with
           review.context_s on each side as a small WAV snippet, read from the drive or any
           copy of it (--root). Existing snippets are skipped. Run it where the audio is:
           the laptop with the drive plugged in, or the cluster ($SCRATCH/beca/audio/<drive>).
+          Before the presence queue exists, it also cuts the presence candidates (the
+          best presence_per_site events per class x site outside the audit queue), so
+          one cut, right after sample, covers both queues: the drive is needed once.
 report    Precision from every audit queue judged so far: an event is correct when the
           verdict is its predicted class; Unsure is left out. Per class x bin (bin strata),
           per class, per class over the events still kept by drive_detection.min_event_conf
@@ -97,6 +106,24 @@ def bin_names(bins):
         list[str]: One name per bin.
     """
     return [f"{bins[i]}-{bins[i + 1]}" for i in range(len(bins) - 1)]
+
+
+def stratum_parts(name, bins):
+    """Split a stratum name into class, site and bin.
+
+    Args:
+        name (str): "Label|lo-hi" (bin), "Label|site" (site) or "Label|site|lo-hi" (site_bin).
+        bins (list[float]): Bin edges (review.audit_bins).
+
+    Returns:
+        tuple[str, str, str]: (label, site or "", bin name or "").
+    """
+    parts = name.split("|")
+    if len(parts) == 3:
+        return parts[0], parts[1], parts[2]
+    if parts[1] in bin_names(bins):
+        return parts[0], "", parts[1]
+    return parts[0], parts[1], ""
 
 
 def bin_of(conf, bins):
@@ -209,17 +236,18 @@ def event_key(row):
 
 # ---------------------------------------------------------------- sample
 def stratify(events, labels, kind, bins):
-    """Group events by stratum: class x max_conf bin, or class x site.
+    """Group events by stratum: class x max_conf bin, class x site, or class x site x bin.
 
     Args:
         events (list[dict]): events.csv rows of one drive.
         labels (list[str]): Model classes.
-        kind (str): "bin" or "site".
-        bins (list[float]): Bin edges (bin strata only).
+        kind (str): "bin", "site" or "site_bin".
+        bins (list[float]): Bin edges (bin and site_bin strata).
 
     Returns:
-        dict[str, list[dict]]: "Label|lo-hi" or "Label|site" -> events. With bin strata
-            every stratum is present (maybe empty); with site strata only non-empty ones.
+        dict[str, list[dict]]: "Label|lo-hi", "Label|site" or "Label|site|lo-hi" -> events.
+            With bin strata every stratum is present (maybe empty); otherwise only
+            non-empty ones.
     """
     names = bin_names(bins)
     strata = {f"{label}|{name}": [] for label in labels for name in names} if kind == "bin" else {}
@@ -234,6 +262,9 @@ def stratify(events, labels, kind, bins):
         bin_idx = bin_of(float(event["max_conf"]), bins)
         if bin_idx is None:
             outside += 1
+            continue
+        if kind == "site_bin":
+            strata.setdefault(f"{event['label']}|{event['site']}|{names[bin_idx]}", []).append(event)
             continue
         strata[f"{event['label']}|{names[bin_idx]}"].append(event)
     if outside:
@@ -274,7 +305,7 @@ def frozen_kind(strata_rows):
         strata_rows (list[dict]): Rows of audit_<drive>_strata.csv.
 
     Returns:
-        str: "bin" or "site".
+        str: "bin", "site" or "site_bin".
     """
     return strata_rows[0].get("kind") or "bin" if strata_rows else "bin"
 
@@ -296,12 +327,11 @@ def check_frozen(cfg, drive, strata, frozen, bins):
     Raises:
         SystemExit: If a compared stratum's population differs.
     """
-    kind = frozen_kind(frozen)
     upper = dict(zip(bin_names(bins), bins[1:], strict=True))
     changed = []
     for row in frozen:
-        label, part = row["stratum"].split("|", 1)
-        if kind == "bin" and part in upper and upper[part] <= class_floor(cfg, label):
+        label, _site, bin_name = stratum_parts(row["stratum"], bins)
+        if bin_name and upper[bin_name] <= class_floor(cfg, label):
             continue
         if len(strata.get(row["stratum"], [])) != int(row["population"]):
             changed.append(row["stratum"])
@@ -311,7 +341,7 @@ def check_frozen(cfg, drive, strata, frozen, bins):
                          f"min_event_conf, review.audit_bins), or redraw with --force (only before judging).")
 
 
-def run_sample(cfg, drive, dry_run, force):
+def run_sample(cfg, drive, dry_run, force, per_stratum=None):
     """Draw and freeze one drive's audit sample, or check the frozen one.
 
     Args:
@@ -319,6 +349,8 @@ def run_sample(cfg, drive, dry_run, force):
         drive (str): Drive name.
         dry_run (bool): Print the strata, write nothing.
         force (bool): Redraw an existing sample (refused once judgments exist).
+        per_stratum (int | None): Events drawn per stratum; None = the config value of
+            the stratum kind.
 
     Raises:
         SystemExit: If the drive has no events, the events changed under a frozen
@@ -342,9 +374,13 @@ def run_sample(cfg, drive, dry_run, force):
         raise SystemExit(f"{judgments_path} has verdicts: the {drive} sample can no longer be redrawn")
 
     kind = review_cfg.get("audit_strata", "bin")
-    if kind not in ("bin", "site"):
-        raise SystemExit(f"review.audit_strata must be bin or site, not {kind}")
-    per_stratum = review_cfg["audit_per_site"] if kind == "site" else review_cfg["audit_per_stratum"]
+    config_key = {"bin": "audit_per_stratum", "site": "audit_per_site", "site_bin": "audit_per_site_bin"}
+    if kind not in config_key:
+        raise SystemExit(f"review.audit_strata must be one of {list(config_key)}, not {kind}")
+    if per_stratum is None:
+        if config_key[kind] not in review_cfg:
+            raise SystemExit(f"review.{config_key[kind]} missing from the config (needed by {kind} strata)")
+        per_stratum = review_cfg[config_key[kind]]
     strata = stratify(events, labels, kind, bins)
     files = {row["file_id"]: row for row in read_dicts(Path(cfg["drive_detection"]["dir"]) / "files" / f"{drive}_files.csv")}
     rng = random.Random(f"{review_cfg['seed']}-audit-{drive}")
@@ -360,12 +396,14 @@ def run_sample(cfg, drive, dry_run, force):
     print_strata(strata_rows)
     snippet_min = sum(float(row["snippet_s"]) for row in rows) / 60
     if dry_run:
-        print(f"{len(rows)} events would be sampled ({kind} strata, {snippet_min:.0f} min of snippets); "
+        print(f"{len(rows)} events would be sampled ({kind} strata, up to {per_stratum} per stratum, "
+              f"{snippet_min:.0f} min of snippets); "
               f"nothing written (--dry-run)")
         return
     write_dicts(queue_path, AUDIT_HEADER, rows)
     write_dicts(strata_path, STRATA_HEADER, strata_rows)
-    print(f"froze {len(rows)} events ({kind} strata, {snippet_min:.0f} min of snippets): {queue_path}, {strata_path}")
+    print(f"froze {len(rows)} events ({kind} strata, up to {per_stratum} per stratum, "
+          f"{snippet_min:.0f} min of snippets): {queue_path}, {strata_path}")
     print(f"next: audit_events.py cut --drive {drive} --root <where the {drive} audio is>")
 
 
@@ -438,6 +476,28 @@ def queued_events(cfg, drive, kinds=QUEUE_KINDS):
     return keys
 
 
+def presence_candidates(cfg, events, audit_queued):
+    """Events that the presence check may queue, per class x site, best first.
+
+    Args:
+        cfg (dict): The whole project config.
+        events (list[dict]): events.csv rows of one drive.
+        audit_queued (set[tuple]): event_key of the drive's audit queue.
+
+    Returns:
+        dict[tuple[str, str], tuple[list[dict], list[dict]]]: (label, site) -> (all events
+            of that class there, events outside the audit queue sorted by max_conf, best
+            first), for the classes of review.presence_labels.
+    """
+    by_cell = defaultdict(list)
+    for event in events:
+        if event["label"] in cfg["review"]["presence_labels"]:
+            by_cell[(event["label"], event["site"])].append(event)
+    return {cell: (members, sorted((event for event in members if event_key(event) not in audit_queued),
+                                   key=lambda event: -float(event["max_conf"])))
+            for cell, members in sorted(by_cell.items())}
+
+
 def run_presence(cfg, drive, dry_run, force):
     """Queue the best events of each site x class not confirmed yet, and freeze the queue.
 
@@ -467,20 +527,14 @@ def run_presence(cfg, drive, dry_run, force):
               f"for a shorter presence queue")
     files = {row["file_id"]: row for row in read_dicts(Path(cfg["drive_detection"]["dir"]) / "files" / f"{drive}_files.csv")}
     per_site = review_cfg["presence_per_site"]
-    by_cell = defaultdict(list)
-    for event in events:
-        if event["label"] in review_cfg["presence_labels"]:
-            by_cell[(event["label"], event["site"])].append(event)
     rows, report = [], []
-    for (label, site), members in sorted(by_cell.items()):
+    for (label, site), (members, candidates) in presence_candidates(cfg, events, audit_queued).items():
         verdicts = [audit_verdicts[event_key(event)] for event in members if event_key(event) in audit_verdicts]
         confirmed = sum(verdict == label for verdict in verdicts)
         judged = sum(verdict != UNSURE for verdict in verdicts)
         if confirmed:
             report.append((label, site, len(members), "confirmed by the audit", 0))
             continue
-        candidates = sorted((event for event in members if event_key(event) not in audit_queued),
-                            key=lambda event: -float(event["max_conf"]))
         take = candidates[:max(0, per_site - judged)]
         rows += [queue_row("presence", event, files[event["file_id"]], snippet_dir_of(cfg),
                            review_cfg["context_s"], label) for event in take]
@@ -494,13 +548,22 @@ def run_presence(cfg, drive, dry_run, force):
         print(f"{len(rows)} events would be queued; nothing written (--dry-run)")
         return
     write_dicts(queue_path, AUDIT_HEADER, rows)
-    print(f"froze {len(rows)} events: {queue_path}")
-    print(f"next: audit_events.py cut --drive {drive} --root <where the {drive} audio is>")
+    uncut = sum(not Path(row["clip_path"]).exists() for row in rows)
+    print(f"froze {len(rows)} events: {queue_path} ({len(rows) - uncut} snippets already cut)")
+    if uncut:
+        print(f"next: audit_events.py cut --drive {drive} --root <where the {drive} audio is>")
+    else:
+        print(f"next: review.py --queue presence --drive {drive}")
 
 
 # ---------------------------------------------------------------- cut
 def run_cut(cfg, drive, root, limit, dry_run, force):
     """Write the audio snippet of each event of the drive's audit and presence queues.
+
+    While the drive has no frozen presence queue, the presence candidates are cut too
+    (the best review.presence_per_site events per class x site outside the audit
+    queue): the presence queue built after judging only ever takes events among them,
+    with the same snippet paths, so the drive is needed once.
 
     Args:
         cfg (dict): The whole project config.
@@ -513,17 +576,31 @@ def run_cut(cfg, drive, root, limit, dry_run, force):
     Raises:
         SystemExit: If no queue is frozen yet or no source file is under root.
     """
-    rows = []
+    rows, counts = [], {}
     for kind in QUEUE_KINDS:
         queue_path = queue_paths(cfg, kind, drive)[0]
         if queue_path.exists():
-            rows += read_dicts(queue_path)
+            queue_rows = read_dicts(queue_path)
+            rows += queue_rows
+            counts[kind] = len(queue_rows)
     if not rows:
         raise SystemExit(f"no {drive} queue: run audit_events.py sample (or presence) --drive {drive} first")
     snippet_dir = snippet_dir_of(cfg)
+    if "presence" not in counts:
+        review_cfg = cfg["review"]
+        files = {row["file_id"]: row for row in
+                 read_dicts(Path(cfg["drive_detection"]["dir"]) / "files" / f"{drive}_files.csv")}
+        cells = presence_candidates(cfg, drive_events(cfg, drive), queued_events(cfg, drive, kinds=("audit",)))
+        candidates = [queue_row("presence", event, files[event["file_id"]], snippet_dir,
+                                review_cfg["context_s"], label)
+                      for (label, _site), (_members, best) in cells.items()
+                      for event in best[:review_cfg["presence_per_site"]]]
+        rows += candidates
+        counts["presence candidates"] = len(candidates)
     todo = [row for row in rows if force or not Path(row["clip_path"]).exists()]
     missing = [row for row in todo if not (root / row["rel_path"]).exists()]
-    print(f"{drive}: {len(rows)} snippets, {len(rows) - len(todo)} already cut, {len(todo)} to cut")
+    parts = " + ".join(f"{n} {kind}" for kind, n in counts.items())
+    print(f"{drive}: {len(rows)} snippets ({parts}), {len(rows) - len(todo)} already cut, {len(todo)} to cut")
     if missing:
         print(f"warning: {len(missing)} source files not under {root}, e.g. {missing[0]['rel_path']}")
         if len(missing) == len(todo):
@@ -678,9 +755,10 @@ def precision_rows(cfg, items, population, sampled, rng):
     """
     review_cfg = cfg["review"]
     labels = model_labels(cfg)
-    names = bin_names(review_cfg["audit_bins"])
-    lower = dict(zip(names, review_cfg["audit_bins"][:-1], strict=True))
-    upper = dict(zip(names, review_cfg["audit_bins"][1:], strict=True))
+    bins = review_cfg["audit_bins"]
+    names = bin_names(bins)
+    lower = dict(zip(names, bins[:-1], strict=True))
+    parts = {key: stratum_parts(key[1], bins) for key in population}
 
     def kept(key):
         """True if the stratum's events are still in events.csv under the class floor.
@@ -691,10 +769,10 @@ def precision_rows(cfg, items, population, sampled, rng):
         Returns:
             bool: False for a bin stratum wholly below the class floor.
         """
-        label, part = key[1].split("|", 1)
-        return part not in upper or lower[part] >= class_floor(cfg, label)
+        label, _site, bin_name = parts[key]
+        return not bin_name or lower[bin_name] >= class_floor(cfg, label)
 
-    scopes = [("class|bin", label, name, [key for key in population if key[1] == f"{label}|{name}"])
+    scopes = [("class|bin", label, name, [key for key in population if parts[key][::2] == (label, name)])
               for label in labels for name in names]
     scopes = [scope for scope in scopes if scope[3]]
     scopes += [("class", label, "", [key for key in population if key[1].split("|")[0] == label])
@@ -854,6 +932,9 @@ def main():
     parser.add_argument("--drive", help="drive name, a key of survey.drives (sample, presence, cut)")
     parser.add_argument("--root", help="cut: where the drive's audio is (default: survey.drives.<drive>)")
     parser.add_argument("--limit", type=int, help="cut: at most N snippets (test)")
+    parser.add_argument("--per-stratum", type=int,
+                        help="sample: events drawn per stratum (overrides review.audit_per_site_bin / "
+                             "audit_per_site / audit_per_stratum for this drive)")
     parser.add_argument("--out", default="results/survey", help="report: folder of the result CSVs")
     parser.add_argument("--dry-run", action="store_true", help="show what would happen, write nothing")
     parser.add_argument("--force", action="store_true",
@@ -872,7 +953,7 @@ def main():
     if args.drive not in drives:
         raise SystemExit(f"--drive must be one of {list(drives)}")
     if args.command == "sample":
-        run_sample(cfg, args.drive, args.dry_run, args.force)
+        run_sample(cfg, args.drive, args.dry_run, args.force, args.per_stratum)
     elif args.command == "presence":
         run_presence(cfg, args.drive, args.dry_run, args.force)
     else:

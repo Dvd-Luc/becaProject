@@ -130,8 +130,11 @@ review:
   background_per_clip: 1                  # train queue: random 3 s windows away from events
   test_bins: [0.0, 0.1, 0.35, 0.5, 0.7, 1.0]   # test queue: v0 best-score bins (heldout)
   test_per_bin: 80
-  audit_strata: site                      # audit_events.py sample: "site" (class x site) or "bin"
+  audit_strata: site_bin                  # audit_events.py sample: "site_bin" (class x site x
+                                          # max_conf bin, D1 on), "site" (class x site) or "bin"
                                           # (class x max_conf bin, used for D4); frozen per drive
+  audit_per_site_bin: 3                   # site_bin strata: events per class x site x bin
+                                          # (sample --per-stratum N overrides; D2 used 5)
   audit_per_site: 5                       # site strata: events drawn per class x site
   audit_bins: [0.5, 0.7, 0.9, 1.0]        # bin strata: max_conf bins of the full-survey events
   audit_per_stratum: 30                   # bin strata: events drawn per class x bin
