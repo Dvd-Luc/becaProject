@@ -20,15 +20,26 @@ review.presence_labels are "not checked"); per site x evening: hours recorded an
 events per class; per event: minutes from sunset; header: precision per class from the
 audit (kept row when the class has a min_event_conf, class row otherwise).
 
-Minutes from sunset come from the recorders' own schedule: each evening is recorded
-from viz.schedule_start_min (-60) to +60 min around sunset, so an event lies at
+Minutes from sunset come from the recorders' own schedule: two one-hour files from
+sunset (viz.schedule_start_min, 0) to sunset + 2 h, so an event lies at
 (event time - first file start of that evening) + schedule_start_min. This needs no
-clock or time-zone correction. Evenings with fewer than viz.min_files_per_evening
-files (the first file may be missing) are left out of this view and counted.
+clock or time-zone correction (most recorder clocks stayed on UTC+1 after the March
+time change, some follow legal time; either way the first file starts at sunset in
+the recorder's own clock). An evening is a site and a date; its files are sorted by
+start. Set-up tests are left out (files starting before noon or shorter than 30 min).
+A single-file evening counts as file 1 if it starts with the site's neighbouring
+evenings (+-3 days, 20 min), as file 2 if about 60 min later, otherwise it is left
+out. The counts of each case are printed.
 
 Positions are matched to sites.csv by the exact site name (viz.sources name_column),
 otherwise by the recorder number (number_column "MIC011" / "Mic049" against
-"SMMICRO_011" in the site name). Unmatched sites are listed by name.
+"SMMICRO_011" in the site name). Unmatched sites are listed by name. Sites are grouped
+by département: the code in the site name ("_25_" = Doubs), or for names without one,
+the département outline (viz.departements) holding the position.
+
+The map's base layer (Plan IGN, aerial photo, relief, land cover, wetlands) is loaded
+from IGN's Géoplateforme only when chosen in the page: IGN then sees which tiles are
+viewed, never the positions. "Off" (default) needs no network.
 
 Writes:
     <viz.out>   e.g. results/survey/viz/full_gen2.html (gitignored)
@@ -43,7 +54,7 @@ import sqlite3
 import struct
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -51,8 +62,10 @@ from common.config import load
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 NUMBER_IN_SITE = re.compile(r"SMMICRO_(\d+)", re.IGNORECASE)
-REGIONS = {"15": "Massif Central", "23": "Massif Central", "43": "Massif Central",
-           "48": "Massif Central", "63": "Massif Central", "25": "Doubs / Jura", "39": "Doubs / Jura"}
+MIN_EVENING_HOUR = 12           # files starting earlier are set-up tests, not evening recordings
+MIN_FILE_S = 1800               # shorter files are tests
+NEIGHBOUR_DAYS = 3              # single-file evenings: compared with the evenings this close
+MATCH_MIN = 20                  # ...whose first file starts within this many minutes
 
 
 def read_dicts(path):
@@ -221,13 +234,14 @@ def precision_header(cfg):
     return out
 
 
-def build_data(cfg, matched, round_coords):
+def build_data(cfg, matched, round_coords, depts):
     """Everything the page shows, as one JSON-ready dict.
 
     Args:
         cfg (dict): The whole project config.
         matched (dict[str, dict]): site -> position.
         round_coords (float | None): Round positions to this many degrees (None: exact).
+        depts (dict): Département outlines (GeoJSON, "code" and "nom" properties).
 
     Returns:
         dict: meta, classes, sites, evenings, events (see the module docstring).
@@ -250,13 +264,14 @@ def build_data(cfg, matched, round_coords):
     done = {row["file_id"] for row in read_dicts(out_dir / "file_summary.csv")}
     hours = Counter()
     evening_hours = defaultdict(float)
-    evening_starts = defaultdict(list)
     for file_id in done:
         row = files[file_id]
         duration_h = float(row["duration_s"]) / 3600
         hours[row["site"]] += duration_h
         evening_hours[(row["site"], row["start"][:10])] += duration_h
-        evening_starts[(row["site"], row["start"][:10])].append(datetime.strptime(row["start"], TIME_FORMAT))
+    first_start, kept_files, evening_counts = evening_starts(files, done)
+    for case, n in sorted(evening_counts.items()):
+        print(f"    {case}: {n}")
 
     events = read_dicts(out_dir / "events.csv")
     n_events = Counter((event["site"], event["label"]) for event in events)
@@ -275,12 +290,26 @@ def build_data(cfg, matched, round_coords):
             return round(round(value / round_coords) * round_coords, 6)
         return round(value, 5)
 
-    site_rows, site_index = [], {}
-    for site in sorted(hours, key=lambda name: (REGIONS.get(dept_of(name), "Other"), name)):
+    dept_names = {feature["properties"]["code"]: feature["properties"]["nom"] for feature in depts["features"]}
+    dept_site, from_position, disagree = {}, [], []
+    for site in hours:
         if site not in matched:
             continue
+        located = dept_at(matched[site]["lon"], matched[site]["lat"], depts)
+        dept_site[site] = dept_of(site) or located
+        if not dept_of(site):
+            from_position.append(short_name(site))
+        elif located and located != dept_of(site):
+            disagree.append(short_name(site))
+    if from_position:
+        print(f"    département from the position (no code in the name): {', '.join(sorted(from_position))}")
+    if disagree:
+        print(f"warning: position outside the département of the name (name kept): {', '.join(sorted(disagree))}")
+
+    site_rows, site_index = [], {}
+    for site in sorted(dept_site, key=lambda name: (dept_site[name], short_name(name))):
         info = sites_csv.get(site, {})
-        dept = dept_of(site)
+        dept = dept_site[site]
         statuses = {}
         for label in order:
             if not n_events[(site, label)]:
@@ -292,7 +321,7 @@ def build_data(cfg, matched, round_coords):
         site_index[site] = len(site_rows)
         site_rows.append({"site": site, "short": short_name(site), "drive": info.get("drive", ""),
                           "split": info.get("split", ""), "dept": dept,
-                          "region": REGIONS.get(dept, f"Dept {dept}"),
+                          "dept_name": f"{dept} {dept_names.get(dept, '')}".strip() if dept else "unknown",
                           "lat": rounded(matched[site]["lat"]), "lon": rounded(matched[site]["lon"]),
                           "hours": round(hours[site], 2),
                           "events": [n_events[(site, label)] for label in order],
@@ -305,21 +334,27 @@ def build_data(cfg, matched, round_coords):
                             + [evening_events[(site, day, label)] for label in order])
 
     schedule_start = viz_cfg["schedule_start_min"]
-    event_rows, incomplete = [], 0
+    event_rows, left_out, beyond = [], 0, 0
+    minutes_of = defaultdict(list)
     for event in events:
         if event["site"] not in site_index:
             continue
-        starts = evening_starts[(event["site"], event["start"][:10])]
-        if len(starts) < viz_cfg["min_files_per_evening"]:
-            incomplete += 1
+        evening = kept_files.get(event["file_id"])
+        if evening is None or evening not in first_start:
+            left_out += 1
             continue
         when = datetime.strptime(event["event_time"], TIME_FORMAT)
-        minutes = (when - min(starts)).total_seconds() / 60 + schedule_start
+        minutes = (when - first_start[evening]).total_seconds() / 60 + schedule_start
+        beyond += not schedule_start <= minutes < schedule_start + 120
+        minutes_of[event["label"]].append(minutes)
         event_rows.append([site_index[event["site"]], order.index(event["label"]), event["start"][:10],
                            round(minutes, 1), float(event["max_conf"])])
-    if incomplete:
-        print(f"note: {incomplete} events on evenings with fewer than {viz_cfg['min_files_per_evening']} "
-              f"files: left out of the time-from-sunset view")
+    if left_out:
+        print(f"note: {left_out} events in files left out above: not in the time-from-sunset view")
+    if beyond:
+        print(f"note: {beyond} events outside the 2 h after the evening's first file (extra files)")
+    print("median minutes from sunset: " + ", ".join(
+        f"{label} {sorted(values)[len(values) // 2]:.0f}" for label, values in sorted(minutes_of.items())))
 
     detection_note = f"windows >= {detection_cfg['min_conf']}"
     if detection_cfg.get("min_event_conf"):
@@ -347,18 +382,119 @@ def dept_of(site):
     return match.group(1) if match else ""
 
 
+def in_ring(lon, lat, ring):
+    """True if a point lies inside a polygon ring (ray casting).
+
+    Args:
+        lon (float): Longitude.
+        lat (float): Latitude.
+        ring (list[list[float]]): [lon, lat] vertices.
+
+    Returns:
+        bool: Inside or not.
+    """
+    inside = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1], strict=True):
+        if (y1 > lat) != (y2 > lat) and lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return inside
+
+
+def dept_at(lon, lat, depts):
+    """Département whose outline contains a point.
+
+    Args:
+        lon (float): Longitude.
+        lat (float): Latitude.
+        depts (dict): GeoJSON FeatureCollection with "code" properties.
+
+    Returns:
+        str: The département code, "" if the point is in none.
+    """
+    for feature in depts["features"]:
+        geometry = feature["geometry"]
+        polygons = [geometry["coordinates"]] if geometry["type"] == "Polygon" else geometry["coordinates"]
+        for rings in polygons:
+            if in_ring(lon, lat, rings[0]) and not any(in_ring(lon, lat, hole) for hole in rings[1:]):
+                return feature["properties"]["code"]
+    return ""
+
+
 def short_name(site):
-    """Site name without the survey prefix, for labels.
+    """Readable site label: commune first, then the recorder.
 
     Args:
         site (str): Site name.
 
     Returns:
-        str: e.g. "049 Houtaud".
+        str: e.g. "Sainte Colombe · 041", "Coltines · MINI01", "Coualle Basse".
     """
     name = re.sub(r"^(2026_Beca_|BECA_)", "", site)
-    name = re.sub(r"^SMMICRO_(\d+)_\d{2}_", r"\1 ", name)
-    return name.replace("_", " ")
+    match = re.match(r"(?:SMMICRO_(\d+)|SM(MINI\d+)|SM_([A-Za-z]+))_\d{2}_(.+)$", name)
+    if not match:
+        return name.replace("_", " ")
+    recorder = next(group for group in match.groups()[:3] if group)
+    return f"{match.group(4).replace('_', ' ')} · {recorder}"
+
+
+def evening_starts(files, done):
+    """Start of the first file of each site-evening, with the files kept or left out.
+
+    The recorders start at sunset and record two one-hour files. An evening is a site and
+    a date; its files are sorted by start. Files starting before MIN_EVENING_HOUR or
+    shorter than MIN_FILE_S are set-up tests and left out. A single-file evening is
+    "file 1" if it starts within MATCH_MIN minutes of the first-file start of the site's
+    evenings within NEIGHBOUR_DAYS, "file 2" if about 60 min later, otherwise left out.
+
+    Args:
+        files (dict[str, dict]): file_id -> files/<drive>_files.csv row.
+        done (set[str]): file_ids with BirdNET results.
+
+    Returns:
+        tuple[dict, dict, Counter]: ((site, date) -> first-file start datetime;
+            file_id -> (site, date) for the files kept; counts per case).
+    """
+    counts = Counter()
+    by_evening = defaultdict(list)
+    for file_id in done:
+        row = files[file_id]
+        start = datetime.strptime(row["start"], TIME_FORMAT)
+        if start.hour < MIN_EVENING_HOUR:
+            counts["files left out: before noon"] += 1
+        elif float(row["duration_s"]) < MIN_FILE_S:
+            counts["files left out: shorter than 30 min"] += 1
+        else:
+            by_evening[(row["site"], row["start"][:10])].append((start, file_id))
+    first, kept = {}, {}
+    for key, items in by_evening.items():
+        if len(items) >= 2:
+            first[key] = min(start for start, _ in items)
+            counts["evenings with 2+ files"] += 1
+    minute_of_day = {key: start.hour * 60 + start.minute for key, start in first.items()}
+    for (site, day), items in by_evening.items():
+        if (site, day) in first:
+            kept.update({file_id: (site, day) for _, file_id in items})
+            continue
+        start, file_id = items[0]
+        neighbours = [(site, (start + timedelta(days=delta)).strftime("%Y-%m-%d"))
+                      for delta in range(-NEIGHBOUR_DAYS, NEIGHBOUR_DAYS + 1) if delta]
+        near = [minute_of_day[key] for key in neighbours if key in minute_of_day]
+        if not near:
+            counts["evenings left out: 1 file, no neighbour"] += 1
+            continue
+        usual = sorted(near)[len(near) // 2]
+        own = start.hour * 60 + start.minute
+        if abs(own - usual) <= MATCH_MIN:
+            first[(site, day)] = start
+            counts["evenings with 1 file: file 1"] += 1
+        elif abs(own - usual - 60) <= MATCH_MIN:
+            first[(site, day)] = start - timedelta(minutes=60)
+            counts["evenings with 1 file: file 2"] += 1
+        else:
+            counts["evenings left out: 1 file off schedule"] += 1
+            continue
+        kept[file_id] = (site, day)
+    return first, kept, counts
 
 
 def main():
@@ -383,7 +519,8 @@ def main():
     if missing:
         print(f"warning: {len(missing)} sites without a position ({len(missing_surveyed)} with full-survey results): "
               + ", ".join(missing))
-    data = build_data(cfg, matched, viz_cfg.get("round_coords"))
+    depts_text = Path(viz_cfg["departements"]).read_text(encoding="utf-8")
+    data = build_data(cfg, matched, viz_cfg.get("round_coords"), json.loads(depts_text))
     events_per_class = dict(zip(data["classes"], [sum(site["events"][i] for site in data["sites"])
                                                   for i in range(len(data["classes"]))], strict=True))
     print(f"page data: {len(data['sites'])} sites ({', '.join(data['meta']['drives'])}), "
@@ -397,7 +534,8 @@ def main():
 
     template = Path(viz_cfg["template"]).read_text(encoding="utf-8")
     page = (template.replace("/*__D3__*/", Path(viz_cfg["d3"]).read_text(encoding="utf-8"))
-            .replace("/*__DEPTS__*/", Path(viz_cfg["departements"]).read_text(encoding="utf-8"))
+            .replace("/*__D3TILE__*/", Path(viz_cfg["d3_tile"]).read_text(encoding="utf-8"))
+            .replace("/*__DEPTS__*/", depts_text)
             .replace("/*__DATA__*/", json.dumps(data, separators=(",", ":"), ensure_ascii=False)))
     out = Path(viz_cfg["out"])
     out.parent.mkdir(parents=True, exist_ok=True)

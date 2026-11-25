@@ -114,23 +114,25 @@ svg text { font-family: var(--font); fill: var(--ink-2); }
 
   <div class="controls" role="group" aria-label="Filters">
     <label for="cls">Class</label><div class="seg" id="cls"></div>
-    <label>Region</label><div class="seg" id="regions"></div>
+    <label>Département</label><div class="seg" id="depts"></div>
     <label for="site">Site</label><select id="site"></select>
   </div>
 
   <div class="grid">
     <section class="panel" id="p-map">
       <div class="panel-head"><h2 id="map-title">Detections per hour</h2>
-        <div class="tools" data-panel="map"><span class="warn">exports hold positions</span></div></div>
-      <p class="sub">Bubble area = kept events per hour of recording. Fill = presence status from your verdicts. Scroll to zoom, drag to pan, click a site.</p>
+        <div class="tools" data-panel="map"><label for="basemap" class="warn">base map</label><select id="basemap"></select>
+          <span class="warn">exports hold positions</span></div></div>
+      <p class="sub">Bubble area = kept events per hour of recording. Fill = presence status from your verdicts. Scroll to zoom, drag to pan, click a site.
+        Base maps are loaded from IGN (internet): IGN sees which tiles are shown, never the site positions.</p>
       <div id="map"></div>
       <div class="legend" id="map-legend"></div>
     </section>
 
     <section class="panel" id="p-site">
-      <div class="panel-head"><h2 id="site-title">Site</h2><div class="tools" data-panel="season"></div></div>
+      <div class="panel-head"><h2 id="site-title">Site</h2><div class="tools" data-panel="season"><button type="button" id="season-reset">Reset zoom</button></div></div>
       <dl class="site-card" id="site-card"></dl>
-      <p class="sub">Events per hour, evening by evening. Hatched: evenings with no recording.</p>
+      <p class="sub">Events per hour, evening by evening. Hatched: evenings with no recording. Scroll on the chart to zoom the dates, drag to pan.</p>
       <div class="scroll" id="season"></div>
     </section>
 
@@ -144,8 +146,9 @@ svg text { font-family: var(--font); fill: var(--ink-2); }
 
     <section class="panel" id="p-night">
       <div class="panel-head"><h2 id="night-title">Time from sunset</h2>
-        <div class="tools" data-panel="night"><div class="seg" id="night-scope"></div></div></div>
-      <p class="sub">Events in 5-minute bins. Time is read from the recorders' schedule (recording starts 60 min before sunset), not from the clock.</p>
+        <div class="tools" data-panel="night"><div class="seg" id="night-scope"></div><button type="button" id="night-reset">Reset zoom</button></div></div>
+      <p class="sub">Events per time bin (5 min; 2 min and 1 min when zoomed in). Time is read from the recorders' schedule: recording
+        starts at sunset (0) and lasts 2 h. Scroll on the chart to zoom, drag to pan.</p>
       <div id="night"></div>
     </section>
 
@@ -161,6 +164,7 @@ svg text { font-family: var(--font); fill: var(--ink-2); }
 <div id="tooltip" hidden></div>
 
 <script>/*__D3__*/</script>
+<script>/*__D3TILE__*/</script>
 <script>
 const DATA = /*__DATA__*/;
 const DEPTS = /*__DEPTS__*/;
@@ -170,10 +174,14 @@ const DEPTS = /*__DEPTS__*/;
   "use strict";
   const CLASSES = DATA.classes;
   const SITES = DATA.sites;
-  const STATUS_TEXT = {"present": "present (confirmed)", "not confirmed": "events, none confirmed",
-                       "not judged": "events, not judged yet", "not checked": "events, not checked", "none": "no events"};
+  const STATUS_TEXT = {"present": "confirmed: ≥ 1 detection judged correct",
+                       "not confirmed": "detected, but every detection judged was something else",
+                       "not judged": "detected, no detection judged yet",
+                       "not checked": "detected, class not in the presence check",
+                       "none": "nothing detected"};
   const state = {cls: CLASSES.indexOf("Drumming") >= 0 ? CLASSES.indexOf("Drumming") : 0,
-                 region: "All", site: null, presenceMode: "status", nightScope: "all"};
+                 dept: "All", basemap: "off", site: null, presenceMode: "status", nightScope: "all",
+                 seasonT: d3.zoomIdentity, nightT: d3.zoomIdentity};
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const classColor = (i) => i < 0 ? css("--call-all") : css("--c" + i);
   const fmt1 = d3.format(".2f");
@@ -186,10 +194,9 @@ const DEPTS = /*__DEPTS__*/;
   const dateExtent = d3.extent(allDates);
   const weekOf = d => d3.utcMonday.floor(parseDay(d));
   const weeks = d3.utcMonday.range(d3.utcMonday.floor(dateExtent[0]), d3.utcDay.offset(dateExtent[1], 1));
-  const regions = Array.from(new Set(SITES.map(s => s.region)));
+  const depts = Array.from(new Set(SITES.map(s => s.dept_name))).sort();
   const siteOrder = d3.range(SITES.length).sort((a, b) =>
-      d3.ascending(regions.indexOf(SITES[a].region), regions.indexOf(SITES[b].region)) ||
-      d3.descending(SITES[a].lat, SITES[b].lat));
+      d3.ascending(SITES[a].dept_name, SITES[b].dept_name) || d3.ascending(SITES[a].short, SITES[b].short));
 
   function rate(site, cls) {
     const s = SITES[site];
@@ -231,7 +238,7 @@ const DEPTS = /*__DEPTS__*/;
   });
   document.getElementById("footnote").textContent =
     "Events: BirdNET windows merged per file and class (gap ≤ 3 s); counts are of kept events only. Presence: 'present' = at least one event of " +
-    "the class at that site judged correct (blind audit or presence check); 'none confirmed' = the best events judged were something else, " +
+    "the class at that site judged correct (blind audit or presence check); 'every detection judged was something else' = the events judged there (random audit draws, then the best-scoring ones) were all another sound, " +
     "which is not proof of absence. Rates are per hour recorded, so sites with different recording effort compare fairly.";
 
   // ---------------------------------------------------------------- controls
@@ -250,11 +257,13 @@ const DEPTS = /*__DEPTS__*/;
   segmented(document.getElementById("cls"),
     CLASSES.map((c, i) => ({label: c, value: i, color: classColor(i)})).concat([{label: "All", value: -1}]),
     () => state.cls, v => { state.cls = v; renderAll(); });
-  segmented(document.getElementById("regions"), ["All"].concat(regions).map(r => ({label: r, value: r})),
-    () => state.region, v => { state.region = v; zoomToRegion(); });
+  segmented(document.getElementById("depts"), ["All"].concat(depts).map(r => ({label: r, value: r})),
+    () => state.dept, v => { state.dept = v; zoomToDept(); });
   const siteSelect = document.getElementById("site");
   const none = document.createElement("option"); none.value = ""; none.textContent = "— click a bubble or pick —"; siteSelect.append(none);
-  siteOrder.forEach(i => { const o = document.createElement("option"); o.value = i; o.textContent = `${SITES[i].short} (${SITES[i].region})`; siteSelect.append(o); });
+  siteOrder.forEach(i => { const o = document.createElement("option"); o.value = i; o.textContent = `${SITES[i].short} (${SITES[i].dept_name})`; siteSelect.append(o); });
+  document.getElementById("season-reset").addEventListener("click", () => { state.seasonT = d3.zoomIdentity; renderSite(); });
+  document.getElementById("night-reset").addEventListener("click", () => { state.nightT = d3.zoomIdentity; renderNight(); });
   siteSelect.addEventListener("change", () => selectSite(siteSelect.value === "" ? null : +siteSelect.value));
   segmented(document.getElementById("presence-mode"), [{label: "Status", value: "status"}, {label: "By month", value: "month"}],
     () => state.presenceMode, v => { state.presenceMode = v; renderPresence(); });
@@ -309,30 +318,70 @@ const DEPTS = /*__DEPTS__*/;
     });
   }
 
-  // ---------------------------------------------------------------- map
-  const MAP_W = 760, MAP_H = 560;
+  // ---------------------------------------------------------------- map (Web Mercator; optional IGN tiles)
+  // Tiles are loaded from IGN only when a base map is chosen: IGN then sees which tiles are
+  // shown (roughly where you look), never the site positions. "Off" needs no network.
+  const MAP_W = 760, MAP_H = 560, TAU = 2 * Math.PI;
+  const BASEMAPS = {
+    off: {label: "Off (offline)"},
+    plan: {label: "Plan IGN", layer: "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", style: "normal", format: "image/png", maxZ: 19},
+    photo: {label: "Aerial photo", layer: "ORTHOIMAGERY.ORTHOPHOTOS", style: "normal", format: "image/jpeg", maxZ: 19},
+    relief: {label: "Relief", layer: "ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW", style: "estompage_grayscale", format: "image/png", maxZ: 15},
+    landcover: {label: "Land cover (CORINE 2018)", layer: "LANDCOVER.CLC18", style: "CORINE Land Cover", format: "image/png", maxZ: 16},
+    wetlands: {label: "Wetlands & water (CORINE HR 2015)", layer: "LANDCOVER.HR.WAW.CLC15",
+               style: "CORINE Land Cover - HR - zones humides et surfaces en eaux permanentes", format: "image/png", maxZ: 13},
+  };
+  const tileUrl = (b, x, y, z) => "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0" +
+    `&LAYER=${b.layer}&STYLE=${encodeURIComponent(b.style)}&FORMAT=${encodeURIComponent(b.format)}` +
+    `&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
   const mapSvg = d3.select("#map").append("svg").attr("viewBox", `0 0 ${MAP_W} ${MAP_H}`).attr("role", "img")
     .attr("aria-label", "Map of microphone sites, bubbles sized by detections per hour");
+  mapSvg.append("defs").append("clipPath").attr("id", "map-clip").append("rect").attr("width", MAP_W).attr("height", MAP_H);
   mapSvg.append("rect").attr("width", MAP_W).attr("height", MAP_H).attr("fill", "var(--surface)");
-  const sitesGeo = {type: "FeatureCollection", features: SITES.map(s => ({type: "Feature", geometry: {type: "Point", coordinates: [s.lon, s.lat]}}))};
-  const projection = d3.geoConicConformal().parallels([44, 49]).rotate([-3, 0]).fitExtent([[30, 30], [MAP_W - 30, MAP_H - 30]], DEPTS);
+  const mapG = mapSvg.append("g").attr("clip-path", "url(#map-clip)");
+  const tileG = mapG.append("g");
+  const projection = d3.geoMercator().scale(1 / TAU).translate([0, 0]);
+  const unit = d3.geoMercator().scale(1 / TAU).translate([0, 0]);      // fixed, for fitting
   const geoPath = d3.geoPath(projection);
-  const mapG = mapSvg.append("g").attr("class", "mapg");
-  mapG.append("g").selectAll("path").data(DEPTS.features).join("path").attr("d", geoPath)
-    .attr("fill", "var(--land)").attr("stroke", "var(--dept)").attr("stroke-width", 0.6).attr("vector-effect", "non-scaling-stroke");
+  const deptPaths = mapG.append("g").selectAll("path").data(DEPTS.features).join("path")
+    .attr("stroke", "var(--dept)").attr("stroke-width", 0.8);
   const marksG = mapG.append("g");
   const labelG = mapG.append("g");
-  SITES.forEach(s => { [s.x, s.y] = projection([s.lon, s.lat]); });
-  let zoomK = 1;
-  const zoom = d3.zoom().scaleExtent([1, 60]).on("zoom", (e) => { zoomK = e.transform.k; mapG.attr("transform", e.transform); renderMarks(); });
+  const attribution = mapSvg.append("text").attr("x", MAP_W - 6).attr("y", MAP_H - 6).attr("text-anchor", "end")
+    .attr("font-size", 10).attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3);
+  SITES.forEach(s => { [s.ux, s.uy] = unit([s.lon, s.lat]); });
+  let mapT = d3.zoomIdentity.scale(2 ** 13);
+  const zoom = d3.zoom().scaleExtent([2 ** 10, 2 ** 22]).on("zoom", (e) => { mapT = e.transform; drawMap(); });
   mapSvg.call(zoom);
+  const baseSelect = document.getElementById("basemap");
+  Object.entries(BASEMAPS).forEach(([key, b]) => { const o = document.createElement("option"); o.value = key; o.textContent = b.label; baseSelect.append(o); });
+  baseSelect.addEventListener("change", () => { state.basemap = baseSelect.value; drawMap(); });
 
-  function zoomToRegion() {
-    const idx = SITES.map((_, i) => i).filter(i => state.region === "All" || SITES[i].region === state.region);
-    let [x0, x1] = d3.extent(idx, i => SITES[i].x), [y0, y1] = d3.extent(idx, i => SITES[i].y);
-    if (state.region === "All") { [[x0, y0], [x1, y1]] = geoPath.bounds(sitesGeo); }
-    const pad = 40, w = Math.max(x1 - x0, 20), h = Math.max(y1 - y0, 20);
-    const k = Math.min(60, 0.85 / Math.max(w / (MAP_W - 2 * pad), h / (MAP_H - 2 * pad)));
+  function drawMap() {
+    projection.scale(mapT.k / TAU).translate([mapT.x, mapT.y]);
+    const b = BASEMAPS[state.basemap];
+    deptPaths.attr("d", geoPath).attr("fill", b.layer ? "none" : "var(--land)")
+      .attr("stroke", b.layer ? "var(--ink-2)" : "var(--dept)").attr("stroke-opacity", b.layer ? 0.7 : 1);
+    if (b.layer) {
+      const z0 = Math.round(Math.log2(mapT.k / 256));
+      const tiles = d3.tile().extent([[0, 0], [MAP_W, MAP_H]]).tileSize(256).zoomDelta(Math.min(0, b.maxZ - z0))(mapT);
+      tileG.selectAll("image").data(tiles, d => state.basemap + "/" + d.join("/")).join("image")
+        .attr("crossorigin", "anonymous").attr("href", ([x, y, z]) => tileUrl(b, x, y, z))
+        .attr("x", ([x]) => (x + tiles.translate[0]) * tiles.scale).attr("y", ([, y]) => (y + tiles.translate[1]) * tiles.scale)
+        .attr("width", tiles.scale + 0.5).attr("height", tiles.scale + 0.5);
+      attribution.text(`${b.label} © IGN Géoplateforme`);
+    } else {
+      tileG.selectAll("image").remove(); attribution.text("");
+    }
+    SITES.forEach(s => { [s.x, s.y] = projection([s.lon, s.lat]); });
+    renderMarks();
+  }
+
+  function zoomToDept() {
+    const idx = d3.range(SITES.length).filter(i => state.dept === "All" || SITES[i].dept_name === state.dept);
+    const [x0, x1] = d3.extent(idx, i => SITES[i].ux), [y0, y1] = d3.extent(idx, i => SITES[i].uy);
+    const pad = 40, w = Math.max(x1 - x0, 2e-5), h = Math.max(y1 - y0, 2e-5);
+    const k = Math.min(2 ** 19, 0.85 / Math.max(w / (MAP_W - 2 * pad), h / (MAP_H - 2 * pad)));
     const t = d3.zoomIdentity.translate(MAP_W / 2, MAP_H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
     mapSvg.transition().duration(matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500).call(zoom.transform, t);
   }
@@ -340,28 +389,27 @@ const DEPTS = /*__DEPTS__*/;
   function renderMarks() {
     const cls = state.cls;
     const rates = SITES.map((_, i) => rate(i, cls));
-    const rMax = 22 / zoomK, r = d3.scaleSqrt().domain([0, d3.max(rates) || 1]).range([0, rMax]);
+    const r = d3.scaleSqrt().domain([0, d3.max(rates) || 1]).range([0, 22]);
     const order = d3.range(SITES.length).sort((a, b) => d3.descending(rates[a], rates[b]));
     marksG.selectAll("circle").data(order, i => i).join("circle")
       .attr("cx", i => SITES[i].x).attr("cy", i => SITES[i].y)
-      .attr("r", i => rates[i] > 0 ? Math.max(r(rates[i]), 3.2 / zoomK) : 2.6 / zoomK)
+      .attr("r", i => rates[i] > 0 ? Math.max(r(rates[i]), 3.2) : 2.6)
       .each(function (i) { statusStyle(d3.select(this), cls, status(i, cls)); })
-      .attr("stroke-width", function () { return (+d3.select(this).attr("stroke-width")) / zoomK; })
       .style("cursor", "pointer")
       .on("pointermove", (e, i) => {
         const s = SITES[i];
-        showTip(e, [{label: `${s.short} · ${s.region} · ${s.split}`}, {value: d3.format(".2f")(rates[i]), label: `${className(cls)} events / h`},
+        showTip(e, [{label: `${s.short} · ${s.dept_name} · ${s.split}`}, {value: d3.format(".2f")(rates[i]), label: `${className(cls)} events / h`},
                     {value: d3.format(",.0f")(s.hours), label: "hours recorded"}]
           .concat(CLASSES.map((c, j) => ({color: classColor(j), value: d3.format(",")(s.events[j]), label: `${c} · ${STATUS_TEXT[s.status[j]]}`}))));
       })
       .on("pointerleave", hideTip)
       .on("click", (e, i) => selectSite(i));
     marksG.selectAll("circle").filter(i => i === state.site).raise()
-      .attr("stroke", "var(--ink)").attr("stroke-width", 2.2 / zoomK).attr("stroke-dasharray", null);
+      .attr("stroke", "var(--ink)").attr("stroke-width", 2.2).attr("stroke-dasharray", null);
     labelG.selectAll("text").data(state.site === null ? [] : [state.site]).join("text")
-      .attr("x", i => SITES[i].x + (r(rates[i]) || 3 / zoomK) + 4 / zoomK).attr("y", i => SITES[i].y + 4 / zoomK)
-      .attr("font-size", 12 / zoomK).attr("font-weight", 600).style("fill", "var(--ink)")
-      .attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3 / zoomK)
+      .attr("x", i => SITES[i].x + (r(rates[i]) || 3) + 4).attr("y", i => SITES[i].y + 4)
+      .attr("font-size", 12).attr("font-weight", 600).style("fill", "var(--ink)")
+      .attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3)
       .text(i => SITES[i].short);
     document.getElementById("map-title").textContent = `${className(cls)}: events per hour`;
     statusLegend(document.getElementById("map-legend"), cls);
@@ -382,7 +430,7 @@ const DEPTS = /*__DEPTS__*/;
     }
     const s = SITES[state.site];
     document.getElementById("site-title").textContent = s.short;
-    const rows = [["Region", `${s.region} (dept ${s.dept})`], ["Drive · split", `${s.drive} · ${s.split}`],
+    const rows = [["Département", s.dept_name], ["Drive · split", `${s.drive} · ${s.split}`],
                   ["Recorded", `${d3.format(",.0f")(s.hours)} h over ${(bySite.get(state.site) || []).length} evenings`]]
       .concat(CLASSES.map((c, j) => [c, `${d3.format(",")(s.events[j])} events · ${d3.format(".2f")(rate(state.site, j))}/h · ${STATUS_TEXT[s.status[j]]}`]));
     rows.forEach(([k, v]) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; card.append(dt, dd); });
@@ -392,33 +440,42 @@ const DEPTS = /*__DEPTS__*/;
       .attr("aria-label", `Events per hour by evening at ${s.short}`);
     svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
     hatchDefs(svg, "hatch-season");
+    svg.append("defs").append("clipPath").attr("id", "season-clip").append("rect")
+      .attr("x", M.l).attr("y", 0).attr("width", W - M.l - M.r).attr("height", H);
     const x = d3.scaleUtc().domain([dateExtent[0], d3.utcDay.offset(dateExtent[1], 1)]).range([M.l, W - M.r]);
-    const dayW = Math.max(1, x(d3.utcDay.offset(dateExtent[0], 1)) - x(dateExtent[0]));
     const recs = new Map((bySite.get(state.site) || []).map(d => [d.date, d]));
     const days = d3.utcDay.range(dateExtent[0], d3.utcDay.offset(dateExtent[1], 1));
     const yMax = d3.max(CLASSES.map((_, j) => d3.max(recs.values(), d => d.hours ? d.ev[j] / d.hours : 0))) || 1;
+    const gaps = [], bars = [];
     CLASSES.forEach((c, j) => {
       const top = M.t + j * rowH, y = d3.scaleLinear().domain([0, yMax]).range([top + rowH - 10, top + 8]);
       const g = svg.append("g");
-      g.selectAll("rect.gap").data(days.filter(d => !recs.has(d3.utcFormat("%Y-%m-%d")(d)))).join("rect")
-        .attr("x", d => x(d)).attr("width", dayW).attr("y", top + 8).attr("height", rowH - 18).attr("fill", "url(#hatch-season)");
+      const plot = g.append("g").attr("clip-path", "url(#season-clip)");
+      gaps.push(plot.selectAll("rect.gap").data(days.filter(d => !recs.has(d3.utcFormat("%Y-%m-%d")(d)))).join("rect")
+        .attr("y", top + 8).attr("height", rowH - 18).attr("fill", "url(#hatch-season)"));
       g.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "var(--line)");
       g.append("text").attr("x", M.l - 8).attr("y", top + rowH / 2).attr("text-anchor", "end").attr("dominant-baseline", "middle")
         .attr("font-size", 12).style("fill", "var(--ink)").text(c);
       g.append("text").attr("x", M.l - 8).attr("y", y(yMax) + 4).attr("text-anchor", "end").attr("font-size", 10).text(d3.format(".1f")(yMax));
       const vals = Array.from(recs.values()).filter(d => d.ev[j] > 0);
-      g.selectAll("rect.bar").data(vals).join("rect").attr("class", "bar")
-        .attr("x", d => x(parseDay(d.date)) + 0.5).attr("width", Math.max(1, dayW - 1))
-        .attr("y", d => y(d.ev[j] / d.hours)).attr("height", d => y(0) - y(d.ev[j] / d.hours))
-        .attr("rx", Math.min(2, dayW / 3)).attr("fill", classColor(j))
+      bars.push(plot.selectAll("rect.bar").data(vals).join("rect").attr("class", "bar")
+        .attr("y", d => y(d.ev[j] / d.hours)).attr("height", d => y(0) - y(d.ev[j] / d.hours)).attr("fill", classColor(j))
         .on("pointermove", (e, d) => showTip(e, [{label: d.date}, {color: classColor(j), value: d3.format(".2f")(d.ev[j] / d.hours), label: `${c} events / h`},
                                                  {value: d.ev[j], label: "events"}, {value: d3.format(".1f")(d.hours), label: "hours recorded"}]))
-        .on("pointerleave", hideTip);
+        .on("pointerleave", hideTip));
     });
-    svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`)
-      .call(d3.axisBottom(x).ticks(d3.utcWeek.every(2)).tickFormat(d3.utcFormat("%d %b")).tickSizeOuter(0))
-      .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
+    const axis = svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`);
     svg.append("text").attr("x", 4).attr("y", 12).attr("font-size", 10).text("events / h");
+    function place(xz) {
+      const dayW = Math.max(1, xz(d3.utcDay.offset(dateExtent[0], 1)) - xz(dateExtent[0]));
+      gaps.forEach(sel => sel.attr("x", d => xz(d)).attr("width", dayW));
+      bars.forEach(sel => sel.attr("x", d => xz(parseDay(d.date)) + 0.5).attr("width", Math.max(1, dayW - 1)).attr("rx", Math.min(2, dayW / 3)));
+      axis.call(d3.axisBottom(xz).ticks(7).tickFormat(d3.utcFormat("%d %b")).tickSizeOuter(0))
+        .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
+    }
+    const seasonZoom = d3.zoom().scaleExtent([1, 40]).extent([[M.l, 0], [W - M.r, H]]).translateExtent([[M.l, 0], [W - M.r, H]])
+      .on("zoom", e => { state.seasonT = e.transform; place(e.transform.rescaleX(x)); });
+    svg.call(seasonZoom).call(seasonZoom.transform, state.seasonT);
   }
 
   // ---------------------------------------------------------------- presence grid
@@ -432,9 +489,10 @@ const DEPTS = /*__DEPTS__*/;
                        : CLASSES.map((c, j) => ({key: j, label: c}));
     document.getElementById("presence-sub").textContent = month
       ? `${CLASSES[cls]}: was the class detected at the site that month? Detection, not confirmation (see the status view).`
-      : "Status per site and class, from your blind verdicts (audit + presence check).";
-    const rowH = 15, M = {l: 150, t: 26, r: 6, b: 6}, colW = month ? 54 : 74;
-    const groups = d3.groups(siteOrder, i => SITES[i].region);
+      : "Status per site and class, from your blind verdicts (audit + presence check). 'Every detection judged was something else' " +
+        "(e.g. horses heard as Drumming) means the model's detections there were wrong, not that the species is absent.";
+    const rowH = 15, M = {l: 215, t: 26, r: 6, b: 6}, colW = month ? 54 : 74;
+    const groups = d3.groups(siteOrder, i => SITES[i].dept_name);
     const H = M.t + siteOrder.length * rowH + groups.length * 16 + M.b, W = M.l + cols.length * colW + M.r;
     const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("role", "img")
       .attr("aria-label", month ? "Detections by site and month" : "Presence status by site and class");
@@ -446,13 +504,13 @@ const DEPTS = /*__DEPTS__*/;
     if (month) evenings.forEach(d => { const key = `${d.site}|${d.date.slice(0, 7)}`; const v = monthly.get(key) || {hours: 0, ev: 0};
                                        v.hours += d.hours; v.ev += d.ev[cls]; monthly.set(key, v); });
     let y = M.t;
-    groups.forEach(([region, idx]) => {
-      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(region);
+    groups.forEach(([dept, idx]) => {
+      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(dept);
       y += 16;
       idx.forEach(i => {
         const row = svg.append("g").attr("transform", `translate(0,${y})`).style("cursor", "pointer").on("click", () => selectSite(i));
         if (i === state.site) row.append("rect").attr("x", 0).attr("width", W).attr("height", rowH).attr("fill", "var(--surface-2)");
-        row.append("text").attr("x", 10).attr("y", rowH - 4).attr("font-size", 11).text(SITES[i].short.slice(0, 24));
+        row.append("text").attr("x", 10).attr("y", rowH - 4).attr("font-size", 11).text(SITES[i].short.slice(0, 36));
         cols.forEach((c, k) => {
           const cx = M.l + k * colW + colW / 2, cy = rowH / 2;
           if (month) {
@@ -493,35 +551,49 @@ const DEPTS = /*__DEPTS__*/;
     const el = document.getElementById("night"); el.replaceChildren();
     const useSite = state.nightScope === "site" && state.site !== null;
     document.getElementById("night-title").textContent = `Time from sunset · ${useSite ? SITES[state.site].short : "all sites"}`;
-    const bins = d3.range(-60, 60, 5);
+    const START = meta.schedule_start_min, END = START + 120;        // two one-hour files from sunset
     const W = 520, rowH = 92, M = {l: 70, r: 10, t: 8, b: 30}, H = M.t + rowH * CLASSES.length + M.b;
     const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Events by minutes from sunset");
     svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
-    const x = d3.scaleLinear().domain([-60, 60]).range([M.l, W - M.r]);
-    const counts = CLASSES.map((_, j) => {
-      const c = new Array(bins.length).fill(0);
-      DATA.events.forEach(e => { if (e[1] === j && (!useSite || e[0] === state.site)) { const b = Math.min(bins.length - 1, Math.max(0, Math.floor((e[3] + 60) / 5))); c[b]++; } });
-      return c;
-    });
-    CLASSES.forEach((c, j) => {
-      const top = M.t + j * rowH, yMax = d3.max(counts[j]) || 1;
-      const y = d3.scaleLinear().domain([0, yMax]).range([top + rowH - 12, top + 10]);
-      svg.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "var(--line)");
+    svg.append("defs").append("clipPath").attr("id", "night-clip").append("rect")
+      .attr("x", M.l).attr("y", 0).attr("width", W - M.l - M.r).attr("height", H);
+    const x = d3.scaleLinear().domain([START, END]).range([M.l, W - M.r]);
+    const minutes = CLASSES.map((_, j) => DATA.events.filter(e => e[1] === j && (!useSite || e[0] === state.site)).map(e => e[3]));
+    const rows = CLASSES.map((c, j) => {
+      const top = M.t + j * rowH;
       svg.append("text").attr("x", M.l - 8).attr("y", top + rowH / 2).attr("text-anchor", "end").attr("dominant-baseline", "middle")
         .attr("font-size", 12).style("fill", "var(--ink)").text(c);
-      svg.append("text").attr("x", M.l - 8).attr("y", y(yMax) + 4).attr("text-anchor", "end").attr("font-size", 10).text(yMax);
-      svg.append("g").selectAll("rect").data(bins).join("rect")
-        .attr("x", b => x(b) + 1).attr("width", x(5) - x(0) - 2).attr("y", (b, k) => y(counts[j][k]))
-        .attr("height", (b, k) => y(0) - y(counts[j][k])).attr("rx", 2).attr("fill", classColor(j))
-        .on("pointermove", (e, b) => showTip(e, [{label: `${b} to ${b + 5} min from sunset`}, {color: classColor(j), value: counts[j][bins.indexOf(b)], label: `${c} events`}]))
-        .on("pointerleave", hideTip);
+      const base = svg.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", top + rowH - 12).attr("y2", top + rowH - 12).attr("stroke", "var(--line)");
+      return {top, base, maxLabel: svg.append("text").attr("x", M.l - 8).attr("text-anchor", "end").attr("font-size", 10),
+              bars: svg.append("g").attr("clip-path", "url(#night-clip)")};
     });
-    svg.append("line").attr("x1", x(0)).attr("x2", x(0)).attr("y1", M.t).attr("y2", H - M.b).attr("stroke", "var(--ink-3)").attr("stroke-dasharray", "3 3");
-    svg.append("text").attr("x", x(0) + 4).attr("y", M.t + 8).attr("font-size", 10).text("sunset (schedule)");
-    svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`).call(d3.axisBottom(x).tickValues(d3.range(-60, 61, 15)).tickSizeOuter(0))
-      .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
+    const axis = svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`);
     svg.append("text").attr("x", (M.l + W - M.r) / 2).attr("y", H - 2).attr("text-anchor", "middle").attr("font-size", 10).text("minutes from sunset");
-    el._counts = {bins, counts};
+    function place(transform) {
+      const xz = transform.rescaleX(x), width = transform.k >= 4 ? 1 : transform.k >= 2 ? 2 : 5;
+      const bins = d3.range(START, END, width);
+      const counts = minutes.map(values => {
+        const c = new Array(bins.length).fill(0);
+        values.forEach(v => { if (v >= START && v < END) c[Math.floor((v - START) / width)]++; });
+        return c;
+      });
+      rows.forEach((row, j) => {
+        const yMax = d3.max(counts[j]) || 1, y = d3.scaleLinear().domain([0, yMax]).range([row.top + rowH - 12, row.top + 10]);
+        row.maxLabel.attr("y", y(yMax) + 4).text(yMax);
+        row.bars.selectAll("rect").data(bins).join("rect")
+          .attr("x", b => xz(b) + 0.5).attr("width", b => Math.max(0.5, xz(b + width) - xz(b) - 1)).attr("y", (b, k) => y(counts[j][k]))
+          .attr("height", (b, k) => y(0) - y(counts[j][k])).attr("rx", 1.5).attr("fill", classColor(j))
+          .on("pointermove", (e, b) => showTip(e, [{label: `${d3.format(".0f")(b)} to ${d3.format(".0f")(b + width)} min from sunset`},
+                                                   {color: classColor(j), value: counts[j][bins.indexOf(b)], label: `${CLASSES[j]} events`}]))
+          .on("pointerleave", hideTip);
+      });
+      axis.call(d3.axisBottom(xz).ticks(8).tickSizeOuter(0))
+        .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
+      el._counts = {bins, counts};
+    }
+    const nightZoom = d3.zoom().scaleExtent([1, 12]).extent([[M.l, 0], [W - M.r, H]]).translateExtent([[M.l, 0], [W - M.r, H]])
+      .on("zoom", e => { state.nightT = e.transform; place(e.transform); });
+    svg.call(nightZoom).call(nightZoom.transform, state.nightT);
   }
 
   // ---------------------------------------------------------------- weekly heatmap
@@ -529,8 +601,8 @@ const DEPTS = /*__DEPTS__*/;
     const el = document.getElementById("heat"); el.replaceChildren();
     const cls = state.cls;
     document.getElementById("heat-title").textContent = `Weekly activity, all sites · ${className(cls)}`;
-    const cellW = 22, rowH = 14, M = {l: 160, t: 34, r: 8, b: 8};
-    const groups = d3.groups(siteOrder, i => SITES[i].region);
+    const cellW = 22, rowH = 14, M = {l: 215, t: 34, r: 8, b: 8};
+    const groups = d3.groups(siteOrder, i => SITES[i].dept_name);
     const W = M.l + weeks.length * cellW + M.r, H = M.t + siteOrder.length * rowH + groups.length * 16 + M.b;
     const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("role", "img").attr("aria-label", "Events per hour by site and week");
     svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
@@ -543,13 +615,13 @@ const DEPTS = /*__DEPTS__*/;
     const color = d3.scaleSequentialSqrt(d3.interpolateRgbBasis(ramp)).domain([0, vmax]);
     weeks.forEach((w, k) => { if (k % 2 === 0) svg.append("text").attr("x", M.l + k * cellW + 1).attr("y", M.t - 10).attr("font-size", 10).text(d3.utcFormat("%d %b")(w)); });
     let y = M.t;
-    groups.forEach(([region, idx]) => {
-      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(region);
+    groups.forEach(([dept, idx]) => {
+      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(dept);
       y += 16;
       idx.forEach(i => {
         const row = svg.append("g").attr("transform", `translate(0,${y})`).style("cursor", "pointer").on("click", () => selectSite(i));
         row.append("text").attr("x", 10).attr("y", rowH - 3).attr("font-size", 10.5)
-          .style("fill", i === state.site ? "var(--ink)" : null).attr("font-weight", i === state.site ? 700 : null).text(SITES[i].short.slice(0, 26));
+          .style("fill", i === state.site ? "var(--ink)" : null).attr("font-weight", i === state.site ? 700 : null).text(SITES[i].short.slice(0, 36));
         weeks.forEach((w, k) => {
           const v = cells.get(`${i}|${+w}`);
           const r = row.append("rect").attr("x", M.l + k * cellW + 1).attr("y", 1).attr("width", cellW - 2).attr("height", rowH - 2).attr("rx", 2);
@@ -579,9 +651,19 @@ const DEPTS = /*__DEPTS__*/;
 
   // ---------------------------------------------------------------- export (SVG / PNG / CSV)
   const VARS = ["--bg", "--surface", "--surface-2", "--line", "--ink", "--ink-2", "--ink-3", "--land", "--dept", "--c0", "--c1", "--c2", "--call-all", "--hatch", "--accent"];
-  function standalone(svgEl) {
+  const asDataUrl = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob);
+  });
+  async function standalone(svgEl) {
     const clone = svgEl.cloneNode(true);
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    // base-map tiles: embedded as data, so the file stands alone (fetched again from IGN)
+    await Promise.all(Array.from(clone.querySelectorAll("image")).map(async img => {
+      const href = img.getAttribute("href");
+      if (!href || href.startsWith("data:")) return;
+      try { img.setAttribute("href", await asDataUrl(await (await fetch(href)).blob())); img.removeAttribute("crossorigin"); }
+      catch (err) { img.remove(); }
+    }));
     let text = new XMLSerializer().serializeToString(clone);
     VARS.forEach(v => { text = text.split(`var(${v})`).join(css(v)); });
     const style = `<style>text{font-family:${css("--font").replace(/"/g, "'")};fill:${css("--ink-2")}}</style>`;
@@ -591,27 +673,28 @@ const DEPTS = /*__DEPTS__*/;
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
     document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
-  function exportSvg(svgEl, name) { download(name + ".svg", new Blob([standalone(svgEl)], {type: "image/svg+xml"})); }
-  function exportPng(svgEl, name) {
+  async function exportSvg(svgEl, name) { download(name + ".svg", new Blob([await standalone(svgEl)], {type: "image/svg+xml"})); }
+  async function exportPng(svgEl, name) {
     const vb = svgEl.viewBox.baseVal, w = vb.width * 2, h = vb.height * 2;
+    const text = await standalone(svgEl);
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext("2d"); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
       canvas.toBlob(b => download(name + ".png", b), "image/png");
     };
-    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(standalone(svgEl));
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(text);
   }
   function csvText(header, rows) {
     const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     return [header.map(q).join(",")].concat(rows.map(r => r.map(q).join(","))).join("\n") + "\n";
   }
   const tables = {
-    map: () => [["site", "region", "split", "lat", "lon", "hours"].concat(CLASSES.flatMap(c => [c + "_events", c + "_per_h", c + "_status"])),
-                SITES.map((s, i) => [s.site, s.region, s.split, s.lat, s.lon, s.hours].concat(CLASSES.flatMap((c, j) => [s.events[j], d3.format(".4f")(rate(i, j)), s.status[j]])))],
+    map: () => [["site", "departement", "split", "lat", "lon", "hours"].concat(CLASSES.flatMap(c => [c + "_events", c + "_per_h", c + "_status"])),
+                SITES.map((s, i) => [s.site, s.dept_name, s.split, s.lat, s.lon, s.hours].concat(CLASSES.flatMap((c, j) => [s.events[j], d3.format(".4f")(rate(i, j)), s.status[j]])))],
     season: () => state.site === null ? [["date"], []] : [["date", "hours"].concat(CLASSES),
                 (bySite.get(state.site) || []).map(d => [d.date, d.hours].concat(d.ev))],
-    presence: () => [["site", "region"].concat(CLASSES.map(c => c + "_status")), siteOrder.map(i => [SITES[i].site, SITES[i].region].concat(SITES[i].status))],
+    presence: () => [["site", "departement"].concat(CLASSES.map(c => c + "_status")), siteOrder.map(i => [SITES[i].site, SITES[i].dept_name].concat(SITES[i].status))],
     night: () => { const n = document.getElementById("night")._counts; return [["bin_start_min"].concat(CLASSES), n.bins.map((b, k) => [b].concat(n.counts.map(c => c[k])))]; },
     heat: () => { const rows = []; siteOrder.forEach(i => weeks.forEach(w => {
                   const v = (bySite.get(i) || []).filter(d => +weekOf(d.date) === +w);
@@ -630,8 +713,9 @@ const DEPTS = /*__DEPTS__*/;
 
   // ---------------------------------------------------------------- go
   function renderAll() { renderMarks(); renderSite(); renderPresence(); renderNight(); renderHeat(); }
+  drawMap();
   renderAll();
-  zoomToRegion();
+  zoomToDept();
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
 })();
 </script>

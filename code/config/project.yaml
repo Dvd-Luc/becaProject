@@ -155,9 +155,10 @@ viz:                                      # build_viz.py: local page of the full
   departements: data/geo/departements.geojson   # public outlines (committed)
   template: src/survey/viz_assets/viz_page.html
   d3: src/survey/viz_assets/d3.v7.9.0.min.js
-  schedule_start_min: -60                 # recorders run from 1 h before to 1 h after sunset:
-                                          # first file start = sunset - 60 min
-  min_files_per_evening: 2                # evenings with fewer files: left out of the sunset view
+  d3_tile: src/survey/viz_assets/d3-tile.v1.0.0.min.js   # basemap tiles (IGN, loaded online)
+  schedule_start_min: 0                   # recorders run from sunset to sunset + 2 h (two 1 h
+                                          # files): first file start = sunset (checked against
+                                          # computed sunsets: median +1 min in recorder time)
   round_coords: null                      # degrees, e.g. 0.1 to blur positions in the page
   out: results/survey/viz/full_gen2.html  # gitignored: holds positions
 
