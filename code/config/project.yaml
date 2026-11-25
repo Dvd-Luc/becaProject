@@ -107,8 +107,9 @@ detection:
   max_events_per_clip: null               # optional cap, to test later
 
 drive_detection:                          # detect_drive.py: every recording, read on the drive
-  gen: 2                                  # model = generations.dir/gen_K/model.tflite
-  dir: data/survey/full/gen_2             # files/, raw/, events.csv, file_summary.csv
+  gen: 3                                  # model = generations.dir/gen_K/model.tflite (gen 2's
+                                          # results: data/survey/full/gen_2, queues audit_<drive>)
+  dir: data/survey/full/gen_3             # files/, raw/, events.csv, file_summary.csv
   raw_min_conf: 0.1
   min_conf: 0.5
   overlap: 0.0
@@ -160,7 +161,7 @@ viz:                                      # build_viz.py: local page of the full
                                           # files): first file start = sunset (checked against
                                           # computed sunsets: median +1 min in recorder time)
   round_coords: null                      # degrees, e.g. 0.1 to blur positions in the page
-  out: results/survey/viz/full_gen2.html  # gitignored: holds positions
+  out: results/survey/viz/full_gen3.html  # gitignored: holds positions (gen 2's page: full_gen2.html)
 
 generations:
   dir: generations
