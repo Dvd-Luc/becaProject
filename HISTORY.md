@@ -12,6 +12,7 @@ changes (the `/wrap-up` routine does this).
 | **v0 = gen_0** | XC clips only: 3 s windows cut from the hand-annotated XC recordings (`outputs/clips`: Call 633, Drumming 473, Song 749, Noise 184) | `models/final/gallinago_v0.tflite`; `generations/gen_0/` only holds links to it | `data/survey/detections/` (all 264 clips; the default `detection.dir`) |
 | **gen_1** | XC clips + 728 survey windows from 496 train-queue verdicts on v0's detections (597 Noise, 59 Call, 40 Song, 32 Drumming); same hyperparameters as v0, seed 1 | `generations/gen_1/model.tflite` | `generations/gen_1/detections/` (198 train-site clips only) |
 | **gen_2** | gen_1's data + 250 verdicts on gen_1's own train-site events at ≥ 0.35 (queue `train_gen1`: 52 events not already judged + 198 background; 221 Noise, 19 Call, 4 Drumming, 6 Unsure) → 989 survey windows; totals Call 727, Drumming 510, Song 789, Noise 1002 (33 %); same hyperparameters, seed 1 | `generations/gen_2/model.tflite` | – |
+| **gen_3** | gen_2's data + the full-survey audit and presence verdicts on gen_2's events, **train sites only** (694 audit + 68 presence; 175 heldout verdicts left out) → 2 233 survey windows (Drumming 281, Song 386, Call 521, Noise 1 045; field Drumming ×7 and Song ×10 vs gen_2); totals Call 1 154, Drumming 754, Song 1 135, Noise 1 229; same hyperparameters, seed 1 | `generations/gen_3/model.tflite` | full survey to be re-run with it |
 
 ## Datasets
 
@@ -144,6 +145,27 @@ each class kept, and ≥ half of the 20 false Drumming events removed, at the fi
 (0.5, Call 0.9). Gen_2 reference on (3): keeps all by construction (rescore = survey
 scores), precision of kept Call 0.988, Drumming 0.648 [0.02, 0.98], Song 0.883.
 
+**Gen 3 evaluated** (`compare_xc.csv`, `compare.csv`, `compare_audit.csv`; rules fixed before training):
+
+| Test | gen_2 | gen_3 | Rule |
+|---|---|---|---|
+| XC AP Call / Drumming / Song | 0.985 / 0.937 / 0.916 | 0.985 / 0.945 / **0.950** (Song +0.034 [+0.003, +0.095]) | met |
+| Survey test, false alarms / h ≥ 0.5, any class | 0.05 [0.00, 0.15] | **0.20** [0.05, 0.40] (diff +0.15 [0.00, +0.30]) | **not met** |
+| Heldout audit: true events kept, Call / Drumming / Song | 1 / 1 / 1 (reference) | 0.978 / 1.000 / 0.990 | met (≥ 0.90) |
+| Heldout audit: false Drumming removed | 0 / 20 | **18 / 20** | met (≥ half) |
+| Heldout audit: precision of kept Drumming / all | 0.648 / 0.892 | **0.990** / 0.959 | – |
+| Heldout audit: false Song removed | 0 / 14 | 2 / 14 | – |
+
+**Deviation from rule 2, recorded:** gen_3 scores 4 of the 333 judged-Noise survey test
+windows ≥ 0.5 instead of 1 (2 Call, 2 Song, at heldout sites Cussac PNRVA and 074
+Bonnevaux). At the survey's thresholds (Call 0.9) only the 2 Song windows would be kept.
+The difference interval includes 0. **Gen 3 is adopted anyway** (your decision): it removes
+the horse Drumming false alarms at new sites without losing true events, and recognises
+Song better on unseen recordists. With 10× more field Song it says "Song" more readily, and
+song-like noises heard only at heldout sites (Bonnevaux scored 0/10 in the D3 audit) were
+never available to learn from: that is the cost of an honest test on new sites. **Watch:**
+Song precision in the gen 3 audit, especially at heldout sites.
+
 Data note: D1 site 032 Cussac holds two extra folders (`Porzana porzana` 186,
 `Zapornia pusilla` 63 WAVs): 16–30 s clips from an earlier BirdNET crake extraction,
 cut from the site's own recordings. The survey globs skip them, as they should.
@@ -166,4 +188,4 @@ signal from field verdicts is nearly exhausted at these sites.
 - **2026-11-18**: gen_0 vs gen_1 on the survey test set (too few positives to conclude). XC test set drawn, annotated blind and evaluated. Output cleanup (old learning-curve models deleted).
 - **2026-11-19**: field false-alarm metric added (gen_1: about 60× fewer). gen_1 run on the train sites; review queue `train_gen1` rebuilt at gen_0's settings (events ≥ 0.35) and judged (250); gen_2 trained and evaluated on both test sets.
 - **2026-11-20 → 11-23**: full survey moved to the MeSU cluster (Slurm job per drive). D4 done with gen_2 (5 752 files, 4 408 events at ≥ 0.5). Audit tool added and the D4 audit sample frozen (270 events, snippets cut).
-- **2026-11-23 → 11-25**: D4 audit judged; Call threshold raised to 0.9; presence check; local visualisation page. D1 and D2 run on the cluster (13 896 files in all), D3 submitted. Audit sampled per class × site × bin from D1 on; D1/D2 judged (444 + 4). Drumming false alarms, mostly horse neighing, at a few Massif Central sites. D3 run and audited (143); recording schedule corrected on the page (sunset → +2 h); page: IGN base maps, départements, zoom. Gen 3 material and the heldout audit test set added; gen 3 training started.
+- **2026-11-23 → 11-25**: D4 audit judged; Call threshold raised to 0.9; presence check; local visualisation page. D1 and D2 run on the cluster (13 896 files in all), D3 submitted. Audit sampled per class × site × bin from D1 on; D1/D2 judged (444 + 4). Drumming false alarms, mostly horse neighing, at a few Massif Central sites. D3 run and audited (143); recording schedule corrected on the page (sunset → +2 h); page: IGN base maps, départements, zoom. Gen 3 material and the heldout audit test set added; gen 3 trained and evaluated, adopted despite rule 2 (2 Song windows); full survey to be re-run with it.
