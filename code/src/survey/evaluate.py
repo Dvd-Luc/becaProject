@@ -4,6 +4,8 @@
     python src/survey/evaluate.py --gens 0 1
     python src/survey/evaluate.py --gens 0 1 2 --boot 1000
     python src/survey/evaluate.py --gens 0 1 --testset xc
+    python src/survey/evaluate.py --gens 2 --testset audit      # check: gen 2 rescored = its max_conf
+    python src/survey/evaluate.py --gens 2 3 --testset audit
 
 Every generation scores exactly the same 3 s windows, so the numbers are comparable:
   1. the test windows are cut once (kept)
@@ -34,11 +36,25 @@ Every generation scores exactly the same 3 s windows, so the numbers are compara
   windows (windows of one recording are not independent). XC recordings are focal and
   clean: this measures generalisation to new recordists, not field precision.
 
+--testset audit: the heldout-site events of the full-survey audit (audit_events.py,
+  judged blind with review.py --queue audit), gen_2's events still kept by the class
+  floors (so gen_2 keeps all of them: it is the reference). Never trained on (only
+  train-site verdicts train). Each event is cut into its 3 s windows on its recording's
+  grid (from the snippets). A generation keeps an event if its best window inside the
+  event scores >= the class floor (drive_detection.min_conf, min_event_conf: FIXED,
+  never tuned on this set) for the predicted class. Per class and "all": true events
+  kept and precision of the kept events (weighted by audit stratum population /
+  judged), false events removed (share); bootstrap over heldout sites. It measures how
+  a generation filters gen_2's events, not recall (that is the XC test). Unsure and the
+  presence verdicts (chosen by score, not at random) are left out.
+
 Writes:
   survey  <review.dir>/test_windows/<item_id>.wav, generations.dir/gen_K/test_scores.csv,
           results/survey/compare.csv, results/survey/pr_<class>.png
   xc      <xc_test.dir>/windows/<window_id>.wav, generations.dir/gen_K/xc_scores.csv,
           results/survey/compare_xc.csv, results/survey/pr_xc_<class>.png
+  audit   <review.dir>/audit_windows/<item_id>_w<k>.wav, generations.dir/gen_K/audit_scores.csv,
+          results/survey/compare_audit.csv
   (gen_K/<cache>_params.csv: BirdNET's analysis parameters of the last scoring run)
 
 Run from code/.
@@ -257,6 +273,184 @@ def load_xc(cfg, args):
             "cache": "xc_scores", "legacy": None, "suffix": "_xc", "hours": None}
 
 
+def class_floor(cfg, label):
+    """Lowest best-window score a kept full-survey event of this class may have.
+
+    Args:
+        cfg (dict): Whole config (drive_detection section).
+        label (str): Class name.
+
+    Returns:
+        float: max(drive_detection.min_conf, min_event_conf of the class).
+    """
+    detection_cfg = cfg["drive_detection"]
+    return max(detection_cfg["min_conf"], (detection_cfg.get("min_event_conf") or {}).get(label, 0.0))
+
+
+def load_audit(cfg, args):
+    """Heldout-site events of the full-survey audit, as 3 s windows on their file's grid.
+
+    Args:
+        cfg (dict): Whole config (review, drive_detection sections).
+        args (argparse.Namespace): review_dir, dry_run.
+
+    Returns:
+        dict: events (list of dicts: item_id, drive, site, predicted, true, weight,
+            windows, max_conf), wavs (window id -> Path), cache, legacy, suffix.
+
+    Raises:
+        SystemExit: If no audit is judged or a snippet is missing.
+    """
+    review_dir = Path(args.review_dir or cfg["review"]["dir"])
+    events, wavs = [], {}
+    windows_dir = review_dir / "audit_windows"
+    n_cut, missing = 0, []
+    for queue_path in sorted(review_dir.glob("audit_D*_queue.csv")):
+        drive = queue_path.name[len("audit_"):-len("_queue.csv")]
+        judgments_path = review_dir / f"audit_{drive}_judgments.csv"
+        if not judgments_path.exists():
+            continue
+        verdict_of = {row["item_id"]: row["verdict"] for row in read_dicts(judgments_path)}
+        population = {row["stratum"]: int(row["population"])
+                      for row in read_dicts(review_dir / f"audit_{drive}_strata.csv")}
+        judged = [row for row in read_dicts(queue_path) if verdict_of.get(row["item_id"], UNSURE) != UNSURE]
+        n_judged = Counter(row["stratum"] for row in judged)          # weights over all splits
+        for row in judged:
+            if row["split"] == "train" or float(row["max_conf"]) < class_floor(cfg, row["predicted"]):
+                continue                     # train site, or an event the survey no longer keeps
+            offset = float(row["offset_s"])
+            first = round((float(row["start_s"]) + offset) / WIN)
+            last = max(first + 1, round((float(row["end_s"]) + offset) / WIN))
+            window_ids = []
+            for index in range(first, last):
+                window_id = f"{row['item_id']}_w{index}"
+                window_ids.append(window_id)
+                wavs[window_id] = windows_dir / f"{window_id}.wav"
+                if not args.dry_run:
+                    if not Path(row["clip_path"]).exists():
+                        missing.append(row["clip_path"])
+                        break
+                    windows_dir.mkdir(parents=True, exist_ok=True)
+                    n_cut += cut_window(row["clip_path"], index * WIN - offset, wavs[window_id])
+            events.append({"item_id": row["item_id"], "drive": drive, "site": row["site"],
+                           "predicted": row["predicted"], "true": verdict_of[row["item_id"]] == row["predicted"],
+                           "weight": population[row["stratum"]] / n_judged[row["stratum"]],
+                           "windows": window_ids, "max_conf": float(row["max_conf"])})
+    if missing:
+        raise SystemExit(f"{len(missing)} audit snippets missing, e.g. {missing[0]}: audit_events.py cut")
+    if not events:
+        raise SystemExit(f"no judged heldout audit event in {review_dir} (audit_events.py, review.py --queue audit)")
+    print(f"heldout audit events (Unsure left out): {len(events)} at {len({e['site'] for e in events})} sites, "
+          f"{len(wavs)} windows; " + ", ".join(
+              f"{label} {sum(e['true'] for e in events if e['predicted'] == label)} true / "
+              f"{sum(not e['true'] for e in events if e['predicted'] == label)} false"
+              for label in sorted({e['predicted'] for e in events})))
+    if n_cut:
+        print(f"cut {n_cut} windows into {windows_dir}")
+    return {"events": events, "wavs": wavs, "cache": "audit_scores", "legacy": None, "suffix": "_audit"}
+
+
+def run_audit(cfg, args, test, models, gens_dir, out_dir):
+    """Event-level comparison of generations on the heldout audit events.
+
+    An event is kept by a generation if its best window, inside the event, scores at
+    least the class floor (drive_detection.min_conf / min_event_conf) for the predicted
+    class. Per class and over all: share of the true events kept (weighted by stratum
+    population / judged), share of the false events removed, and the precision of the
+    events kept; 95 % CI from a bootstrap over heldout sites.
+
+    Args:
+        cfg (dict): Whole config.
+        args (argparse.Namespace): gens, boot, threads.
+        test (dict): From load_audit.
+        models (dict[int, Path]): gen -> model.tflite.
+        gens_dir (Path): generations.dir.
+        out_dir (Path): Output folder.
+    """
+    events = test["events"]
+    scores = {gen: score(path, test["wavs"], path.parent, test["cache"], test["legacy"], args.threads)
+              for gen, path in models.items()}
+    best = {gen: np.array([max((scores[gen][w].get(e["predicted"], 0.0) for w in e["windows"]), default=0.0)
+                           for e in events]) for gen in args.gens}
+    ref = args.gens[0]
+    gap = np.abs(best[ref] - np.array([e["max_conf"] for e in events]))
+    print(f"check, gen_{ref} rescored vs the full-survey max_conf: {int((gap > 0.01).sum())} of {len(events)} "
+          f"events differ by > 0.01 (median gap {np.median(gap):.4f})")
+    floors = np.array([class_floor(cfg, e["predicted"]) for e in events])
+    true = np.array([e["true"] for e in events], float)
+    weight = np.array([e["weight"] for e in events])
+    labels = sorted({e["predicted"] for e in events})
+    scopes = {label: np.array([e["predicted"] == label for e in events]) for label in labels}
+    scopes["all"] = np.ones(len(events), bool)
+    sites = np.array([e["site"] for e in events])
+    site_groups = [np.where(sites == site)[0] for site in np.unique(sites)]
+
+    def metrics(idx, gen):
+        """Retention, removal, precision of kept events over a resample.
+
+        Args:
+            idx (numpy.ndarray): Event indices (with repeats).
+            gen (int): Generation.
+
+        Returns:
+            dict[str, list[float]]: scope -> [true kept (weighted), false removed (share),
+                precision of kept (weighted)].
+        """
+        kept = (best[gen] >= floors).astype(float)
+        out = {}
+        for name, mask in scopes.items():
+            m = mask[idx]
+            t, k, w = true[idx][m], kept[idx][m], weight[idx][m]
+            true_w, kept_w = (w * t).sum(), (w * k).sum()
+            n_false = (1 - t).sum()
+            out[name] = [(w * t * k).sum() / true_w if true_w else np.nan,
+                         ((1 - t) * (1 - k)).sum() / n_false if n_false else np.nan,
+                         (w * t * k).sum() / kept_w if kept_w else np.nan]
+        return out
+
+    names = ["true_kept", "false_removed", "precision_kept"]
+    everything = np.arange(len(events))
+    point = {gen: metrics(everything, gen) for gen in args.gens}
+    rng = np.random.default_rng(0)
+    boots = [np.concatenate([site_groups[k] for k in rng.choice(len(site_groups), len(site_groups))])
+             for _ in range(args.boot)]
+    boot = {gen: [metrics(idx, gen) for idx in boots] for gen in args.gens}
+    rows = []
+    for name in scopes:
+        mask = scopes[name]
+        for gen in args.gens:
+            for j, metric in enumerate(names):
+                row = {"gen": gen, "class": name, "metric": metric, "n_true": int(true[mask].sum()),
+                       "n_false": int((1 - true[mask]).sum()), "value": point[gen][name][j]}
+                if args.boot:
+                    values = np.array([b[name][j] for b in boot[gen]])
+                    row["lo"], row["hi"] = np.nanpercentile(values, [2.5, 97.5])
+                    if gen != ref:
+                        delta = values - np.array([b[name][j] for b in boot[ref]])
+                        row[f"diff_vs_gen{ref}"] = point[gen][name][j] - point[ref][name][j]
+                        row["diff_lo"], row["diff_hi"] = np.nanpercentile(delta, [2.5, 97.5])
+                rows.append(row)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"compare{test['suffix']}.csv"
+    header = ["gen", "class", "metric", "n_true", "n_false", "value", "lo", "hi",
+              f"diff_vs_gen{ref}", "diff_lo", "diff_hi"]
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({col: (f"{value:.4f}" if isinstance(value, float) else value) for col, value in row.items()})
+    print(f"\nheldout audit events, kept if best window >= {', '.join(f'{label} {class_floor(cfg, label):g}' for label in labels)}"
+          f" [95% CI, sites resampled]")
+    for name in scopes:
+        for metric in names:
+            cells = []
+            for gen in args.gens:
+                row = next(r for r in rows if r["gen"] == gen and r["class"] == name and r["metric"] == metric)
+                cells.append(f"gen_{gen} {row['value']:.3f} [{row.get('lo', np.nan):.3f}, {row.get('hi', np.nan):.3f}]")
+            print(f"  {name:9s} {metric:15s} " + "   ".join(cells))
+    print(f"wrote {path}")
+
+
 # ---------- scoring ----------
 def parse_result(path):
     """Best score per label in the first 3 s segment of one BirdNET result file.
@@ -401,7 +595,7 @@ def main():
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default="config/project.yaml")
     parser.add_argument("--gens", type=int, nargs="+", required=True)
-    parser.add_argument("--testset", choices=["survey", "xc"], default="survey")
+    parser.add_argument("--testset", choices=["survey", "xc", "audit"], default="survey")
     parser.add_argument("--review-dir", help="default: review.dir (survey test set)")
     parser.add_argument("--gen-dir", help="default: generations.dir")
     parser.add_argument("--out", default="results/survey")
@@ -417,7 +611,7 @@ def main():
     thresholds = sorted(set(gen_cfg.get("eval_thresholds", [0.35, 0.5, 0.7])
                             + [cfg["detection"]["min_conf"]]))
 
-    test = (load_xc if args.testset == "xc" else load_survey)(cfg, args)
+    test = {"xc": load_xc, "audit": load_audit, "survey": load_survey}[args.testset](cfg, args)
     models = {gen: gens_dir / f"gen_{gen}" / "model.tflite" for gen in args.gens}
     for gen, model_path in models.items():
         if not model_path.exists():
@@ -426,6 +620,9 @@ def main():
     if args.dry_run:
         print("models:", {gen: str(path) for gen, path in models.items()})
         print("dry run: nothing cut, scored or written")
+        return
+    if args.testset == "audit":
+        run_audit(cfg, args, test, models, gens_dir, out_dir)
         return
     labels = [line.strip() for line in models[args.gens[0]].with_name("model_Labels.txt")
               .read_text(encoding="utf-8").splitlines() if line.strip()]
