@@ -1,0 +1,13 @@
+gen,class,metric,n_true,n_false,value,lo,hi,diff_vs_gen2,diff_lo,diff_hi
+2,Call,true_kept,50,2,1.0000,1.0000,1.0000,,,
+2,Call,false_removed,50,2,0.0000,0.0000,0.0000,,,
+2,Call,precision_kept,50,2,0.9882,0.9445,1.0000,,,
+2,Drumming,true_kept,32,20,1.0000,1.0000,1.0000,,,
+2,Drumming,false_removed,32,20,0.0000,0.0000,0.0000,,,
+2,Drumming,precision_kept,32,20,0.6479,0.0180,0.9826,,,
+2,Song,true_kept,32,14,1.0000,1.0000,1.0000,,,
+2,Song,false_removed,32,14,0.0000,0.0000,0.0000,,,
+2,Song,precision_kept,32,14,0.8830,0.5271,0.9951,,,
+2,all,true_kept,114,36,1.0000,1.0000,1.0000,,,
+2,all,false_removed,114,36,0.0000,0.0000,0.0000,,,
+2,all,precision_kept,114,36,0.8923,0.6398,0.9908,,,
