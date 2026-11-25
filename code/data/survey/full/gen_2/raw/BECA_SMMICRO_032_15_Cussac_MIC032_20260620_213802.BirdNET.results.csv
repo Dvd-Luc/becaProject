@@ -1,0 +1,4 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Drumming,Drumming,0.1742,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260620_213802.wav
+87.0,90.0,Drumming,Drumming,0.1125,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260620_213802.wav
+1677.0,1680.0,Drumming,Drumming,0.1174,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260620_213802.wav

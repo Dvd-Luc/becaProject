@@ -1,0 +1,18 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Drumming,Drumming,0.1065,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+45.0,48.0,Drumming,Drumming,0.1026,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+48.0,51.0,Drumming,Drumming,0.1084,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+51.0,54.0,Drumming,Drumming,0.1155,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+81.0,84.0,Drumming,Drumming,0.1189,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+720.0,723.0,Drumming,Drumming,0.1557,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+723.0,726.0,Drumming,Drumming,0.1643,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+726.0,729.0,Drumming,Drumming,0.1318,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+729.0,732.0,Drumming,Drumming,0.1847,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2259.0,2262.0,Drumming,Drumming,0.1264,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2265.0,2268.0,Drumming,Drumming,0.1029,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2280.0,2283.0,Drumming,Drumming,0.1050,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2349.0,2352.0,Drumming,Drumming,0.1069,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2352.0,2355.0,Drumming,Drumming,0.1371,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2355.0,2358.0,Drumming,Drumming,0.1157,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2367.0,2370.0,Drumming,Drumming,0.1582,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav
+2400.0,2403.0,Drumming,Drumming,0.1117,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260428_205002.wav

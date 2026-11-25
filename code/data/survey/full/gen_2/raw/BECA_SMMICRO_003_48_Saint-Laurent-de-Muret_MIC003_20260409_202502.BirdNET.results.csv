@@ -1,0 +1,9 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+420.0,423.0,Song,Song,0.1111,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav
+687.0,690.0,Call,Call,0.9186,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav
+987.0,990.0,Call,Call,0.2538,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav
+990.0,993.0,Call,Call,0.5209,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav
+1407.0,1410.0,Drumming,Drumming,0.1446,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav
+1413.0,1416.0,Drumming,Drumming,0.1202,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav
+1416.0,1419.0,Drumming,Drumming,0.1071,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav
+2769.0,2772.0,Drumming,Drumming,0.1881,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260409_202502.wav

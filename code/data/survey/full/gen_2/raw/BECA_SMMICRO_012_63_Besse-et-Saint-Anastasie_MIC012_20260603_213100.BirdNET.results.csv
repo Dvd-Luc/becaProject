@@ -1,0 +1,27 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+3.0,6.0,Song,Song,0.1085,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+6.0,9.0,Song,Song,0.1272,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+9.0,12.0,Song,Song,0.1328,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+12.0,15.0,Song,Song,0.1041,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+15.0,18.0,Song,Song,0.1396,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+21.0,24.0,Song,Song,0.1456,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+24.0,27.0,Song,Song,0.1272,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+27.0,30.0,Song,Song,0.1080,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+30.0,33.0,Song,Song,0.1833,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+33.0,36.0,Song,Song,0.1079,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+42.0,45.0,Song,Song,0.1531,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+45.0,48.0,Song,Song,0.1458,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+48.0,51.0,Song,Song,0.1059,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+66.0,69.0,Song,Song,0.1120,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+417.0,420.0,Drumming,Drumming,0.1100,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+432.0,435.0,Song,Song,0.1013,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+438.0,441.0,Song,Song,0.1285,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+450.0,453.0,Drumming,Drumming,0.1189,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+495.0,498.0,Drumming,Drumming,0.1058,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+603.0,606.0,Drumming,Drumming,0.1443,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+624.0,627.0,Drumming,Drumming,0.1833,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+624.0,627.0,Call,Call,0.1068,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+630.0,633.0,Drumming,Drumming,0.1243,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+636.0,639.0,Call,Call,0.2957,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+1620.0,1623.0,Drumming,Drumming,0.1098,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav
+2730.0,2733.0,Drumming,Drumming,0.1119,/tmp/detect_drive_tkz97avm/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260603_213100.wav

@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+9.0,12.0,Drumming,Drumming,0.3739,/tmp/detect_drive_84c68amc/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260418_203802.wav
+21.0,24.0,Drumming,Drumming,0.1262,/tmp/detect_drive_84c68amc/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260418_203802.wav
+3183.0,3186.0,Call,Call,0.1128,/tmp/detect_drive_84c68amc/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260418_203802.wav
+3354.0,3357.0,Drumming,Drumming,0.2920,/tmp/detect_drive_84c68amc/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260418_203802.wav

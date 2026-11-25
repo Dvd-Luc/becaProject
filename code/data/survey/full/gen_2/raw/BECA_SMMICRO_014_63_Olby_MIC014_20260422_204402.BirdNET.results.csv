@@ -1,0 +1,9 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Song,Song,0.1270,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav
+192.0,195.0,Call,Call,0.1391,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav
+207.0,210.0,Call,Call,0.2081,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav
+210.0,213.0,Drumming,Drumming,0.1391,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav
+318.0,321.0,Drumming,Drumming,0.1188,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav
+321.0,324.0,Call,Call,0.1194,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav
+1185.0,1188.0,Drumming,Drumming,0.1861,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav
+2181.0,2184.0,Drumming,Drumming,0.1068,/tmp/detect_drive_pzn5lg4x/BECA_SMMICRO_014_63_Olby_MIC014_20260422_204402.wav

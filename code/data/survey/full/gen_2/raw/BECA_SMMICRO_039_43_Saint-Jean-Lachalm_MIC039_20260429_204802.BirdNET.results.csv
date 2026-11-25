@@ -1,0 +1,17 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+30.0,33.0,Song,Song,0.7148,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+33.0,36.0,Song,Song,0.7288,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+57.0,60.0,Drumming,Drumming,0.7846,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+63.0,66.0,Drumming,Drumming,0.2996,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+66.0,69.0,Drumming,Drumming,0.1367,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+75.0,78.0,Drumming,Drumming,0.4156,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+87.0,90.0,Drumming,Drumming,0.1507,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+96.0,99.0,Drumming,Drumming,0.7483,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+276.0,279.0,Call,Call,0.1257,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+279.0,282.0,Call,Call,0.1104,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+2388.0,2391.0,Drumming,Drumming,0.1328,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+3393.0,3396.0,Drumming,Drumming,0.1074,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+3414.0,3417.0,Call,Call,0.1370,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+3456.0,3459.0,Call,Call,0.3574,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+3519.0,3522.0,Call,Call,0.1332,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav
+3549.0,3552.0,Call,Call,0.1712,/tmp/detect_drive_73wh_xwf/BECA_SMMICRO_039_43_Saint-Jean-Lachalm_MIC039_20260429_204802.wav

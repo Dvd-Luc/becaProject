@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+1899.0,1902.0,Drumming,Drumming,0.1078,/tmp/detect_drive_fdm4kw32/BECA_SMMICRO_007_63_La Godivelle_MIC007_20260422_204202.wav
+2850.0,2853.0,Drumming,Drumming,0.1025,/tmp/detect_drive_fdm4kw32/BECA_SMMICRO_007_63_La Godivelle_MIC007_20260422_204202.wav
+3555.0,3558.0,Call,Call,0.1197,/tmp/detect_drive_fdm4kw32/BECA_SMMICRO_007_63_La Godivelle_MIC007_20260422_204202.wav
+3558.0,3561.0,Call,Call,0.1307,/tmp/detect_drive_fdm4kw32/BECA_SMMICRO_007_63_La Godivelle_MIC007_20260422_204202.wav

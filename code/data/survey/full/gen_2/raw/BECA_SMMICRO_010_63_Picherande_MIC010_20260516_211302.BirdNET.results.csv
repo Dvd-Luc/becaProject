@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+111.0,114.0,Drumming,Drumming,0.1054,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260516_211302.wav
+3030.0,3033.0,Call,Call,0.1545,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260516_211302.wav
+3033.0,3036.0,Call,Call,0.1657,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260516_211302.wav
+3033.0,3036.0,Drumming,Drumming,0.1165,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260516_211302.wav

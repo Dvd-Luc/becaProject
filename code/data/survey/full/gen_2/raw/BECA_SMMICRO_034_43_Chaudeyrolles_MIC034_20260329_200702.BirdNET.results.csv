@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+93.0,96.0,Drumming,Drumming,0.1079,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260329_200702.wav
+1368.0,1371.0,Drumming,Drumming,0.1212,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260329_200702.wav
+1758.0,1761.0,Call,Call,0.1015,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260329_200702.wav
+3360.0,3363.0,Call,Call,0.2963,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260329_200702.wav

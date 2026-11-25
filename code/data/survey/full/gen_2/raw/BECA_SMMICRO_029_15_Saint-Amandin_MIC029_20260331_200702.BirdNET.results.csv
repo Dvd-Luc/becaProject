@@ -1,0 +1,7 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+135.0,138.0,Drumming,Drumming,0.1023,/tmp/detect_drive_893wbyi4/BECA_SMMICRO_029_15_Saint-Amandin_MIC029_20260331_200702.wav
+588.0,591.0,Drumming,Drumming,0.1031,/tmp/detect_drive_893wbyi4/BECA_SMMICRO_029_15_Saint-Amandin_MIC029_20260331_200702.wav
+639.0,642.0,Call,Call,0.1234,/tmp/detect_drive_893wbyi4/BECA_SMMICRO_029_15_Saint-Amandin_MIC029_20260331_200702.wav
+1677.0,1680.0,Call,Call,0.1039,/tmp/detect_drive_893wbyi4/BECA_SMMICRO_029_15_Saint-Amandin_MIC029_20260331_200702.wav
+2145.0,2148.0,Drumming,Drumming,0.1120,/tmp/detect_drive_893wbyi4/BECA_SMMICRO_029_15_Saint-Amandin_MIC029_20260331_200702.wav
+2145.0,2148.0,Call,Call,0.1078,/tmp/detect_drive_893wbyi4/BECA_SMMICRO_029_15_Saint-Amandin_MIC029_20260331_200702.wav

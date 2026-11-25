@@ -1,0 +1,4 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+954.0,957.0,Drumming,Drumming,0.1103,/tmp/detect_drive_w40obkq1/BECA_SMMICRO_013_63_Saint-Sauves d'Auvergne_MIC013_20260331_191600.wav
+1107.0,1110.0,Drumming,Drumming,0.1033,/tmp/detect_drive_w40obkq1/BECA_SMMICRO_013_63_Saint-Sauves d'Auvergne_MIC013_20260331_191600.wav
+1110.0,1113.0,Call,Call,0.1008,/tmp/detect_drive_w40obkq1/BECA_SMMICRO_013_63_Saint-Sauves d'Auvergne_MIC013_20260331_191600.wav

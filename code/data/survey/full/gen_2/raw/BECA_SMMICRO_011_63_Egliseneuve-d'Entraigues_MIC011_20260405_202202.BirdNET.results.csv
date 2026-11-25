@@ -1,0 +1,16 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Drumming,Drumming,0.1011,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+120.0,123.0,Song,Song,0.1270,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+129.0,132.0,Call,Call,0.1545,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+132.0,135.0,Call,Call,0.1960,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+402.0,405.0,Call,Call,0.8881,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+723.0,726.0,Song,Song,0.1045,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+1368.0,1371.0,Drumming,Drumming,0.1403,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+1533.0,1536.0,Drumming,Drumming,0.1658,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+1557.0,1560.0,Drumming,Drumming,0.1054,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+1563.0,1566.0,Drumming,Drumming,0.1076,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+1623.0,1626.0,Drumming,Drumming,0.1223,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+2400.0,2403.0,Song,Song,0.1088,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+2562.0,2565.0,Call,Call,0.1045,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+3333.0,3336.0,Drumming,Drumming,0.1011,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav
+3519.0,3522.0,Call,Call,0.1019,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260405_202202.wav

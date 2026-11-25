@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+456.0,459.0,Drumming,Drumming,0.1097,/tmp/detect_drive_d8c0l1pz/BECA_SMMICRO_016_23_Flayat_MIC016_20260503_210002.wav
+2364.0,2367.0,Call,Call,0.2563,/tmp/detect_drive_d8c0l1pz/BECA_SMMICRO_016_23_Flayat_MIC016_20260503_210002.wav
+2367.0,2370.0,Drumming,Drumming,0.1621,/tmp/detect_drive_d8c0l1pz/BECA_SMMICRO_016_23_Flayat_MIC016_20260503_210002.wav
+2706.0,2709.0,Drumming,Drumming,0.1504,/tmp/detect_drive_d8c0l1pz/BECA_SMMICRO_016_23_Flayat_MIC016_20260503_210002.wav

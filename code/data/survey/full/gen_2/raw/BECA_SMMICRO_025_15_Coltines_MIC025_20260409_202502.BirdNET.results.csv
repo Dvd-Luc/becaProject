@@ -1,0 +1,18 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Song,Song,0.2676,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+6.0,9.0,Song,Song,0.3500,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+9.0,12.0,Song,Song,0.1093,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+18.0,21.0,Song,Song,0.1474,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+123.0,126.0,Song,Song,0.1255,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+183.0,186.0,Song,Song,0.1143,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+219.0,222.0,Song,Song,0.1562,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+222.0,225.0,Song,Song,0.1215,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+228.0,231.0,Song,Song,0.2374,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+231.0,234.0,Song,Song,0.2719,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+258.0,261.0,Song,Song,0.1037,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+264.0,267.0,Song,Song,0.1216,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+273.0,276.0,Song,Song,0.1107,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+285.0,288.0,Song,Song,0.1073,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+360.0,363.0,Song,Song,0.1317,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+1269.0,1272.0,Call,Call,0.1088,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav
+1287.0,1290.0,Call,Call,0.1990,/tmp/detect_drive_vy6rmbt3/BECA_SMMICRO_025_15_Coltines_MIC025_20260409_202502.wav

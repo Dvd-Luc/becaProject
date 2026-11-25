@@ -1,0 +1,12 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+1113.0,1116.0,Song,Song,0.1955,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1122.0,1125.0,Song,Song,0.1311,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1137.0,1140.0,Call,Call,0.7480,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1140.0,1143.0,Call,Call,0.8647,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1140.0,1143.0,Song,Song,0.2455,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1143.0,1146.0,Song,Song,0.4847,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1143.0,1146.0,Call,Call,0.3931,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1146.0,1149.0,Call,Call,0.1213,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+1215.0,1218.0,Song,Song,0.1176,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+2019.0,2022.0,Drumming,Drumming,0.3963,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav
+2541.0,2544.0,Call,Call,0.1005,/tmp/detect_drive_mk453vvn/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260412_193100.wav

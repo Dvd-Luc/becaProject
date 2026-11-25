@@ -1,0 +1,8 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+3.0,6.0,Drumming,Drumming,0.1205,/tmp/detect_drive_bios4y0y/BECA_SMMICRO_015_15_Murat_MIC015_20260320_192044.wav
+6.0,9.0,Drumming,Drumming,0.1350,/tmp/detect_drive_bios4y0y/BECA_SMMICRO_015_15_Murat_MIC015_20260320_192044.wav
+9.0,12.0,Call,Call,0.1838,/tmp/detect_drive_bios4y0y/BECA_SMMICRO_015_15_Murat_MIC015_20260320_192044.wav
+9.0,12.0,Drumming,Drumming,0.1312,/tmp/detect_drive_bios4y0y/BECA_SMMICRO_015_15_Murat_MIC015_20260320_192044.wav
+12.0,15.0,Drumming,Drumming,0.1345,/tmp/detect_drive_bios4y0y/BECA_SMMICRO_015_15_Murat_MIC015_20260320_192044.wav
+21.0,24.0,Drumming,Drumming,0.1023,/tmp/detect_drive_bios4y0y/BECA_SMMICRO_015_15_Murat_MIC015_20260320_192044.wav
+48.0,51.0,Call,Call,0.1247,/tmp/detect_drive_bios4y0y/BECA_SMMICRO_015_15_Murat_MIC015_20260320_192044.wav

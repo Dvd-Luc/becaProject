@@ -1,0 +1,22 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Song,Song,0.1156,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+120.0,123.0,Call,Call,0.1052,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+564.0,567.0,Call,Call,0.2153,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+573.0,576.0,Call,Call,0.1014,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+663.0,666.0,Call,Call,0.1709,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+699.0,702.0,Call,Call,0.1273,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+855.0,858.0,Call,Call,0.1110,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+906.0,909.0,Call,Call,0.1011,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1008.0,1011.0,Drumming,Drumming,0.1410,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1074.0,1077.0,Call,Call,0.1150,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1077.0,1080.0,Song,Song,0.1247,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1383.0,1386.0,Drumming,Drumming,0.1119,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1389.0,1392.0,Call,Call,0.1174,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1440.0,1443.0,Drumming,Drumming,0.1109,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1473.0,1476.0,Drumming,Drumming,0.1170,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1479.0,1482.0,Drumming,Drumming,0.1277,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+1593.0,1596.0,Song,Song,0.1110,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+2625.0,2628.0,Call,Call,0.1841,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+3285.0,3288.0,Call,Call,0.1800,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+3288.0,3291.0,Call,Call,0.1385,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav
+3531.0,3534.0,Call,Call,0.2456,/tmp/detect_drive_sgolpymu/BECA_SMMICRO_010_63_Picherande_MIC010_20260401_191600.wav

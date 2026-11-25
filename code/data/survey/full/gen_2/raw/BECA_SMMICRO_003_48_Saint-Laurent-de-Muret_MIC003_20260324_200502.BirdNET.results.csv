@@ -1,0 +1,15 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+21.0,24.0,Call,Call,0.1124,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+519.0,522.0,Call,Call,0.1865,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+522.0,525.0,Call,Call,0.1169,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+531.0,534.0,Drumming,Drumming,0.1073,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+558.0,561.0,Drumming,Drumming,0.1419,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+561.0,564.0,Drumming,Drumming,0.1675,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+756.0,759.0,Call,Call,0.1028,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+1029.0,1032.0,Drumming,Drumming,0.1278,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+1044.0,1047.0,Drumming,Drumming,0.1695,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+1851.0,1854.0,Call,Call,0.1027,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+1854.0,1857.0,Call,Call,0.2061,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+1857.0,1860.0,Call,Call,0.2259,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+2334.0,2337.0,Call,Call,0.1168,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav
+3060.0,3063.0,Drumming,Drumming,0.1503,/tmp/detect_drive_cub6hwu0/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260324_200502.wav

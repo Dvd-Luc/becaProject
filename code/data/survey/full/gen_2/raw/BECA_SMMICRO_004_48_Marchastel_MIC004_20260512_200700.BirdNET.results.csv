@@ -1,0 +1,7 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+657.0,660.0,Drumming,Drumming,0.1144,/tmp/detect_drive_bmv1jey1/BECA_SMMICRO_004_48_Marchastel_MIC004_20260512_200700.wav
+753.0,756.0,Drumming,Drumming,0.1125,/tmp/detect_drive_bmv1jey1/BECA_SMMICRO_004_48_Marchastel_MIC004_20260512_200700.wav
+888.0,891.0,Drumming,Drumming,0.1105,/tmp/detect_drive_bmv1jey1/BECA_SMMICRO_004_48_Marchastel_MIC004_20260512_200700.wav
+897.0,900.0,Drumming,Drumming,0.1100,/tmp/detect_drive_bmv1jey1/BECA_SMMICRO_004_48_Marchastel_MIC004_20260512_200700.wav
+2211.0,2214.0,Call,Call,0.1261,/tmp/detect_drive_bmv1jey1/BECA_SMMICRO_004_48_Marchastel_MIC004_20260512_200700.wav
+3003.0,3006.0,Call,Call,0.1025,/tmp/detect_drive_bmv1jey1/BECA_SMMICRO_004_48_Marchastel_MIC004_20260512_200700.wav

@@ -1,0 +1,12 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+123.0,126.0,Drumming,Drumming,0.1029,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+165.0,168.0,Drumming,Drumming,0.1855,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+270.0,273.0,Song,Song,0.1939,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+1566.0,1569.0,Call,Call,0.2942,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+1959.0,1962.0,Call,Call,0.7207,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+1962.0,1965.0,Call,Call,0.9836,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+1965.0,1968.0,Call,Call,0.2852,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+1968.0,1971.0,Call,Call,0.1510,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+1971.0,1974.0,Call,Call,0.1502,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+2088.0,2091.0,Call,Call,0.4873,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav
+3027.0,3030.0,Drumming,Drumming,0.1036,/tmp/detect_drive_afzhyn93/BECA_SMMICRO_035_43_Champclause_MIC035_20260414_192700.wav

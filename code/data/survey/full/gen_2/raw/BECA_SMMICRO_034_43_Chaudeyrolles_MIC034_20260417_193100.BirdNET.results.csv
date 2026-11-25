@@ -1,0 +1,12 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+1023.0,1026.0,Drumming,Drumming,0.1288,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+1029.0,1032.0,Drumming,Drumming,0.1320,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+1032.0,1035.0,Drumming,Drumming,0.1038,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+1050.0,1053.0,Drumming,Drumming,0.1291,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+1167.0,1170.0,Drumming,Drumming,0.2080,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+2190.0,2193.0,Song,Song,0.1392,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+2253.0,2256.0,Call,Call,0.7188,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+2340.0,2343.0,Call,Call,0.4692,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+2343.0,2346.0,Call,Call,0.6017,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+2760.0,2763.0,Call,Call,0.1956,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav
+2766.0,2769.0,Call,Call,0.1132,/tmp/detect_drive_9e9yq91e/BECA_SMMICRO_034_43_Chaudeyrolles_MIC034_20260417_193100.wav

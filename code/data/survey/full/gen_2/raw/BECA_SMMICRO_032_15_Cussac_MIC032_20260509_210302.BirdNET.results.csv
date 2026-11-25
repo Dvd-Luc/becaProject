@@ -1,0 +1,11 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+15.0,18.0,Song,Song,0.4278,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+261.0,264.0,Drumming,Drumming,0.1156,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+303.0,306.0,Drumming,Drumming,0.1687,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+444.0,447.0,Song,Song,0.1664,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+528.0,531.0,Drumming,Drumming,0.1055,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+1143.0,1146.0,Drumming,Drumming,0.1197,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+1377.0,1380.0,Drumming,Drumming,0.1143,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+1497.0,1500.0,Drumming,Drumming,0.1385,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+2367.0,2370.0,Drumming,Drumming,0.1159,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
+3042.0,3045.0,Song,Song,0.1120,/tmp/detect_drive_ws3beqju/BECA_SMMICRO_032_15_Cussac_MIC032_20260509_210302.wav
