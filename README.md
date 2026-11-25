@@ -488,21 +488,23 @@ events**, with confidence intervals. Do this one drive at a time, as soon as its
 ```bash
 python src/survey/audit_events.py sample --drive D1 --dry-run   # strata and their populations
 python src/survey/audit_events.py sample --drive D1             # draw and freeze the sample
-python src/survey/audit_events.py cut --drive D1 --root /mnt/d  # snippets of every queued event
+python src/survey/audit_events.py cut --drive D1 --root /mnt/d  # snippets: audit + presence candidates
 python src/survey/review.py --queue audit --drive D1            # judge (blind), in several sessions if needed
 python src/survey/audit_events.py presence --drive D1           # after the audit: sites still to confirm
-python src/survey/audit_events.py cut --drive D1 --root /mnt/d  # their snippets
-python src/survey/review.py --queue presence --drive D1         # judge them (blind)
+python src/survey/review.py --queue presence --drive D1         # judge them (blind), snippets already cut
 python src/survey/audit_events.py report                        # precision + presence, every drive so far
 ```
 
 - **sample**: each event goes in a stratum and a random sample is drawn per stratum,
   seeded by `review.seed` and the drive. `review.audit_strata` picks the strata:
-  - `site` (default): class × site, `review.audit_per_site` (5) events each. Every site
-    is checked, so precision can be compared between sites and one hotspot can't fill
-    the sample.
-  - `bin`: class × `max_conf` bin (`review.audit_bins`), `review.audit_per_stratum` (30)
-    each. Used for D4, to choose the thresholds.
+  - `site_bin` (default, D1 on): class × site × `max_conf` bin (`review.audit_bins`),
+    `review.audit_per_site_bin` (3) events each. Every site is heard at low and high
+    scores, so precision can be compared between sites and between bins, and one hotspot
+    can't fill the sample. `--per-stratum N` draws more for one drive (D2: 5).
+  - `site`: class × site, `review.audit_per_site` (5) events each, drawn at random, so
+    mostly low scores are heard.
+  - `bin`: class × `max_conf` bin, `review.audit_per_stratum` (30) each. Used for D4, to
+    choose the thresholds.
 
   The sample, the population of each stratum and the stratum kind are frozen in
   `data/survey/review/audit_<drive>_{queue,strata}.csv`. `--force` redraws, and only
@@ -515,7 +517,10 @@ python src/survey/audit_events.py report                        # precision + pr
 - **cut**: writes the audio of every queued event (audit and presence), with 10 s on each
   side, as a snippet in `data/survey/full/gen_2/audit/snippets/` (gitignored WAVs). It
   reads from the plugged-in drive or from the cluster copy
-  (`--root $SCRATCH/beca/audio/<drive>`). Once it's done, the drive can be unplugged.
+  (`--root $SCRATCH/beca/audio/<drive>`). Before the presence queue exists, it also cuts
+  the presence candidates: the best `presence_per_site` events per class × site outside
+  the audit queue. The presence queue only ever takes events among them, so one cut right
+  after `sample` covers both queues and the drive is needed once.
 - **review**: the queue is **blind**, so neither the predicted class nor the score is shown. You
   say what each event really is (class, Noise or Unsure).
 - **report**: an event is correct when the verdict is its predicted class (Unsure left
