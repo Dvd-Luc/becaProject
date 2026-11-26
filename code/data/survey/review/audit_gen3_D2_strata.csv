@@ -1,0 +1,55 @@
+kind,drive,stratum,population,sampled,n_sites
+site_bin,D2,Call|BECA_Les Chastelets|0.9-1.0,4,4,1
+site_bin,D2,Call|BECA_Plaine Jacquot|0.9-1.0,3,3,1
+site_bin,D2,Call|BECA_SMMICRO_007_63_La Godivelle|0.9-1.0,14,8,1
+site_bin,D2,Call|BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne|0.9-1.0,112,8,1
+site_bin,D2,Call|BECA_SMMICRO_010_63_Picherande|0.9-1.0,4,4,1
+site_bin,D2,Call|BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues|0.9-1.0,86,8,1
+site_bin,D2,Call|BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie|0.9-1.0,11,8,1
+site_bin,D2,Call|BECA_SMMICRO_034_43_Chaudeyrolles|0.9-1.0,3,3,1
+site_bin,D2,Call|BECA_SMMICRO_035_43_Champclause|0.9-1.0,25,8,1
+site_bin,D2,Call|BECA_SMMICRO_036_43_Siaugues-Sainte-Marie|0.9-1.0,61,8,1
+site_bin,D2,Call|BECA_SMMICRO_037_43_Landos|0.9-1.0,49,8,1
+site_bin,D2,Call|BECA_SMMICRO_038_43_Costaros|0.9-1.0,8,8,1
+site_bin,D2,Call|BECA_SMMICRO_039_43_Saint-Jean-Lachalm|0.9-1.0,79,8,1
+site_bin,D2,Call|BECA_SMMICRO_040_43_Les Vastres|0.9-1.0,11,8,1
+site_bin,D2,Drumming|BECA_Plaine Jacquot|0.5-0.7,2,2,1
+site_bin,D2,Drumming|BECA_SMMICRO_007_63_La Godivelle|0.5-0.7,3,3,1
+site_bin,D2,Drumming|BECA_SMMICRO_007_63_La Godivelle|0.7-0.9,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne|0.5-0.7,4,4,1
+site_bin,D2,Drumming|BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne|0.7-0.9,6,6,1
+site_bin,D2,Drumming|BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne|0.9-1.0,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues|0.5-0.7,266,8,1
+site_bin,D2,Drumming|BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues|0.7-0.9,525,8,1
+site_bin,D2,Drumming|BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues|0.9-1.0,457,8,1
+site_bin,D2,Drumming|BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie|0.5-0.7,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_034_43_Chaudeyrolles|0.5-0.7,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_035_43_Champclause|0.5-0.7,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_037_43_Landos|0.5-0.7,3,3,1
+site_bin,D2,Drumming|BECA_SMMICRO_037_43_Landos|0.7-0.9,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_037_43_Landos|0.9-1.0,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_038_43_Costaros|0.5-0.7,1,1,1
+site_bin,D2,Drumming|BECA_SMMICRO_039_43_Saint-Jean-Lachalm|0.5-0.7,193,8,1
+site_bin,D2,Drumming|BECA_SMMICRO_039_43_Saint-Jean-Lachalm|0.7-0.9,372,8,1
+site_bin,D2,Drumming|BECA_SMMICRO_039_43_Saint-Jean-Lachalm|0.9-1.0,514,8,1
+site_bin,D2,Drumming|BECA_SMMICRO_040_43_Les Vastres|0.5-0.7,10,8,1
+site_bin,D2,Drumming|BECA_SMMICRO_040_43_Les Vastres|0.7-0.9,2,2,1
+site_bin,D2,Song|BECA_Plaine Jacquot|0.5-0.7,1,1,1
+site_bin,D2,Song|BECA_SMMICRO_007_63_La Godivelle|0.5-0.7,15,8,1
+site_bin,D2,Song|BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne|0.5-0.7,43,8,1
+site_bin,D2,Song|BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne|0.7-0.9,8,8,1
+site_bin,D2,Song|BECA_SMMICRO_008_63_Saint-Alyre-ès-Montagne|0.9-1.0,2,2,1
+site_bin,D2,Song|BECA_SMMICRO_010_63_Picherande|0.5-0.7,1,1,1
+site_bin,D2,Song|BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues|0.5-0.7,293,8,1
+site_bin,D2,Song|BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues|0.7-0.9,332,8,1
+site_bin,D2,Song|BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues|0.9-1.0,138,8,1
+site_bin,D2,Song|BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie|0.5-0.7,5,5,1
+site_bin,D2,Song|BECA_SMMICRO_036_43_Siaugues-Sainte-Marie|0.5-0.7,6,6,1
+site_bin,D2,Song|BECA_SMMICRO_037_43_Landos|0.5-0.7,292,8,1
+site_bin,D2,Song|BECA_SMMICRO_037_43_Landos|0.7-0.9,28,8,1
+site_bin,D2,Song|BECA_SMMICRO_038_43_Costaros|0.5-0.7,252,8,1
+site_bin,D2,Song|BECA_SMMICRO_038_43_Costaros|0.7-0.9,27,8,1
+site_bin,D2,Song|BECA_SMMICRO_039_43_Saint-Jean-Lachalm|0.5-0.7,183,8,1
+site_bin,D2,Song|BECA_SMMICRO_039_43_Saint-Jean-Lachalm|0.7-0.9,302,8,1
+site_bin,D2,Song|BECA_SMMICRO_039_43_Saint-Jean-Lachalm|0.9-1.0,202,8,1
+site_bin,D2,Song|BECA_SMMICRO_040_43_Les Vastres|0.5-0.7,6,6,1
