@@ -1,0 +1,10 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+18.0,21.0,Call,Call,0.1746,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+21.0,24.0,Call,Call,0.4540,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+36.0,39.0,Call,Call,0.5478,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+39.0,42.0,Call,Call,0.2906,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+144.0,147.0,Call,Call,0.2691,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+423.0,426.0,Drumming,Drumming,0.1237,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+447.0,450.0,Call,Call,0.1083,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+447.0,450.0,Drumming,Drumming,0.1026,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav
+1617.0,1620.0,Drumming,Drumming,0.1052,/tmp/detect_drive_3aonba5l/BECA_SMMICRO_002_48_Recoules-d'Aubrac_MIC002_20260509_200200.wav

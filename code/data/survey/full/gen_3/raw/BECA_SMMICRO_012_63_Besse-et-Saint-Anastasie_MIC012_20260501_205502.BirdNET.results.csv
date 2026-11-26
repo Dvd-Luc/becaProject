@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+72.0,75.0,Song,Song,0.2552,/tmp/detect_drive_rl4xsccs/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260501_205502.wav
+75.0,78.0,Song,Song,0.2909,/tmp/detect_drive_rl4xsccs/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260501_205502.wav
+1458.0,1461.0,Drumming,Drumming,0.1001,/tmp/detect_drive_rl4xsccs/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260501_205502.wav
+2169.0,2172.0,Drumming,Drumming,0.2371,/tmp/detect_drive_rl4xsccs/BECA_SMMICRO_012_63_Besse-et-Saint-Anastasie_MIC012_20260501_205502.wav

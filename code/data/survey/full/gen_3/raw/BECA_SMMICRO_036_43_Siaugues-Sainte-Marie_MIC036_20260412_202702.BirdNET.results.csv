@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+1860.0,1863.0,Drumming,Drumming,0.1018,/tmp/detect_drive_pp0npu9a/BECA_SMMICRO_036_43_Siaugues-Sainte-Marie_MIC036_20260412_202702.wav
+3549.0,3552.0,Drumming,Drumming,0.1033,/tmp/detect_drive_pp0npu9a/BECA_SMMICRO_036_43_Siaugues-Sainte-Marie_MIC036_20260412_202702.wav
+3561.0,3564.0,Drumming,Drumming,0.1260,/tmp/detect_drive_pp0npu9a/BECA_SMMICRO_036_43_Siaugues-Sainte-Marie_MIC036_20260412_202702.wav
+3579.0,3582.0,Call,Call,0.2457,/tmp/detect_drive_pp0npu9a/BECA_SMMICRO_036_43_Siaugues-Sainte-Marie_MIC036_20260412_202702.wav

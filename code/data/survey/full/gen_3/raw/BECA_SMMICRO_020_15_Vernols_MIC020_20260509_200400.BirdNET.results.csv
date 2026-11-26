@@ -1,0 +1,20 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Drumming,Drumming,0.1400,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+3.0,6.0,Call,Call,0.1073,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+6.0,9.0,Call,Call,0.1328,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+12.0,15.0,Call,Call,0.1008,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+15.0,18.0,Call,Call,0.1190,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+27.0,30.0,Call,Call,0.1392,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+60.0,63.0,Call,Call,0.1148,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+180.0,183.0,Drumming,Drumming,0.1110,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+462.0,465.0,Call,Call,0.1033,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+510.0,513.0,Drumming,Drumming,0.1074,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+528.0,531.0,Drumming,Drumming,0.1026,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+546.0,549.0,Song,Song,0.1250,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+627.0,630.0,Drumming,Drumming,0.1180,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+666.0,669.0,Drumming,Drumming,0.1470,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+879.0,882.0,Song,Song,0.1039,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+1047.0,1050.0,Song,Song,0.1209,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+1434.0,1437.0,Drumming,Drumming,0.1121,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+1839.0,1842.0,Drumming,Drumming,0.1027,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav
+1851.0,1854.0,Drumming,Drumming,0.1291,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260509_200400.wav

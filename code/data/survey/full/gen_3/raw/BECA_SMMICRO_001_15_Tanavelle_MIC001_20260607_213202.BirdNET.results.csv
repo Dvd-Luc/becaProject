@@ -1,0 +1,23 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+48.0,51.0,Song,Song,0.1628,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+150.0,153.0,Song,Song,0.1238,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+213.0,216.0,Drumming,Drumming,0.1361,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+228.0,231.0,Drumming,Drumming,0.1005,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+240.0,243.0,Song,Song,0.1065,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+243.0,246.0,Song,Song,0.1285,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+258.0,261.0,Song,Song,0.1042,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+267.0,270.0,Song,Song,0.5211,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+270.0,273.0,Song,Song,0.3324,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+990.0,993.0,Drumming,Drumming,0.1942,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+996.0,999.0,Song,Song,0.1406,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+999.0,1002.0,Song,Song,0.1162,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+1251.0,1254.0,Song,Song,0.1626,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+1254.0,1257.0,Song,Song,0.2125,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+1509.0,1512.0,Drumming,Drumming,0.1653,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+2079.0,2082.0,Drumming,Drumming,0.1088,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+2103.0,2106.0,Drumming,Drumming,0.1194,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+2424.0,2427.0,Drumming,Drumming,0.1039,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+2616.0,2619.0,Call,Call,0.1005,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+2733.0,2736.0,Call,Call,0.1142,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+2742.0,2745.0,Drumming,Drumming,0.1029,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav
+2850.0,2853.0,Call,Call,0.1330,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260607_213202.wav

@@ -1,0 +1,22 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+12.0,15.0,Drumming,Drumming,0.1308,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+816.0,819.0,Call,Call,0.1427,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+987.0,990.0,Call,Call,0.1109,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+990.0,993.0,Drumming,Drumming,0.1389,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+1383.0,1386.0,Call,Call,0.2549,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2184.0,2187.0,Call,Call,0.8779,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2187.0,2190.0,Call,Call,0.9198,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2190.0,2193.0,Call,Call,0.9798,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2193.0,2196.0,Call,Call,0.7956,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2196.0,2199.0,Call,Call,0.9857,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2199.0,2202.0,Call,Call,0.9898,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2202.0,2205.0,Call,Call,0.9851,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2205.0,2208.0,Call,Call,0.9695,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2208.0,2211.0,Call,Call,0.9361,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2211.0,2214.0,Call,Call,0.9310,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2214.0,2217.0,Call,Call,0.9756,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2217.0,2220.0,Call,Call,0.9678,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2220.0,2223.0,Call,Call,0.4724,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2304.0,2307.0,Song,Song,0.1268,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+2508.0,2511.0,Drumming,Drumming,0.1001,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav
+3417.0,3420.0,Song,Song,0.1253,/tmp/detect_drive_y5ipqapi/BECA_SMMICRO_027_15_Anzat-le-Luguet_MIC027_20260404_192000.wav

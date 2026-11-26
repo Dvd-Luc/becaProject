@@ -1,0 +1,16 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+60.0,63.0,Drumming,Drumming,0.1721,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+360.0,363.0,Call,Call,0.1306,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+363.0,366.0,Drumming,Drumming,0.1374,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+363.0,366.0,Call,Call,0.1360,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+381.0,384.0,Drumming,Drumming,0.1397,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+384.0,387.0,Drumming,Drumming,0.1558,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+429.0,432.0,Drumming,Drumming,0.1321,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+477.0,480.0,Drumming,Drumming,0.1255,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+483.0,486.0,Drumming,Drumming,0.1245,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+657.0,660.0,Drumming,Drumming,0.1597,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+798.0,801.0,Drumming,Drumming,0.1113,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+1002.0,1005.0,Drumming,Drumming,0.1152,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+1104.0,1107.0,Song,Song,0.1028,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+1185.0,1188.0,Drumming,Drumming,0.1310,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav
+1185.0,1188.0,Call,Call,0.1206,/tmp/detect_drive_auv1k7uc/2026_Beca_SMMICRO_063_25_La_Rivière_Drugeon_MIC063_20260626_213400.wav

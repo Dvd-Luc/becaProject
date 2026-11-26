@@ -1,0 +1,15 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+72.0,75.0,Call,Call,0.1562,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+150.0,153.0,Song,Song,0.1253,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+204.0,207.0,Call,Call,0.1654,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+858.0,861.0,Call,Call,0.1503,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+1158.0,1161.0,Song,Song,0.1910,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+1191.0,1194.0,Drumming,Drumming,0.1025,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+1305.0,1308.0,Call,Call,0.1027,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+1989.0,1992.0,Drumming,Drumming,0.3568,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+2139.0,2142.0,Call,Call,0.7431,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+2142.0,2145.0,Call,Call,0.4974,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+2358.0,2361.0,Song,Song,0.1194,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+2361.0,2364.0,Song,Song,0.2057,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+2394.0,2397.0,Call,Call,0.3569,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav
+2643.0,2646.0,Drumming,Drumming,0.1209,/tmp/detect_drive_5yv9qslw/2026_Beca_SMMICRO_048_25_Houtaud_MIC048_20260326_185500.wav

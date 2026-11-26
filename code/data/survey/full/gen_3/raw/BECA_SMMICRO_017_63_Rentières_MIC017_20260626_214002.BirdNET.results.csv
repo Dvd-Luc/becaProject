@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+774.0,777.0,Drumming,Drumming,0.1129,/tmp/detect_drive_nvp9s0au/BECA_SMMICRO_017_63_Rentières_MIC017_20260626_214002.wav
+1170.0,1173.0,Drumming,Drumming,0.2112,/tmp/detect_drive_nvp9s0au/BECA_SMMICRO_017_63_Rentières_MIC017_20260626_214002.wav
+3198.0,3201.0,Call,Call,0.1064,/tmp/detect_drive_nvp9s0au/BECA_SMMICRO_017_63_Rentières_MIC017_20260626_214002.wav
+3201.0,3204.0,Drumming,Drumming,0.1268,/tmp/detect_drive_nvp9s0au/BECA_SMMICRO_017_63_Rentières_MIC017_20260626_214002.wav

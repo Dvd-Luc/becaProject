@@ -1,0 +1,6 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+300.0,303.0,Call,Call,0.1395,/tmp/detect_drive_55e_sobh/BECA_SMMICRO_019_15_Dienne_MIC019_20260322_200302.wav
+348.0,351.0,Call,Call,0.1092,/tmp/detect_drive_55e_sobh/BECA_SMMICRO_019_15_Dienne_MIC019_20260322_200302.wav
+1566.0,1569.0,Drumming,Drumming,0.1171,/tmp/detect_drive_55e_sobh/BECA_SMMICRO_019_15_Dienne_MIC019_20260322_200302.wav
+1749.0,1752.0,Drumming,Drumming,0.1289,/tmp/detect_drive_55e_sobh/BECA_SMMICRO_019_15_Dienne_MIC019_20260322_200302.wav
+3450.0,3453.0,Song,Song,0.1056,/tmp/detect_drive_55e_sobh/BECA_SMMICRO_019_15_Dienne_MIC019_20260322_200302.wav

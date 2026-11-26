@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+12.0,15.0,Drumming,Drumming,0.1487,/tmp/detect_drive_of1zadbh/BECA_SMMICRO_035_43_Champclause_MIC035_20260708_213200.wav
+15.0,18.0,Drumming,Drumming,0.1227,/tmp/detect_drive_of1zadbh/BECA_SMMICRO_035_43_Champclause_MIC035_20260708_213200.wav
+459.0,462.0,Call,Call,0.1456,/tmp/detect_drive_of1zadbh/BECA_SMMICRO_035_43_Champclause_MIC035_20260708_213200.wav
+465.0,468.0,Drumming,Drumming,0.1004,/tmp/detect_drive_of1zadbh/BECA_SMMICRO_035_43_Champclause_MIC035_20260708_213200.wav

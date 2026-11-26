@@ -1,0 +1,4 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+3.0,6.0,Drumming,Drumming,0.1156,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260330_200102.wav
+918.0,921.0,Drumming,Drumming,0.1009,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260330_200102.wav
+1404.0,1407.0,Call,Call,0.1770,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260330_200102.wav

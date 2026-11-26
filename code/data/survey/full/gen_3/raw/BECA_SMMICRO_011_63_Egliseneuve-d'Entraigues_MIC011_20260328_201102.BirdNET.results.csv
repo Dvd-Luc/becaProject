@@ -1,0 +1,18 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+321.0,324.0,Drumming,Drumming,0.1091,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+327.0,330.0,Drumming,Drumming,0.4340,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+330.0,333.0,Drumming,Drumming,0.6535,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+336.0,339.0,Drumming,Drumming,0.5376,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+342.0,345.0,Drumming,Drumming,0.3756,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+342.0,345.0,Call,Call,0.1019,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+354.0,357.0,Drumming,Drumming,0.5804,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+378.0,381.0,Drumming,Drumming,0.2662,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+402.0,405.0,Song,Song,0.6599,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+405.0,408.0,Song,Song,0.8506,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+411.0,414.0,Song,Song,0.4462,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+462.0,465.0,Drumming,Drumming,0.1322,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+1317.0,1320.0,Drumming,Drumming,0.1029,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+2652.0,2655.0,Call,Call,0.9930,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+2655.0,2658.0,Call,Call,0.9818,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+2658.0,2661.0,Call,Call,0.9148,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav
+2661.0,2664.0,Call,Call,0.9771,/tmp/detect_drive_g4gs0dam/BECA_SMMICRO_011_63_Egliseneuve-d'Entraigues_MIC011_20260328_201102.wav

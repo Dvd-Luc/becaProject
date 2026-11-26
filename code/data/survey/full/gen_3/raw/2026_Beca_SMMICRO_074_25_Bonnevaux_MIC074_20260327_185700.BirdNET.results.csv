@@ -1,0 +1,18 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Call,Call,0.1034,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+57.0,60.0,Drumming,Drumming,0.1336,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+117.0,120.0,Drumming,Drumming,0.1164,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+369.0,372.0,Drumming,Drumming,0.1418,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+624.0,627.0,Drumming,Drumming,0.1169,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+627.0,630.0,Drumming,Drumming,0.1372,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+630.0,633.0,Drumming,Drumming,0.1113,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+690.0,693.0,Call,Call,0.1787,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+1023.0,1026.0,Song,Song,0.2445,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+1155.0,1158.0,Song,Song,0.1173,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+1212.0,1215.0,Drumming,Drumming,0.1300,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+1452.0,1455.0,Drumming,Drumming,0.1071,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+1770.0,1773.0,Drumming,Drumming,0.1099,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+1998.0,2001.0,Drumming,Drumming,0.1112,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+2103.0,2106.0,Drumming,Drumming,0.1100,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+2910.0,2913.0,Call,Call,0.2457,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav
+2913.0,2916.0,Call,Call,0.1133,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260327_185700.wav

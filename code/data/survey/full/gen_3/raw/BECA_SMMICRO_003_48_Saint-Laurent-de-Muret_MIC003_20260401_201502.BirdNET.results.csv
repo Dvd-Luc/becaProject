@@ -1,0 +1,17 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+3.0,6.0,Call,Call,0.2014,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+162.0,165.0,Call,Call,0.1125,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+186.0,189.0,Call,Call,0.6611,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+189.0,192.0,Call,Call,0.4976,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+192.0,195.0,Call,Call,0.6604,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+195.0,198.0,Call,Call,0.6579,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+201.0,204.0,Call,Call,0.3865,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+468.0,471.0,Call,Call,0.2712,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+483.0,486.0,Drumming,Drumming,0.1337,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+492.0,495.0,Drumming,Drumming,0.1165,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+492.0,495.0,Call,Call,0.1078,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+819.0,822.0,Call,Call,0.1245,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+2226.0,2229.0,Call,Call,0.1200,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+2289.0,2292.0,Call,Call,0.2053,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+2526.0,2529.0,Call,Call,0.1182,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav
+3561.0,3564.0,Call,Call,0.2286,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260401_201502.wav

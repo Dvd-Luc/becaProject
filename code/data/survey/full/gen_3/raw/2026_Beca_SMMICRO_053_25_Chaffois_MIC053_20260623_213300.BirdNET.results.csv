@@ -1,0 +1,6 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+207.0,210.0,Call,Call,0.5188,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260623_213300.wav
+210.0,213.0,Call,Call,0.8051,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260623_213300.wav
+393.0,396.0,Drumming,Drumming,0.1299,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260623_213300.wav
+432.0,435.0,Drumming,Drumming,0.1068,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260623_213300.wav
+1728.0,1731.0,Song,Song,0.1130,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260623_213300.wav

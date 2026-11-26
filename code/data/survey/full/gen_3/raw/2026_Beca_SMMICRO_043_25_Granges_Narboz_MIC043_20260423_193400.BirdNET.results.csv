@@ -1,0 +1,19 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Drumming,Drumming,0.1381,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+45.0,48.0,Drumming,Drumming,0.1748,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+48.0,51.0,Drumming,Drumming,0.4668,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+51.0,54.0,Drumming,Drumming,0.2690,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+54.0,57.0,Call,Call,0.3508,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+87.0,90.0,Call,Call,0.1680,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+204.0,207.0,Call,Call,0.1823,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+336.0,339.0,Drumming,Drumming,0.1046,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+597.0,600.0,Song,Song,0.1036,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+651.0,654.0,Call,Call,0.3993,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+654.0,657.0,Call,Call,0.8993,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+657.0,660.0,Call,Call,0.8261,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+660.0,663.0,Call,Call,0.4686,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+1392.0,1395.0,Drumming,Drumming,0.1095,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+2172.0,2175.0,Drumming,Drumming,0.1075,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+2352.0,2355.0,Drumming,Drumming,0.1820,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+3141.0,3144.0,Drumming,Drumming,0.1314,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav
+3144.0,3147.0,Drumming,Drumming,0.1011,/tmp/detect_drive_mw8apq47/2026_Beca_SMMICRO_043_25_Granges_Narboz_MIC043_20260423_193400.wav

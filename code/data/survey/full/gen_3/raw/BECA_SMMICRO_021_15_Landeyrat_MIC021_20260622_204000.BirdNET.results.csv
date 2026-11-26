@@ -1,0 +1,10 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Drumming,Drumming,0.1032,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+75.0,78.0,Drumming,Drumming,0.1056,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+90.0,93.0,Drumming,Drumming,0.1021,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+663.0,666.0,Drumming,Drumming,0.1268,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+726.0,729.0,Drumming,Drumming,0.1016,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+1083.0,1086.0,Drumming,Drumming,0.1266,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+2253.0,2256.0,Drumming,Drumming,0.1328,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+2964.0,2967.0,Call,Call,0.1129,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav
+3417.0,3420.0,Call,Call,0.4246,/tmp/detect_drive_osjqohk1/BECA_SMMICRO_021_15_Landeyrat_MIC021_20260622_204000.wav

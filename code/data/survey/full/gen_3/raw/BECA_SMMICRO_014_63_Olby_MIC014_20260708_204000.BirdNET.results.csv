@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+300.0,303.0,Song,Song,0.5429,/tmp/detect_drive_6lrwfepu/BECA_SMMICRO_014_63_Olby_MIC014_20260708_204000.wav
+765.0,768.0,Song,Song,0.1933,/tmp/detect_drive_6lrwfepu/BECA_SMMICRO_014_63_Olby_MIC014_20260708_204000.wav
+1245.0,1248.0,Drumming,Drumming,0.1061,/tmp/detect_drive_6lrwfepu/BECA_SMMICRO_014_63_Olby_MIC014_20260708_204000.wav
+1998.0,2001.0,Drumming,Drumming,0.1007,/tmp/detect_drive_6lrwfepu/BECA_SMMICRO_014_63_Olby_MIC014_20260708_204000.wav

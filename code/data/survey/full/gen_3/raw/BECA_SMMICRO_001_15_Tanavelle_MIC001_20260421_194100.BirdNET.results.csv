@@ -1,0 +1,19 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+51.0,54.0,Drumming,Drumming,0.1340,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+57.0,60.0,Drumming,Drumming,0.1682,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+60.0,63.0,Drumming,Drumming,0.1590,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+63.0,66.0,Drumming,Drumming,0.2618,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+84.0,87.0,Drumming,Drumming,0.1120,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+294.0,297.0,Drumming,Drumming,0.1075,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+387.0,390.0,Drumming,Drumming,0.1211,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+411.0,414.0,Drumming,Drumming,0.1036,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+573.0,576.0,Drumming,Drumming,0.1035,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+624.0,627.0,Drumming,Drumming,0.1173,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+1704.0,1707.0,Drumming,Drumming,0.1026,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+2700.0,2703.0,Call,Call,0.3343,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+2703.0,2706.0,Call,Call,0.9260,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+2706.0,2709.0,Call,Call,0.9566,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+2709.0,2712.0,Call,Call,0.9754,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+2712.0,2715.0,Call,Call,0.5269,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+2715.0,2718.0,Call,Call,0.2898,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav
+2721.0,2724.0,Call,Call,0.1393,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260421_194100.wav

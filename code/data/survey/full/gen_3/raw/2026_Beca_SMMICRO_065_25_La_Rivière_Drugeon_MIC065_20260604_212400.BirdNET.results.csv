@@ -1,0 +1,26 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+111.0,114.0,Drumming,Drumming,0.1106,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+123.0,126.0,Drumming,Drumming,0.1055,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+129.0,132.0,Drumming,Drumming,0.1021,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+189.0,192.0,Call,Call,0.1008,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+225.0,228.0,Drumming,Drumming,0.1062,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+228.0,231.0,Drumming,Drumming,0.1015,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+231.0,234.0,Drumming,Drumming,0.1309,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+258.0,261.0,Call,Call,0.1235,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+288.0,291.0,Drumming,Drumming,0.1158,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+387.0,390.0,Call,Call,0.1050,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+462.0,465.0,Drumming,Drumming,0.1154,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+534.0,537.0,Call,Call,0.1112,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+546.0,549.0,Drumming,Drumming,0.1141,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+552.0,555.0,Call,Call,0.1029,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+708.0,711.0,Call,Call,0.1005,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+738.0,741.0,Call,Call,0.1076,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+834.0,837.0,Drumming,Drumming,0.1056,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+867.0,870.0,Drumming,Drumming,0.1030,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+870.0,873.0,Drumming,Drumming,0.1080,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+876.0,879.0,Drumming,Drumming,0.1005,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+1158.0,1161.0,Call,Call,0.7053,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+1179.0,1182.0,Call,Call,0.1014,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+1200.0,1203.0,Drumming,Drumming,0.1087,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+1410.0,1413.0,Call,Call,0.1278,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav
+3099.0,3102.0,Drumming,Drumming,0.1622,/tmp/detect_drive_llgctmmc/2026_Beca_SMMICRO_065_25_La_Rivière_Drugeon_MIC065_20260604_212400.wav

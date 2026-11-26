@@ -1,0 +1,8 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+999.0,1002.0,Drumming,Drumming,0.1208,/tmp/detect_drive_ry0lwdbc/2026_Beca_SMMICRO_075_25_Frasne_MIC075_20260403_200702.wav
+1527.0,1530.0,Call,Call,0.1152,/tmp/detect_drive_ry0lwdbc/2026_Beca_SMMICRO_075_25_Frasne_MIC075_20260403_200702.wav
+2040.0,2043.0,Drumming,Drumming,0.1499,/tmp/detect_drive_ry0lwdbc/2026_Beca_SMMICRO_075_25_Frasne_MIC075_20260403_200702.wav
+2913.0,2916.0,Call,Call,0.3617,/tmp/detect_drive_ry0lwdbc/2026_Beca_SMMICRO_075_25_Frasne_MIC075_20260403_200702.wav
+2916.0,2919.0,Call,Call,0.7034,/tmp/detect_drive_ry0lwdbc/2026_Beca_SMMICRO_075_25_Frasne_MIC075_20260403_200702.wav
+2919.0,2922.0,Call,Call,0.9689,/tmp/detect_drive_ry0lwdbc/2026_Beca_SMMICRO_075_25_Frasne_MIC075_20260403_200702.wav
+2922.0,2925.0,Call,Call,0.6220,/tmp/detect_drive_ry0lwdbc/2026_Beca_SMMICRO_075_25_Frasne_MIC075_20260403_200702.wav

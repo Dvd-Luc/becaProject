@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+1641.0,1644.0,Drumming,Drumming,0.1066,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260614_213602.wav
+2826.0,2829.0,Drumming,Drumming,0.2216,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260614_213602.wav
+3063.0,3066.0,Call,Call,0.2003,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260614_213602.wav
+3063.0,3066.0,Drumming,Drumming,0.1103,/tmp/detect_drive_tmhepbcs/BECA_SMMICRO_001_15_Tanavelle_MIC001_20260614_213602.wav

@@ -1,0 +1,13 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+234.0,237.0,Drumming,Drumming,0.1383,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+252.0,255.0,Drumming,Drumming,0.1156,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+282.0,285.0,Song,Song,0.2469,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+678.0,681.0,Call,Call,0.1270,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1152.0,1155.0,Call,Call,0.1103,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1320.0,1323.0,Song,Song,0.1049,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1428.0,1431.0,Call,Call,0.2739,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1536.0,1539.0,Drumming,Drumming,0.1286,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1848.0,1851.0,Call,Call,0.1899,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1878.0,1881.0,Call,Call,0.1064,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1899.0,1902.0,Call,Call,0.4116,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav
+1917.0,1920.0,Call,Call,0.1361,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260519_210800.wav

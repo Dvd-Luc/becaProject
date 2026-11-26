@@ -1,0 +1,24 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+78.0,81.0,Drumming,Drumming,0.1485,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+81.0,84.0,Drumming,Drumming,0.1158,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+87.0,90.0,Drumming,Drumming,0.1260,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+90.0,93.0,Drumming,Drumming,0.1115,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+93.0,96.0,Drumming,Drumming,0.2445,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+96.0,99.0,Drumming,Drumming,0.1534,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+126.0,129.0,Song,Song,0.1044,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+183.0,186.0,Call,Call,0.1197,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+186.0,189.0,Call,Call,0.1917,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+1458.0,1461.0,Call,Call,0.2816,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+1761.0,1764.0,Drumming,Drumming,0.1094,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+1764.0,1767.0,Drumming,Drumming,0.1251,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+1962.0,1965.0,Call,Call,0.5936,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+2112.0,2115.0,Call,Call,0.1703,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+2367.0,2370.0,Drumming,Drumming,0.1208,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+2469.0,2472.0,Call,Call,0.1052,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+2553.0,2556.0,Drumming,Drumming,0.1009,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+2577.0,2580.0,Drumming,Drumming,0.1082,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+2640.0,2643.0,Drumming,Drumming,0.1341,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+3162.0,3165.0,Call,Call,0.1104,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+3276.0,3279.0,Drumming,Drumming,0.1090,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+3315.0,3318.0,Song,Song,0.1742,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav
+3567.0,3570.0,Drumming,Drumming,0.1155,/tmp/detect_drive_7t19_nm9/2026_Beca_SMMICRO_070_25_Bouverans_MIC070_20260325_185400.wav

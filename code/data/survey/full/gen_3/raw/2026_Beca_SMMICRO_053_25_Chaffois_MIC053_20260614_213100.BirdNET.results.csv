@@ -1,0 +1,19 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+237.0,240.0,Drumming,Drumming,0.1203,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+249.0,252.0,Drumming,Drumming,0.1212,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+252.0,255.0,Drumming,Drumming,0.1169,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+522.0,525.0,Song,Song,0.1037,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+537.0,540.0,Song,Song,0.1146,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+657.0,660.0,Song,Song,0.2114,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+660.0,663.0,Call,Call,0.1227,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+1029.0,1032.0,Song,Song,0.1072,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+1227.0,1230.0,Call,Call,0.1471,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+1335.0,1338.0,Call,Call,0.1252,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+1758.0,1761.0,Call,Call,0.1535,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+1782.0,1785.0,Call,Call,0.1025,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+1896.0,1899.0,Call,Call,0.1346,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+2310.0,2313.0,Call,Call,0.1274,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+2376.0,2379.0,Call,Call,0.1574,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+2421.0,2424.0,Call,Call,0.1117,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+2538.0,2541.0,Call,Call,0.1918,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav
+3435.0,3438.0,Call,Call,0.1497,/tmp/detect_drive_v6huk_mm/2026_Beca_SMMICRO_053_25_Chaffois_MIC053_20260614_213100.wav

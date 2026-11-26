@@ -1,0 +1,4 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+360.0,363.0,Drumming,Drumming,0.1084,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260506_205802.wav
+864.0,867.0,Call,Call,0.1544,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260506_205802.wav
+1416.0,1419.0,Drumming,Drumming,0.1043,/tmp/detect_drive_on64dhes/BECA_SMMICRO_003_48_Saint-Laurent-de-Muret_MIC003_20260506_205802.wav

@@ -1,0 +1,18 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+252.0,255.0,Drumming,Drumming,0.1027,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+600.0,603.0,Drumming,Drumming,0.1018,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+624.0,627.0,Drumming,Drumming,0.1190,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+690.0,693.0,Drumming,Drumming,0.1015,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+693.0,696.0,Drumming,Drumming,0.1118,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+702.0,705.0,Drumming,Drumming,0.1144,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+774.0,777.0,Drumming,Drumming,0.1103,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+783.0,786.0,Call,Call,0.2033,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+885.0,888.0,Drumming,Drumming,0.1003,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+942.0,945.0,Song,Song,0.1086,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+966.0,969.0,Song,Song,0.1633,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+1293.0,1296.0,Song,Song,0.1575,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+1305.0,1308.0,Song,Song,0.1003,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+1398.0,1401.0,Drumming,Drumming,0.1065,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+1845.0,1848.0,Drumming,Drumming,0.1280,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+2016.0,2019.0,Song,Song,0.1063,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav
+2019.0,2022.0,Song,Song,0.1265,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260519_211600.wav

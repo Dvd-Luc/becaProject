@@ -1,0 +1,10 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+3.0,6.0,Drumming,Drumming,0.1147,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+648.0,651.0,Call,Call,0.1274,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+1059.0,1062.0,Drumming,Drumming,0.1104,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+3183.0,3186.0,Song,Song,0.1211,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+3273.0,3276.0,Drumming,Drumming,0.1458,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+3291.0,3294.0,Song,Song,0.1483,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+3306.0,3309.0,Drumming,Drumming,0.1088,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+3309.0,3312.0,Drumming,Drumming,0.2076,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav
+3327.0,3330.0,Drumming,Drumming,0.1103,/tmp/detect_drive_lpfi_fdp/BECA_SMMICRO_030_15_Ségur-les-Villas_MIC030_20260606_223302.wav

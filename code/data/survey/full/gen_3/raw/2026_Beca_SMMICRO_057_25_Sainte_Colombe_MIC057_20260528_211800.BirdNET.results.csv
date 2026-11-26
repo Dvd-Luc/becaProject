@@ -1,0 +1,17 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+255.0,258.0,Drumming,Drumming,0.1174,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+264.0,267.0,Drumming,Drumming,0.1074,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+462.0,465.0,Drumming,Drumming,0.1292,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+483.0,486.0,Call,Call,0.1380,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+486.0,489.0,Call,Call,0.1480,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+489.0,492.0,Call,Call,0.2407,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+492.0,495.0,Drumming,Drumming,0.4101,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+519.0,522.0,Call,Call,0.1317,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+555.0,558.0,Drumming,Drumming,0.1141,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+558.0,561.0,Call,Call,0.1077,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+564.0,567.0,Call,Call,0.1327,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+933.0,936.0,Song,Song,0.1118,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+1923.0,1926.0,Drumming,Drumming,0.1221,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+3063.0,3066.0,Call,Call,0.1429,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+3306.0,3309.0,Call,Call,0.2785,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav
+3357.0,3360.0,Call,Call,0.1293,/tmp/detect_drive_t4c84uif/2026_Beca_SMMICRO_057_25_Sainte_Colombe_MIC057_20260528_211800.wav

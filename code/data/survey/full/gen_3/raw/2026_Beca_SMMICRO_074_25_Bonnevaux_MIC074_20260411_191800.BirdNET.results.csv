@@ -1,0 +1,26 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+15.0,18.0,Drumming,Drumming,0.2463,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+18.0,21.0,Call,Call,0.5032,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+75.0,78.0,Drumming,Drumming,0.1243,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+90.0,93.0,Call,Call,0.1397,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+489.0,492.0,Song,Song,0.2160,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+501.0,504.0,Drumming,Drumming,0.1365,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+537.0,540.0,Drumming,Drumming,0.1051,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+543.0,546.0,Drumming,Drumming,0.1522,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+591.0,594.0,Drumming,Drumming,0.1264,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+657.0,660.0,Call,Call,0.1349,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+690.0,693.0,Drumming,Drumming,0.1238,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+735.0,738.0,Song,Song,0.1024,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1275.0,1278.0,Call,Call,0.6839,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1278.0,1281.0,Call,Call,0.7866,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1281.0,1284.0,Call,Call,0.4050,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1416.0,1419.0,Call,Call,0.2754,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1455.0,1458.0,Call,Call,0.1190,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1557.0,1560.0,Call,Call,0.1005,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1686.0,1689.0,Call,Call,0.1183,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1725.0,1728.0,Song,Song,0.1268,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1854.0,1857.0,Song,Song,0.1415,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+1998.0,2001.0,Drumming,Drumming,0.1148,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+2085.0,2088.0,Drumming,Drumming,0.1280,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+2211.0,2214.0,Drumming,Drumming,0.1486,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav
+3465.0,3468.0,Drumming,Drumming,0.1333,/tmp/detect_drive_rcvhdvca/2026_Beca_SMMICRO_074_25_Bonnevaux_MIC074_20260411_191800.wav

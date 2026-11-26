@@ -1,0 +1,17 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+42.0,45.0,Song,Song,0.1028,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+762.0,765.0,Call,Call,0.2103,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1488.0,1491.0,Song,Song,0.1689,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1503.0,1506.0,Song,Song,0.1190,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1824.0,1827.0,Call,Call,0.5605,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1827.0,1830.0,Call,Call,0.1228,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1830.0,1833.0,Call,Call,0.1358,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1833.0,1836.0,Call,Call,0.5214,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1842.0,1845.0,Call,Call,0.2364,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1845.0,1848.0,Call,Call,0.2808,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1848.0,1851.0,Call,Call,0.8808,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+1983.0,1986.0,Call,Call,0.1094,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+3069.0,3072.0,Call,Call,0.1507,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+3072.0,3075.0,Call,Call,0.9707,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+3075.0,3078.0,Call,Call,0.9577,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav
+3081.0,3084.0,Call,Call,0.8930,/tmp/detect_drive_sl8lsdfc/2026_Beca_SMMICRO_052_25_Bannans_MIC052_20260410_191600.wav

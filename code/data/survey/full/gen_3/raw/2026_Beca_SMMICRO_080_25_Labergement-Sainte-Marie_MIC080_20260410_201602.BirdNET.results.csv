@@ -1,0 +1,5 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+0.0,3.0,Drumming,Drumming,0.1160,/tmp/detect_drive_1v2xjc8l/2026_Beca_SMMICRO_080_25_Labergement-Sainte-Marie_MIC080_20260410_201602.wav
+303.0,306.0,Call,Call,0.1705,/tmp/detect_drive_1v2xjc8l/2026_Beca_SMMICRO_080_25_Labergement-Sainte-Marie_MIC080_20260410_201602.wav
+312.0,315.0,Call,Call,0.3789,/tmp/detect_drive_1v2xjc8l/2026_Beca_SMMICRO_080_25_Labergement-Sainte-Marie_MIC080_20260410_201602.wav
+2862.0,2865.0,Song,Song,0.1654,/tmp/detect_drive_1v2xjc8l/2026_Beca_SMMICRO_080_25_Labergement-Sainte-Marie_MIC080_20260410_201602.wav

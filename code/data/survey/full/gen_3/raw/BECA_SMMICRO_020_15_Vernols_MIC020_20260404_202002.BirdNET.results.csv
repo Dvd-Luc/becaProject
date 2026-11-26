@@ -1,0 +1,11 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+453.0,456.0,Drumming,Drumming,0.1422,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+456.0,459.0,Drumming,Drumming,0.1264,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+696.0,699.0,Drumming,Drumming,0.1179,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+2070.0,2073.0,Call,Call,0.5739,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+2073.0,2076.0,Call,Call,0.9010,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+2076.0,2079.0,Call,Call,0.4922,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+2076.0,2079.0,Drumming,Drumming,0.1023,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+2589.0,2592.0,Drumming,Drumming,0.1369,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+3048.0,3051.0,Drumming,Drumming,0.1099,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav
+3513.0,3516.0,Drumming,Drumming,0.1033,/tmp/detect_drive_pv9y6b87/BECA_SMMICRO_020_15_Vernols_MIC020_20260404_202002.wav

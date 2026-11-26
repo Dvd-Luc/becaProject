@@ -1,0 +1,18 @@
+Start (s),End (s),Scientific name,Common name,Confidence,File
+15.0,18.0,Drumming,Drumming,0.2101,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+105.0,108.0,Drumming,Drumming,0.1220,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+219.0,222.0,Drumming,Drumming,0.1037,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+771.0,774.0,Drumming,Drumming,0.1054,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+939.0,942.0,Song,Song,0.1262,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+1212.0,1215.0,Song,Song,0.1343,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+1518.0,1521.0,Song,Song,0.1154,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2022.0,2025.0,Call,Call,0.9161,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2025.0,2028.0,Call,Call,0.9630,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2028.0,2031.0,Call,Call,0.8084,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2031.0,2034.0,Call,Call,0.6282,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2034.0,2037.0,Call,Call,0.3512,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2043.0,2046.0,Call,Call,0.1128,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2121.0,2124.0,Song,Song,0.1456,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2340.0,2343.0,Call,Call,0.1452,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2373.0,2376.0,Call,Call,0.7034,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
+2790.0,2793.0,Song,Song,0.1029,/tmp/detect_drive_qscwtuuw/BECA_SMMICRO_025_15_Coltines_MIC025_20260418_193700.wav
