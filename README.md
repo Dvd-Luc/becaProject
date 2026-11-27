@@ -584,11 +584,25 @@ python src/survey/audit_events.py report                        # precision + pr
 
 ```bash
 python src/survey/build_viz.py --dry-run   # matched positions, counts, status (prints no position)
-python src/survey/build_viz.py             # writes results/survey/viz/full_gen2.html
+python src/survey/build_viz.py             # writes results/survey/viz/full_gen3.html (~10 MB)
 ```
 
-This writes **one self-contained HTML file**. Open it by double-click: no server.
-Data, d3, d3-tile and the département outlines are inlined. It has five linked views:
+Run `audit_events.py report --split train` and `--split heldout` first, so the page can show precision.
+
+This writes **one self-contained HTML file** (~10 MB). Open it by double-click: no server.
+It works on a phone too: filters in a drawer, a sticky section bar, tap for details.
+Explanations are folded behind the **i** next to each panel title, and each panel's SVG / PNG / CSV
+downloads are in its **Export** menu.
+Data, d3, d3-tile, the département outlines and the audio examples are inlined.
+
+- **Thresholds:** the viewer picks the threshold per class (0.5 / 0.7 / 0.9; ● marks the
+  survey thresholds). Every view is recomputed, and the audited precision at that
+  threshold is shown for heldout sites (train in smaller type).
+- **Audio:** one 8 s example per site × class, with a spectrogram, in the site card.
+  "Verified" means you judged that event correct. Clips are cut from the audit
+  snippets (no drive needed) and cached in `results/survey/viz/audio_gen<K>/`.
+
+Linked views:
 - **Map:** bubble area = kept events per hour recorded. Fill = presence status from
   your verdicts. Zoom and pan, one button per département. **Base map** (off by default):
   Plan IGN, aerial photo, relief, land cover (CORINE 2018) or wetlands and water
@@ -607,6 +621,9 @@ Data, d3, d3-tile and the département outlines are inlined. It has five linked 
   evening's first file start. Set-up tests (before noon, shorter than 30 min) are left
   out; a single-file evening is matched to its neighbours as file 1 or file 2. 5-min
   bins, 2 or 1 min when zoomed in.
+- **Season overview:** all sites pooled, events per hour each week, and the number of
+  sites recording. For each site: the recording period and the first and last
+  detection. A hollow dot is within 3 days of the start or end of recording.
 - **Weekly heatmap:** events per hour, by site and week.
 
 Each view has **SVG / PNG / CSV** buttons (map exports embed the base-map tiles, © IGN).
