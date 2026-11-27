@@ -4,162 +4,279 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Snipe Survey Explorer</title>
-<!-- Built by src/survey/build_viz.py. Holds microphone positions: keep this file on your computer. -->
+<!-- Built by src/survey/build_viz.py. Holds microphone positions: share only with trusted people. -->
 <style>
-/* Layout: header + one control row, then a two-column grid of panels (map + site detail on top). */
 :root {
   color-scheme: light;
-  --bg: #f6f6f3;
-  --surface: #fcfcfb;
-  --surface-2: #efeeea;
-  --line: #dcdbd5;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --ink-3: #85847e;
-  --land: #f0efea;
-  --dept: #c9c8c1;
-  --accent: #2a78d6;
+  --bg: #f6f6f3; --surface: #fcfcfb; --surface-2: #efeeea; --line: #dcdbd5;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #85847e;
+  --land: #f0efea; --dept: #c9c8c1; --accent: #2a78d6;
   --c0: #2a78d6;   /* Drumming  (categorical slot 1) */
   --c1: #eb6834;   /* Song      (slot 2) */
   --c2: #1baf7a;   /* Call      (slot 3) */
-  --call-all: #52514e;
-  --hatch: #c9c8c1;
+  --call-all: #52514e; --hatch: #c9c8c1; --effort: #b9b8b1;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --bar-h: 48px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg: #121211;
-    --surface: #1a1a19;
-    --surface-2: #242422;
-    --line: #383835;
-    --ink: #f0efec;
-    --ink-2: #c3c2b7;
-    --ink-3: #8f8e86;
-    --land: #20201e;
-    --dept: #4a4a46;
-    --accent: #3987e5;
-    --c0: #3987e5;
-    --c1: #d95926;
-    --c2: #199e70;
-    --call-all: #c3c2b7;
-    --hatch: #4a4a46;
+    --bg: #121211; --surface: #1a1a19; --surface-2: #242422; --line: #383835;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
+    --land: #20201e; --dept: #4a4a46; --accent: #3987e5;
+    --c0: #3987e5; --c1: #d95926; --c2: #199e70;
+    --call-all: #c3c2b7; --hatch: #4a4a46; --effort: #55554f;
   }
 }
 * { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--bar-h) + 8px); }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); }
-.wrap { max-width: 1500px; margin: 0 auto; padding-block: 20px 40px;
-        padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; text-wrap: balance; }
+.wrap { max-width: 1500px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { padding: 18px 0 10px; }
+header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
 .meta { color: var(--ink-2); font-size: 13px; }
-.private { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--ink-2);
-           border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; background: var(--surface); }
-.precision { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; }
-.precision .chip { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink-2); }
-.precision .key { width: 10px; height: 10px; border-radius: 2px; align-self: center; }
-.precision strong { color: var(--ink); font-variant-numeric: tabular-nums; font-size: 15px; }
-.controls { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; margin: 18px 0 14px;
-            padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
-.controls label { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
-.seg button { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--ink-2);
-              padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.private { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--ink-2); border: 1px solid var(--line);
+           border-radius: 4px; padding: 2px 8px; background: var(--surface); }
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+.kpi .label { font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+.kpi .value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.kpi .sub { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.key { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+/* sticky bar */
+nav.bar { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 92%, transparent);
+          backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+nav.bar .wrap { display: flex; align-items: center; gap: 8px; height: var(--bar-h); }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; }
+.chips::-webkit-scrollbar { display: none; }
+.chips a { flex: none; font-size: 13px; color: var(--ink-2); text-decoration: none; border: 1px solid var(--line);
+           border-radius: 999px; padding: 4px 11px; background: var(--surface); }
+.chips a:hover { color: var(--ink); border-color: var(--ink-3); }
+#filters-btn { display: none; flex: none; font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: 999px;
+               padding: 5px 12px; background: var(--ink); color: var(--bg); cursor: pointer; }
+/* controls */
+.controls { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; margin: 12px 0 14px;
+            padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.controls > label, .controls .lab { font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.controls .row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; min-width: 0; }
+.drawer-head { display: none; }
+.thr { display: inline-flex; align-items: center; gap: 6px; }
+.thr .name { font-size: 13px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 5px; }
+.thr .prec { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 9ch; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--ink-2); padding: 5px 10px;
+              cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); font-weight: 600; }
-.seg button:focus-visible, select:focus-visible, .tools button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.linkbtn { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+           border-radius: 4px; padding: 3px 9px; cursor: pointer; }
 .swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
 select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line);
          background: var(--surface); color: var(--ink); max-width: 100%; }
-.grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; }
+/* panels */
+.grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; padding-bottom: 40px; }
 @media (max-width: 1100px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; min-width: 0; }
 .panel.wide { grid-column: 1 / -1; }
-.panel-head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
 .panel h2 { font-size: 15px; margin: 0; }
-.panel .sub { font-size: 12px; color: var(--ink-2); margin: 2px 0 8px; max-width: 75ch; }
+.panel .sub { font-size: 12px; color: var(--ink-2); margin: 2px 0 8px; max-width: 80ch; padding: 6px 9px;
+               background: var(--surface-2); border-radius: 5px; }
+.title { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.info-btn { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+            color: var(--ink-2); font: italic 600 12px/1 Georgia, "Times New Roman", serif; cursor: pointer; padding: 0; }
+.info-btn[aria-expanded="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.export { position: relative; }
+.export summary { list-style: none; font-size: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+                  border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.export summary::-webkit-details-marker { display: none; }
+.export[open] summary { color: var(--ink); border-color: var(--ink-3); }
+.export .menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 25; display: flex; flex-direction: column; gap: 6px;
+                min-width: 160px; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+                box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.export .menu button { text-align: left; }
+.example .caution { font-size: 11px; color: var(--ink-3); flex-basis: 100%; }
+.summary-line { font-size: 13px; color: var(--ink); margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+details.bydept { font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
+details.bydept summary, details.about summary { cursor: pointer; color: var(--ink-2); }
+details.bydept div { display: grid; gap: 2px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+details.about { margin: 6px 0 30px; font-size: 12px; }
 .tools { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.tools button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface);
-                color: var(--ink-2); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.tools button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+                border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 .tools button:hover { color: var(--ink); border-color: var(--ink-3); }
 .tools .warn { font-size: 11px; color: var(--ink-3); }
-.scroll { overflow-x: auto; }
+.zoombtns { display: inline-flex; gap: 4px; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 svg { display: block; max-width: 100%; height: auto; }
 svg text { font-family: var(--font); fill: var(--ink-2); }
+#map svg { touch-action: none; max-width: none; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); margin-top: 8px; align-items: center; }
 .legend .item { display: inline-flex; align-items: center; gap: 6px; }
 .site-card { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; margin-bottom: 8px; }
 .site-card dt { color: var(--ink-3); }
 .site-card dd { margin: 0; font-variant-numeric: tabular-nums; }
-.note { font-size: 12px; color: var(--ink-3); margin-top: 6px; max-width: 80ch; }
-#tooltip { position: fixed; pointer-events: none; z-index: 20; background: var(--surface); color: var(--ink);
+.note { font-size: 12px; color: var(--ink-3); margin-top: 6px; max-width: 90ch; }
+/* audio examples */
+.examples { display: grid; gap: 8px; margin: 6px 0 12px; }
+.example { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; }
+.example .play { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2);
+                 color: var(--ink); cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
+.example .play:disabled { opacity: .4; cursor: default; }
+.example .what { font-size: 12px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.example .badge { font-size: 11px; border-radius: 3px; padding: 0 5px; border: 1px solid var(--line); }
+.example .spec { grid-column: 2; position: relative; display: none; }
+.example .spec canvas { width: 100%; height: 64px; display: block; border-radius: 3px; border: 1px solid var(--line); }
+.example .spec .head { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); left: 0; }
+/* presence table */
+.ptable { border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.ptable th, .ptable td { padding: 1px 4px; text-align: center; white-space: nowrap; }
+.ptable thead th { position: sticky; top: 0; background: var(--surface); font-weight: 600; color: var(--ink); z-index: 2; }
+.ptable th.site, .ptable td.site { position: sticky; left: 0; text-align: left; background: var(--surface); z-index: 1;
+                                   max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.ptable thead th.site { z-index: 3; }
+.ptable tr.group td { font-weight: 650; color: var(--ink); padding-top: 8px; text-align: left; }
+.ptable tbody tr.siterow { cursor: pointer; }
+.ptable tbody tr.siterow:hover td, .ptable tbody tr.sel td { background: var(--surface-2); }
+.ptable .cell { display: inline-block; width: 40px; height: 12px; border-radius: 2px; vertical-align: middle; }
+.ptable-wrap { max-height: 560px; overflow: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--line); }
+/* heatmap split */
+.heat-split { display: flex; align-items: flex-start; min-width: 0; }
+.heat-split .labels { flex: none; background: var(--surface); }
+.heat-split .cells { overflow-x: auto; -webkit-overflow-scrolling: touch; flex: 1; min-width: 0; }
+body { overflow-x: hidden; }
+.heat-split svg { max-width: none; }
+/* tooltip */
+#tooltip { position: fixed; pointer-events: none; z-index: 50; background: var(--surface); color: var(--ink);
            border: 1px solid var(--line); border-radius: 5px; padding: 6px 9px; font-size: 12px;
-           box-shadow: 0 2px 8px rgba(0,0,0,.12); max-width: 280px; }
+           box-shadow: 0 2px 8px rgba(0,0,0,.12); max-width: min(300px, calc(100vw - 16px)); }
 #tooltip .v { font-weight: 650; font-variant-numeric: tabular-nums; }
 #tooltip .row { display: flex; gap: 6px; align-items: center; }
-#tooltip .k { width: 10px; height: 2px; display: inline-block; }
+#tooltip .k { width: 10px; height: 2px; display: inline-block; flex: none; }
 #tooltip .l { color: var(--ink-2); }
-@media (prefers-reduced-motion: no-preference) { .mapg { transition: none; } }
+#backdrop { display: none; }
+/* touch: bigger targets */
+@media (pointer: coarse) {
+  .seg button, .tools button, .linkbtn, select { min-height: 40px; }
+  .seg button { padding: 6px 12px; }
+  .chips a { padding: 8px 13px; }
+  .info-btn { width: 32px; height: 32px; }
+  .export summary { min-height: 40px; display: inline-flex; align-items: center; }
+}
+/* phone: filters in a drawer */
+@media (max-width: 700px) {
+  :root { --bar-h: 56px; }
+  header h1 { font-size: 19px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi .value { font-size: 19px; }
+  #filters-btn { display: inline-block; }
+  .controls { position: fixed; left: 0; right: 0; bottom: 0; margin: 0; z-index: 40; border-radius: 12px 12px 0 0;
+              max-height: 80vh; overflow: auto; grid-template-columns: 1fr; transform: translateY(105%);
+              transition: transform .2s ease; box-shadow: 0 -4px 20px rgba(0,0,0,.2);
+              padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+  body.filters-open .controls { transform: none; }
+  body.filters-open #backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 35; }
+  .drawer-head { display: flex; justify-content: space-between; align-items: center; }
+  .panel { padding: 10px 10px 12px; }
+  .ptable th.site, .ptable td.site { max-width: 150px; }
+}
+@media (prefers-reduced-motion: reduce) { .controls { transition: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>Snipe Survey Explorer</h1>
-    <div class="meta" id="meta"></div>
-    <div class="private">Contains microphone positions (sensitive): keep this file and map exports on this computer.</div>
-    <div class="precision" id="precision"></div>
-  </header>
+<header class="top"><div class="wrap">
+  <h1>Snipe Survey Explorer</h1>
+  <div class="meta" id="meta"></div>
+  <div class="private">Contains exact microphone positions (snipe breeding sites): share only with trusted people.</div>
+  <div class="kpis" id="kpis"></div>
+</div></header>
 
-  <div class="controls" role="group" aria-label="Filters">
-    <label for="cls">Class</label><div class="seg" id="cls"></div>
-    <label>Département</label><div class="seg" id="depts"></div>
-    <label for="site">Site</label><select id="site"></select>
+<nav class="bar" aria-label="Sections"><div class="wrap">
+  <div class="chips">
+    <a href="#p-map">Map</a><a href="#p-site">Site</a><a href="#p-presence">Presence</a>
+    <a href="#p-overview">Season</a><a href="#p-night">Sunset</a><a href="#p-heat">Weekly</a>
+  </div>
+  <button type="button" id="filters-btn" aria-controls="controls" aria-expanded="false">Filters</button>
+</div></nav>
+<div id="backdrop"></div>
+
+<div class="wrap">
+  <div class="controls" id="controls" role="group" aria-label="Filters">
+    <div class="drawer-head"><strong>Filters</strong><button type="button" class="linkbtn" id="filters-close">Done</button></div>
+    <span class="drawer-head" aria-hidden="true"></span>
+    <label>Class</label><div class="row"><div class="seg" id="cls"></div></div>
+    <span class="lab">Threshold</span>
+    <div class="row" id="thresholds"></div>
+    <label>Département</label><div class="row"><div class="seg" id="depts"></div></div>
+    <label for="site">Site</label><div class="row"><select id="site"></select></div>
   </div>
 
   <div class="grid">
     <section class="panel" id="p-map">
-      <div class="panel-head"><h2 id="map-title">Detections per hour</h2>
-        <div class="tools" data-panel="map"><label for="basemap" class="warn">base map</label><select id="basemap"></select>
-          <span class="warn">exports hold positions</span></div></div>
-      <p class="sub">Bubble area = kept events per hour of recording. Fill = presence status from your verdicts. Scroll to zoom, drag to pan, click a site.
-        Base maps are loaded from IGN (internet): IGN sees which tiles are shown, never the site positions.</p>
+      <div class="panel-head"><div class="title"><h2 id="map-title">Detections per hour</h2><button type="button" class="info-btn" aria-controls="map-info" aria-expanded="false" aria-label="About this panel">i</button></div>
+        <div class="tools" data-panel="map"><label for="basemap" class="warn">base map</label><select id="basemap"></select></div></div>
+      <p class="sub" id="map-info" hidden>Bubble area = events per hour recorded, at the chosen thresholds. Fill = presence status from
+        your verdicts: <b>confirmed</b> = at least one detection judged correct; <b>judged wrong</b> = every detection judged there was
+        another sound (not proof of absence); <b>not judged yet</b>; <b>not checked</b> = Call is not in the presence check;
+        <b>none detected</b> at this threshold. Scroll or pinch to zoom, drag to pan, tap a site to open it. Base maps come from IGN
+        (internet): IGN sees which tiles are shown, never the site positions. "Off" works offline.</p>
       <div id="map"></div>
       <div class="legend" id="map-legend"></div>
     </section>
 
     <section class="panel" id="p-site">
-      <div class="panel-head"><h2 id="site-title">Site</h2><div class="tools" data-panel="season"><button type="button" id="season-reset">Reset zoom</button></div></div>
+      <div class="panel-head"><div class="title"><h2 id="site-title">Site</h2><button type="button" class="info-btn" aria-controls="site-info" aria-expanded="false" aria-label="About this panel">i</button></div>
+        <div class="tools" data-panel="season"><span class="zoombtns" id="season-zoom"></span></div></div>
+      <p class="sub" id="site-info" hidden>Counts and rates at the chosen thresholds; status from your verdicts. ▶ plays an 8 s example
+        of each class at this site with its spectrogram (0–8 kHz, time left to right): <b>verified</b> = you judged that very event
+        correct. Chart: events per hour, evening by evening; hatched = no recording. Zoom with the mouse wheel, or the − + ◀ ▶ buttons
+        on a phone.</p>
       <dl class="site-card" id="site-card"></dl>
-      <p class="sub">Events per hour, evening by evening. Hatched: evenings with no recording. Scroll on the chart to zoom the dates, drag to pan.</p>
-      <div class="scroll" id="season"></div>
+      <div class="examples" id="examples"></div>
+      <div id="season"></div>
     </section>
 
     <section class="panel" id="p-presence">
-      <div class="panel-head"><h2>Presence by site</h2>
+      <div class="panel-head"><div class="title"><h2>Presence by site</h2><button type="button" class="info-btn" aria-controls="presence-sub" aria-expanded="false" aria-label="About this panel">i</button></div>
         <div class="tools" data-panel="presence"><div class="seg" id="presence-mode"></div></div></div>
-      <p class="sub" id="presence-sub"></p>
-      <div class="scroll" id="presence"></div>
+      <p class="sub" id="presence-sub" hidden></p>
+      <div class="ptable-wrap" id="presence"></div>
       <div class="legend" id="presence-legend"></div>
     </section>
 
     <section class="panel" id="p-night">
-      <div class="panel-head"><h2 id="night-title">Time from sunset</h2>
-        <div class="tools" data-panel="night"><div class="seg" id="night-scope"></div><button type="button" id="night-reset">Reset zoom</button></div></div>
-      <p class="sub">Events per time bin (5 min; 2 min and 1 min when zoomed in). Time is read from the recorders' schedule: recording
-        starts at sunset (0) and lasts 2 h. Scroll on the chart to zoom, drag to pan.</p>
+      <div class="panel-head"><div class="title"><h2 id="night-title">Time from sunset</h2><button type="button" class="info-btn" aria-controls="night-info" aria-expanded="false" aria-label="About this panel">i</button></div>
+        <div class="tools" data-panel="night"><div class="seg" id="night-scope"></div><span class="zoombtns" id="night-zoom"></span></div></div>
+      <p class="sub" id="night-info" hidden>Events per time bin (5 min; 2 and 1 min when zoomed in). Recording starts at sunset (0) and
+        lasts 2 h; time is read from the recorders' schedule, not their clock. "All sites" follows the département filter.</p>
       <div id="night"></div>
     </section>
 
+    <section class="panel wide" id="p-overview">
+      <div class="panel-head"><div class="title"><h2 id="overview-title">Season overview</h2><button type="button" class="info-btn" aria-controls="overview-info" aria-expanded="false" aria-label="About this panel">i</button></div>
+        <div class="tools" data-panel="overview"></div></div>
+      <p class="sub" id="overview-info" hidden>Top: all sites pooled, events per hour recorded each week; below it, how many sites were
+        recording. Bottom: for each site, the recording period (grey bar) and the first and last detection (dots). A hollow dot lies
+        within 3 days of the start or end of recording: the season may extend beyond what was recorded. Follows the class,
+        threshold and département filters.</p>
+      <div class="summary-line" id="overview-summary"></div>
+      <details class="bydept"><summary>By département</summary><div id="overview-depts"></div></details>
+      <div id="overview"></div>
+    </section>
+
     <section class="panel wide" id="p-heat">
-      <div class="panel-head"><h2 id="heat-title">Weekly activity, all sites</h2><div class="tools" data-panel="heat"></div></div>
-      <p class="sub">Events per hour recorded, by site and week (weeks start on Monday). Hatched: no recording that week.</p>
-      <div class="scroll" id="heat"></div>
+      <div class="panel-head"><div class="title"><h2 id="heat-title">Weekly activity by site</h2><button type="button" class="info-btn" aria-controls="heat-info" aria-expanded="false" aria-label="About this panel">i</button></div>
+        <div class="tools" data-panel="heat"></div></div>
+      <p class="sub" id="heat-info" hidden>Events per hour recorded, by site and week (weeks start on Monday). Hatched: no recording that
+        week. Tap a row to open the site; scroll sideways on a phone.</p>
+      <div class="heat-split" id="heat"></div>
       <div class="legend" id="heat-legend"></div>
     </section>
   </div>
-  <p class="note" id="footnote"></p>
+  <details class="about"><summary>About these data</summary><p class="note" id="footnote"></p></details>
 </div>
 <div id="tooltip" hidden></div>
 
@@ -172,74 +289,104 @@ const DEPTS = /*__DEPTS__*/;
 <script>
 (function () {
   "use strict";
-  const CLASSES = DATA.classes;
-  const SITES = DATA.sites;
+  const CLASSES = DATA.classes, SITES = DATA.sites, meta = DATA.meta;
   const STATUS_TEXT = {"present": "confirmed: ≥ 1 detection judged correct",
                        "not confirmed": "detected, but every detection judged was something else",
                        "not judged": "detected, no detection judged yet",
                        "not checked": "detected, class not in the presence check",
-                       "none": "nothing detected"};
-  const state = {cls: CLASSES.indexOf("Drumming") >= 0 ? CLASSES.indexOf("Drumming") : 0,
-                 dept: "All", basemap: "off", site: null, presenceMode: "status", nightScope: "all",
-                 seasonT: d3.zoomIdentity, nightT: d3.zoomIdentity};
+                       "none": "nothing detected (at this threshold)"};
+  const coarse = matchMedia("(pointer: coarse)").matches;
+  const narrow = () => matchMedia("(max-width: 700px)").matches;
+  const state = {cls: Math.max(0, CLASSES.indexOf("Drumming")), thr: {...meta.floors}, dept: "All", basemap: "off",
+                 site: null, presenceMode: "status", nightScope: "all", seasonT: d3.zoomIdentity, nightT: d3.zoomIdentity};
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const classColor = (i) => i < 0 ? css("--call-all") : css("--c" + i);
-  const fmt1 = d3.format(".2f");
+  const f2 = d3.format(".2f"), fInt = d3.format(",");
+  const fRate = (v) => v >= 0.1 ? d3.format(".2f")(v) : v > 0 ? d3.format(".2r")(v) : "0";
+  const plural = (n, word) => `${fInt(n)} ${word}${n === 1 ? "" : "s"}`;
+  const STATUS_SHORT = {"present": "confirmed", "not confirmed": "judged wrong", "not judged": "not judged yet",
+                        "not checked": "not checked", "none": "none detected"};
+  const className = (cls) => cls < 0 ? "All classes" : CLASSES[cls];
+  const parseDay = d3.utcParse("%Y-%m-%d"), fmtDay = d3.utcFormat("%Y-%m-%d"), fmtShort = d3.utcFormat("%d %b");
 
-  // ---------------------------------------------------------------- derived tables
-  const evenings = DATA.evenings.map(r => ({site: r[0], date: r[1], hours: r[2], ev: r.slice(3)}));
-  const bySite = d3.group(evenings, d => d.site);
-  const parseDay = d3.utcParse("%Y-%m-%d");
-  const allDates = evenings.map(d => parseDay(d.date));
-  const dateExtent = d3.extent(allDates);
-  const weekOf = d => d3.utcMonday.floor(parseDay(d));
+  // ---------------------------------------------------------------- data
+  const evenings = DATA.evenings.map(r => ({site: r[0], date: r[1], hours: r[2]}));
+  const events = DATA.events.map(r => ({site: r[0], cls: r[1], date: r[2], min: r[3], conf: r[4]}));
+  const examples = new Map(DATA.examples.map(r => [`${r[0]}|${r[1]}`,
+    {site: r[0], cls: r[1], verified: r[2], gen: r[3], date: r[4], time: r[5], score: r[6], audio: r[7]}]));
+  const eveningsBySite = d3.group(evenings, d => d.site);
+  const dateExtent = d3.extent(evenings, d => parseDay(d.date));
+  const days = d3.utcDay.range(dateExtent[0], d3.utcDay.offset(dateExtent[1], 1));
+  const weekOf = (date) => d3.utcMonday.floor(parseDay(date));
   const weeks = d3.utcMonday.range(d3.utcMonday.floor(dateExtent[0]), d3.utcDay.offset(dateExtent[1], 1));
   const depts = Array.from(new Set(SITES.map(s => s.dept_name))).sort();
   const siteOrder = d3.range(SITES.length).sort((a, b) =>
-      d3.ascending(SITES[a].dept_name, SITES[b].dept_name) || d3.ascending(SITES[a].short, SITES[b].short));
+    d3.ascending(SITES[a].dept_name, SITES[b].dept_name) || d3.ascending(SITES[a].short, SITES[b].short));
+  const inScope = (i) => state.dept === "All" || SITES[i].dept_name === state.dept;
 
+  // kept events at the chosen thresholds, and the counts derived from them
+  let kept = [], siteCounts = [], eveCounts = new Map();
+  function recompute() {
+    kept = events.filter(e => e.conf >= state.thr[CLASSES[e.cls]] - 1e-9);
+    siteCounts = SITES.map(() => CLASSES.map(() => 0));
+    eveCounts = new Map();
+    kept.forEach(e => {
+      siteCounts[e.site][e.cls]++;
+      const key = `${e.site}|${e.date}`;
+      if (!eveCounts.has(key)) eveCounts.set(key, CLASSES.map(() => 0));
+      eveCounts.get(key)[e.cls]++;
+    });
+  }
+  const evCount = (site, date, cls) => { const v = eveCounts.get(`${site}|${date}`); return v ? (cls < 0 ? d3.sum(v) : v[cls]) : 0; };
   function rate(site, cls) {
-    const s = SITES[site];
-    const n = cls < 0 ? d3.sum(s.events) : s.events[cls];
-    return s.hours ? n / s.hours : 0;
+    const n = cls < 0 ? d3.sum(siteCounts[site]) : siteCounts[site][cls];
+    return SITES[site].hours ? n / SITES[site].hours : 0;
   }
   function status(site, cls) {
-    const st = SITES[site].status;
-    if (cls >= 0) return st[cls];
+    if (cls >= 0) return siteCounts[site][cls] ? SITES[site].status[cls] : "none";
+    const st = CLASSES.map((_, j) => status(site, j));
     for (const k of ["present", "not judged", "not checked", "not confirmed"]) if (st.includes(k)) return k;
     return "none";
   }
-  function className(cls) { return cls < 0 ? "All classes" : CLASSES[cls]; }
+  // audited precision of the events >= t (weighted by bin population); null if a bin was never audited
+  function precisionAt(label, t, split) {
+    const bins = (meta.audit[split] || {})[label];
+    if (!bins) return null;
+    const use = bins.filter(b => b.lo >= t - 1e-9 && b.population > 0);
+    if (!use.length || use.some(b => b.precision === null)) return null;
+    const pop = d3.sum(use, b => b.population);
+    return {value: d3.sum(use, b => b.population * b.precision) / pop, judged: d3.sum(use, b => b.judged)};
+  }
 
-  // ---------------------------------------------------------------- header
-  const meta = DATA.meta;
+  // ---------------------------------------------------------------- header + KPIs
   document.getElementById("meta").textContent =
     `Full survey, model gen ${meta.gen} · drives ${meta.drives.join(", ")} · ${SITES.length} sites · ` +
-    `${d3.format(",.0f")(meta.hours)} h recorded · kept events: ${meta.detection} · built ${meta.built}` +
-    (meta.rounded ? ` · positions rounded to ${meta.rounded}°` : "");
-  const prec = document.getElementById("precision");
-  CLASSES.forEach((c, i) => {
-    const p = meta.precision[c];
-    const chip = document.createElement("div"); chip.className = "chip";
-    const key = document.createElement("span"); key.className = "key"; key.style.background = classColor(i);
-    const name = document.createElement("span"); name.textContent = c;
-    const val = document.createElement("strong");
-    const total = d3.sum(SITES, s => s.events[i]);
-    const extra = document.createElement("span");
-    if (p) {
-      val.textContent = d3.format(".2f")(p.precision);
-      extra.textContent = `precision [${fmt1(p.low)}, ${fmt1(p.high)}]${p.scope === "kept" ? " (events " + p.bin + ")" : ""}, ` +
-        `${p.judged} judged, audit ${p.drives.join("+")} · ${d3.format(",")(total)} events`;
-    } else {
-      val.textContent = d3.format(",")(total);
-      extra.textContent = "events (no audit yet)";
-    }
-    chip.append(key, name, val, extra); prec.append(chip);
-  });
+    `${d3.format(",.0f")(meta.hours)} h recorded · built ${meta.built}` + (meta.rounded ? ` · positions rounded to ${meta.rounded}°` : "");
+  function renderKpis() {
+    const box = document.getElementById("kpis"); box.replaceChildren();
+    const tile = (label, value, sub, color) => {
+      const t = document.createElement("div"); t.className = "kpi";
+      const l = document.createElement("div"); l.className = "label";
+      if (color) { const k = document.createElement("span"); k.className = "key"; k.style.background = color; l.append(k); }
+      l.append(document.createTextNode(label));
+      const v = document.createElement("div"); v.className = "value"; v.textContent = value;
+      const s = document.createElement("div"); s.className = "sub"; s.textContent = sub;
+      t.append(l, v, s); box.append(t);
+    };
+    tile("Sites · hours recorded", `${SITES.length}`, `${d3.format(",.0f")(meta.hours)} h over ${fInt(evenings.length)} site-evenings`);
+    CLASSES.forEach((c, j) => {
+      const n = d3.sum(siteCounts, s => s[j]);
+      const held = precisionAt(c, state.thr[c], "heldout"), train = precisionAt(c, state.thr[c], "train");
+      const p = held ? `precision ${f2(held.value)} (heldout)` + (train ? ` · ${f2(train.value)} train` : "") : "precision not audited at this threshold";
+      tile(`${c} · score ≥ ${state.thr[c]}`, fInt(n), `${p} · ${d3.sum(siteCounts, s => s[j] > 0)} sites`, classColor(j));
+    });
+  }
   document.getElementById("footnote").textContent =
-    "Events: BirdNET windows merged per file and class (gap ≤ 3 s); counts are of kept events only. Presence: 'present' = at least one event of " +
-    "the class at that site judged correct (blind audit or presence check); 'every detection judged was something else' = the events judged there (random audit draws, then the best-scoring ones) were all another sound, " +
-    "which is not proof of absence. Rates are per hour recorded, so sites with different recording effort compare fairly.";
+    "Events: BirdNET windows ≥ 0.5 merged per file and class (gap ≤ 3 s); an event is kept when its best window reaches the class threshold " +
+    "(survey thresholds: " + CLASSES.map(c => `${c} ${meta.floors[c]}`).join(", ") + "). Precision: share of kept events judged correct in the blind audit, " +
+    "weighted by stratum; heldout sites are the honest estimate (the model never learned from them). Presence: 'confirmed' = at least one detection " +
+    "of the class at that site judged correct; 'every detection judged was something else' is not proof of absence. Audio: one 8 s example per " +
+    "site × class (16 kHz, normalised), 'verified' when you judged that event correct. Rates are per hour recorded.";
 
   // ---------------------------------------------------------------- controls
   function segmented(el, items, current, onPick) {
@@ -254,29 +401,58 @@ const DEPTS = /*__DEPTS__*/;
       el.append(b);
     });
   }
-  segmented(document.getElementById("cls"),
-    CLASSES.map((c, i) => ({label: c, value: i, color: classColor(i)})).concat([{label: "All", value: -1}]),
+  segmented(document.getElementById("cls"), CLASSES.map((c, i) => ({label: c, value: i, color: classColor(i)})).concat([{label: "All", value: -1}]),
     () => state.cls, v => { state.cls = v; renderAll(); });
+  function renderThresholds() {
+    const box = document.getElementById("thresholds"); box.replaceChildren();
+    CLASSES.forEach((c, j) => {
+      const wrap = document.createElement("span"); wrap.className = "thr";
+      const name = document.createElement("span"); name.className = "name";
+      const k = document.createElement("span"); k.className = "swatch"; k.style.background = classColor(j); name.append(k, document.createTextNode(c));
+      const seg = document.createElement("div"); seg.className = "seg";
+      const prec = document.createElement("span"); prec.className = "prec";
+      const p = precisionAt(c, state.thr[c], "heldout");
+      prec.textContent = p ? `prec. ${f2(p.value)}` : "not audited";
+      prec.title = "audited precision at heldout sites for this threshold";
+      segmented(seg, meta.choices.map(t => ({label: (t === meta.floors[c] ? "● " : "") + t, value: t})), () => state.thr[c],
+        v => { state.thr[c] = v; thresholdsChanged(); });
+      wrap.append(name, seg, prec); box.append(wrap);
+    });
+    const reset = document.createElement("button"); reset.type = "button"; reset.className = "linkbtn"; reset.textContent = "Survey thresholds";
+    reset.title = "● marks the thresholds used for the survey results";
+    reset.addEventListener("click", () => { state.thr = {...meta.floors}; thresholdsChanged(); });
+    box.append(reset);
+  }
+  function thresholdsChanged() { recompute(); renderThresholds(); renderKpis(); renderAll(); }
   segmented(document.getElementById("depts"), ["All"].concat(depts).map(r => ({label: r, value: r})),
-    () => state.dept, v => { state.dept = v; zoomToDept(); });
+    () => state.dept, v => { state.dept = v; zoomToDept(); renderPresence(); renderNight(); renderOverview(); renderHeat(); });
   const siteSelect = document.getElementById("site");
-  const none = document.createElement("option"); none.value = ""; none.textContent = "— click a bubble or pick —"; siteSelect.append(none);
+  const none = document.createElement("option"); none.value = ""; none.textContent = "— tap a bubble or pick —"; siteSelect.append(none);
   siteOrder.forEach(i => { const o = document.createElement("option"); o.value = i; o.textContent = `${SITES[i].short} (${SITES[i].dept_name})`; siteSelect.append(o); });
-  document.getElementById("season-reset").addEventListener("click", () => { state.seasonT = d3.zoomIdentity; renderSite(); });
-  document.getElementById("night-reset").addEventListener("click", () => { state.nightT = d3.zoomIdentity; renderNight(); });
   siteSelect.addEventListener("change", () => selectSite(siteSelect.value === "" ? null : +siteSelect.value));
   segmented(document.getElementById("presence-mode"), [{label: "Status", value: "status"}, {label: "By month", value: "month"}],
     () => state.presenceMode, v => { state.presenceMode = v; renderPresence(); });
   segmented(document.getElementById("night-scope"), [{label: "All sites", value: "all"}, {label: "Selected site", value: "site"}],
     () => state.nightScope, v => { state.nightScope = v; renderNight(); });
+  // phone drawer
+  const filtersBtn = document.getElementById("filters-btn");
+  const setDrawer = (open) => { document.body.classList.toggle("filters-open", open); filtersBtn.setAttribute("aria-expanded", String(open)); };
+  filtersBtn.addEventListener("click", () => setDrawer(!document.body.classList.contains("filters-open")));
+  document.getElementById("filters-close").addEventListener("click", () => setDrawer(false));
+  document.getElementById("backdrop").addEventListener("click", () => setDrawer(false));
+  // explanations are hidden behind the "i" buttons
+  document.querySelectorAll(".info-btn").forEach(b => b.addEventListener("click", () => {
+    const box = document.getElementById(b.getAttribute("aria-controls"));
+    box.hidden = !box.hidden; b.setAttribute("aria-expanded", String(!box.hidden));
+  }));
 
-  function selectSite(i) {
+  function selectSite(i, fromMap) {
     state.site = i; siteSelect.value = i === null ? "" : String(i);
-    if (i !== null && state.nightScope === "all") { /* keep scope */ }
     renderMarks(); renderSite(); renderPresence(); renderNight(); renderHeat();
+    if (fromMap && narrow() && i !== null) document.getElementById("p-site").scrollIntoView({behavior: "smooth"});
   }
 
-  // ---------------------------------------------------------------- tooltip
+  // ---------------------------------------------------------------- tooltip (hover, or tap on touch screens)
   const tip = document.getElementById("tooltip");
   function showTip(event, rows) {
     tip.replaceChildren();
@@ -288,13 +464,21 @@ const DEPTS = /*__DEPTS__*/;
       tip.append(line);
     });
     tip.hidden = false;
-    const x = Math.min(event.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
-    const y = Math.min(event.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+    const x = Math.max(8, Math.min(event.clientX + 14, window.innerWidth - tip.offsetWidth - 8));
+    const y = Math.max(8, Math.min(event.clientY + 14, window.innerHeight - tip.offsetHeight - 8));
     tip.style.left = x + "px"; tip.style.top = y + "px";
   }
   const hideTip = () => { tip.hidden = true; };
+  function hover(sel, rowsFn) {
+    sel.on("pointermove", (e, d) => { if (e.pointerType !== "touch") showTip(e, rowsFn(d)); })
+       .on("pointerleave", (e) => { if (e.pointerType !== "touch") hideTip(); })
+       .on("click.tip", (e, d) => { if (coarse) { showTip(e, rowsFn(d)); e.stopPropagation(); } });
+    return sel;
+  }
+  document.addEventListener("click", () => { if (coarse) hideTip(); });
+  window.addEventListener("scroll", () => { if (coarse) hideTip(); }, {passive: true});
 
-  // ---------------------------------------------------------------- shared svg helpers
+  // ---------------------------------------------------------------- shared helpers
   function hatchDefs(svg, id) {
     const p = svg.append("defs").append("pattern").attr("id", id).attr("patternUnits", "userSpaceOnUse")
       .attr("width", 6).attr("height", 6).attr("patternTransform", "rotate(45)");
@@ -314,14 +498,32 @@ const DEPTS = /*__DEPTS__*/;
       const item = document.createElement("span"); item.className = "item";
       const svg = d3.select(item).append("svg").attr("width", 14).attr("height", 14);
       statusStyle(svg.append("circle").attr("cx", 7).attr("cy", 7).attr("r", st === "none" ? 3 : 5.5), cls, st);
-      item.append(document.createTextNode(STATUS_TEXT[st])); el.append(item);
+      item.title = STATUS_TEXT[st]; item.append(document.createTextNode(STATUS_SHORT[st])); el.append(item);
     });
+  }
+  const widthOf = (id, fallback) => Math.max(300, Math.round(document.getElementById(id).clientWidth || fallback));
+  // x-zoom for a chart: wheel + drag with a mouse; +/-/◀/▶ buttons on touch screens (swipes keep scrolling the page)
+  function xZoom(svg, extent, maxK, getT, setT, place, btnBox) {
+    const zoom = d3.zoom().scaleExtent([1, maxK]).extent(extent).translateExtent(extent)
+      .on("zoom", e => { setT(e.transform); place(e.transform); });
+    const target = coarse ? d3.select(document.createElement("div")) : svg;
+    target.call(zoom).call(zoom.transform, getT());
+    const box = document.getElementById(btnBox); box.replaceChildren();
+    const btn = (label, title, fn) => { const b = document.createElement("button"); b.type = "button"; b.textContent = label; b.title = title;
+                                        b.addEventListener("click", fn); box.append(b); };
+    if (coarse) {
+      btn("−", "zoom out", () => target.call(zoom.scaleBy, 1 / 1.6));
+      btn("+", "zoom in", () => target.call(zoom.scaleBy, 1.6));
+      btn("◀", "earlier", () => target.call(zoom.translateBy, (extent[1][0] - extent[0][0]) / 4 / getT().k, 0));
+      btn("▶", "later", () => target.call(zoom.translateBy, -(extent[1][0] - extent[0][0]) / 4 / getT().k, 0));
+    }
+    btn(coarse ? "↺" : "Reset zoom", "back to the whole period", () => target.call(zoom.transform, d3.zoomIdentity));
   }
 
   // ---------------------------------------------------------------- map (Web Mercator; optional IGN tiles)
-  // Tiles are loaded from IGN only when a base map is chosen: IGN then sees which tiles are
-  // shown (roughly where you look), never the site positions. "Off" needs no network.
-  const MAP_W = 760, MAP_H = 560, TAU = 2 * Math.PI;
+  const TAU = 2 * Math.PI;
+  const MAP_W = widthOf("map", 760),
+        MAP_H = narrow() ? Math.round(Math.max(320, Math.min(520, window.innerHeight * 0.6))) : Math.round(Math.min(MAP_W * 0.72, 640));
   const BASEMAPS = {
     off: {label: "Off (offline)"},
     plan: {label: "Plan IGN", layer: "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", style: "normal", format: "image/png", maxZ: 19},
@@ -334,25 +536,23 @@ const DEPTS = /*__DEPTS__*/;
   const tileUrl = (b, x, y, z) => "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0" +
     `&LAYER=${b.layer}&STYLE=${encodeURIComponent(b.style)}&FORMAT=${encodeURIComponent(b.format)}` +
     `&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-  const mapSvg = d3.select("#map").append("svg").attr("viewBox", `0 0 ${MAP_W} ${MAP_H}`).attr("role", "img")
-    .attr("aria-label", "Map of microphone sites, bubbles sized by detections per hour");
+  const mapSvg = d3.select("#map").append("svg").attr("viewBox", `0 0 ${MAP_W} ${MAP_H}`).attr("width", MAP_W).attr("height", MAP_H)
+    .attr("role", "img").attr("aria-label", "Map of microphone sites, bubbles sized by detections per hour");
   mapSvg.append("defs").append("clipPath").attr("id", "map-clip").append("rect").attr("width", MAP_W).attr("height", MAP_H);
   mapSvg.append("rect").attr("width", MAP_W).attr("height", MAP_H).attr("fill", "var(--surface)");
   const mapG = mapSvg.append("g").attr("clip-path", "url(#map-clip)");
   const tileG = mapG.append("g");
   const projection = d3.geoMercator().scale(1 / TAU).translate([0, 0]);
-  const unit = d3.geoMercator().scale(1 / TAU).translate([0, 0]);      // fixed, for fitting
+  const unit = d3.geoMercator().scale(1 / TAU).translate([0, 0]);
   const geoPath = d3.geoPath(projection);
-  const deptPaths = mapG.append("g").selectAll("path").data(DEPTS.features).join("path")
-    .attr("stroke", "var(--dept)").attr("stroke-width", 0.8);
-  const marksG = mapG.append("g");
-  const labelG = mapG.append("g");
+  const deptPaths = mapG.append("g").selectAll("path").data(DEPTS.features).join("path").attr("stroke-width", 0.8);
+  const marksG = mapG.append("g"), labelG = mapG.append("g");
   const attribution = mapSvg.append("text").attr("x", MAP_W - 6).attr("y", MAP_H - 6).attr("text-anchor", "end")
     .attr("font-size", 10).attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3);
   SITES.forEach(s => { [s.ux, s.uy] = unit([s.lon, s.lat]); });
   let mapT = d3.zoomIdentity.scale(2 ** 13);
-  const zoom = d3.zoom().scaleExtent([2 ** 10, 2 ** 22]).on("zoom", (e) => { mapT = e.transform; drawMap(); });
-  mapSvg.call(zoom);
+  const mapZoom = d3.zoom().scaleExtent([2 ** 10, 2 ** 22]).on("zoom", (e) => { mapT = e.transform; drawMap(); });
+  mapSvg.call(mapZoom);
   const baseSelect = document.getElementById("basemap");
   Object.entries(BASEMAPS).forEach(([key, b]) => { const o = document.createElement("option"); o.value = key; o.textContent = b.label; baseSelect.append(o); });
   baseSelect.addEventListener("change", () => { state.basemap = baseSelect.value; drawMap(); });
@@ -370,266 +570,471 @@ const DEPTS = /*__DEPTS__*/;
         .attr("x", ([x]) => (x + tiles.translate[0]) * tiles.scale).attr("y", ([, y]) => (y + tiles.translate[1]) * tiles.scale)
         .attr("width", tiles.scale + 0.5).attr("height", tiles.scale + 0.5);
       attribution.text(`${b.label} © IGN Géoplateforme`);
-    } else {
-      tileG.selectAll("image").remove(); attribution.text("");
-    }
+    } else { tileG.selectAll("image").remove(); attribution.text(""); }
     SITES.forEach(s => { [s.x, s.y] = projection([s.lon, s.lat]); });
     renderMarks();
   }
-
   function zoomToDept() {
-    const idx = d3.range(SITES.length).filter(i => state.dept === "All" || SITES[i].dept_name === state.dept);
+    const idx = d3.range(SITES.length).filter(inScope);
     const [x0, x1] = d3.extent(idx, i => SITES[i].ux), [y0, y1] = d3.extent(idx, i => SITES[i].uy);
-    const pad = 40, w = Math.max(x1 - x0, 2e-5), h = Math.max(y1 - y0, 2e-5);
+    const pad = 30, w = Math.max(x1 - x0, 2e-5), h = Math.max(y1 - y0, 2e-5);
     const k = Math.min(2 ** 19, 0.85 / Math.max(w / (MAP_W - 2 * pad), h / (MAP_H - 2 * pad)));
     const t = d3.zoomIdentity.translate(MAP_W / 2, MAP_H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
-    mapSvg.transition().duration(matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500).call(zoom.transform, t);
+    mapSvg.transition().duration(matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500).call(mapZoom.transform, t);
   }
-
   function renderMarks() {
-    const cls = state.cls;
-    const rates = SITES.map((_, i) => rate(i, cls));
-    const r = d3.scaleSqrt().domain([0, d3.max(rates) || 1]).range([0, 22]);
+    const cls = state.cls, rates = SITES.map((_, i) => rate(i, cls));
+    const r = d3.scaleSqrt().domain([0, d3.max(rates) || 1]).range([0, narrow() ? 18 : 22]);
     const order = d3.range(SITES.length).sort((a, b) => d3.descending(rates[a], rates[b]));
-    marksG.selectAll("circle").data(order, i => i).join("circle")
+    hover(marksG.selectAll("circle").data(order, i => i).join("circle")
       .attr("cx", i => SITES[i].x).attr("cy", i => SITES[i].y)
       .attr("r", i => rates[i] > 0 ? Math.max(r(rates[i]), 3.2) : 2.6)
       .each(function (i) { statusStyle(d3.select(this), cls, status(i, cls)); })
-      .style("cursor", "pointer")
-      .on("pointermove", (e, i) => {
+      .style("cursor", "pointer"), i => {
         const s = SITES[i];
-        showTip(e, [{label: `${s.short} · ${s.dept_name} · ${s.split}`}, {value: d3.format(".2f")(rates[i]), label: `${className(cls)} events / h`},
-                    {value: d3.format(",.0f")(s.hours), label: "hours recorded"}]
-          .concat(CLASSES.map((c, j) => ({color: classColor(j), value: d3.format(",")(s.events[j]), label: `${c} · ${STATUS_TEXT[s.status[j]]}`}))));
+        return [{label: `${s.short} · ${s.dept_name} · ${s.split}`}, {value: f2(rates[i]), label: `${className(cls)} events / h`},
+                {value: d3.format(",.0f")(s.hours), label: "hours recorded"}]
+          .concat(CLASSES.map((c, j) => ({color: classColor(j), value: fInt(siteCounts[i][j]), label: `${c} · ${STATUS_TEXT[status(i, j)]}`})));
       })
-      .on("pointerleave", hideTip)
-      .on("click", (e, i) => selectSite(i));
-    marksG.selectAll("circle").filter(i => i === state.site).raise()
-      .attr("stroke", "var(--ink)").attr("stroke-width", 2.2).attr("stroke-dasharray", null);
+      .on("click", (e, i) => selectSite(i, true));
+    marksG.selectAll("circle").filter(i => i === state.site).raise().attr("stroke", "var(--ink)").attr("stroke-width", 2.2).attr("stroke-dasharray", null);
     labelG.selectAll("text").data(state.site === null ? [] : [state.site]).join("text")
       .attr("x", i => SITES[i].x + (r(rates[i]) || 3) + 4).attr("y", i => SITES[i].y + 4)
       .attr("font-size", 12).attr("font-weight", 600).style("fill", "var(--ink)")
-      .attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3)
-      .text(i => SITES[i].short);
+      .attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3).text(i => SITES[i].short);
     document.getElementById("map-title").textContent = `${className(cls)}: events per hour`;
-    statusLegend(document.getElementById("map-legend"), cls);
-    const sizeNote = document.createElement("span"); sizeNote.className = "item";
-    sizeNote.textContent = `largest bubble = ${d3.format(".2f")(d3.max(rates) || 0)} events/h`;
-    document.getElementById("map-legend").append(sizeNote);
+    const leg = document.getElementById("map-legend"); statusLegend(leg, cls);
+    const note = document.createElement("span"); note.className = "item"; note.textContent = `largest bubble = ${f2(d3.max(rates) || 0)} events/h`;
+    leg.append(note);
   }
 
-  // ---------------------------------------------------------------- site detail + season
+  // ---------------------------------------------------------------- site card, audio examples, season of the site
+  const player = new Audio();
+  let playing = null;                    // {ex, btn, head}
+  function exampleUrl(ex) {
+    if (!ex.url) {
+      const bin = atob(ex.audio), bytes = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+      ex.blob = new Blob([bytes], {type: "audio/mpeg"}); ex.url = URL.createObjectURL(ex.blob);
+    }
+    return ex.url;
+  }
+  function fft(re, im) {                 // in place, length = power of 2
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit;
+      if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+      for (let i = 0; i < n; i += len) { let cr = 1, ci = 0;
+        for (let k = 0; k < len / 2; k++) {
+          const a = i + k, b = a + len / 2, tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+          const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr; } } }
+  }
+  async function drawSpectrogram(ex, canvas) {
+    if (!ex.spec) {
+      // an offline context decodes without an audio device (and phones limit live contexts)
+      const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext, ctx = new Ctx(1, 1, 32000);
+      const data = await ex.blob.arrayBuffer();
+      const buffer = await new Promise((ok, fail) => {        // callback form for older Safari, promise form elsewhere
+        const p = ctx.decodeAudioData(data, ok, fail);
+        if (p && p.then) p.then(ok, fail);
+      });
+      const x = buffer.getChannelData(0), sr = buffer.sampleRate, n = sr > 24000 ? 1024 : 512, hop = n / 2;
+      const fmaxBin = Math.min(n / 2, Math.round(8000 / (sr / n))), frames = Math.max(1, Math.floor((x.length - n) / hop));
+      const win = Float32Array.from({length: n}, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)));
+      const mag = new Float32Array(frames * fmaxBin); let top = -Infinity;
+      const re = new Float32Array(n), im = new Float32Array(n);
+      for (let f = 0; f < frames; f++) {
+        for (let i = 0; i < n; i++) { re[i] = x[f * hop + i] * win[i]; im[i] = 0; }
+        fft(re, im);
+        for (let b = 0; b < fmaxBin; b++) { const v = 10 * Math.log10(re[b] * re[b] + im[b] * im[b] + 1e-12); mag[f * fmaxBin + b] = v; if (v > top) top = v; }
+      }
+      ex.spec = {mag, frames, bins: fmaxBin, top, duration: x.length / sr};
+    }
+    const {mag, frames, bins, top} = ex.spec, w = canvas.width = Math.max(200, canvas.clientWidth * (window.devicePixelRatio || 1)), h = canvas.height = 64 * (window.devicePixelRatio || 1);
+    const g = canvas.getContext("2d"), img = g.createImageData(w, h);
+    const ramp = d3.interpolateRgb(css("--surface"), css("--ink"));
+    const lut = d3.range(256).map(k => d3.rgb(ramp(Math.pow(k / 255, 1.3))));
+    for (let px = 0; px < w; px++) {
+      const f = Math.min(frames - 1, Math.floor(px / w * frames));
+      for (let py = 0; py < h; py++) {
+        const b = Math.min(bins - 1, Math.floor((1 - py / h) * bins));
+        const v = Math.max(0, Math.min(1, (mag[f * bins + b] - (top - 70)) / 70)), c = lut[Math.round(v * 255)], o = (py * w + px) * 4;
+        img.data[o] = c.r; img.data[o + 1] = c.g; img.data[o + 2] = c.b; img.data[o + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }
+  function tick() {
+    if (!playing) return;
+    const d = player.duration || meta.example_s;
+    playing.head.style.left = `${Math.min(100, 100 * player.currentTime / d)}%`;
+    if (!player.paused) requestAnimationFrame(tick);
+  }
+  player.addEventListener("ended", () => { if (playing) { playing.btn.textContent = "▶"; playing.btn.setAttribute("aria-label", "play"); } });
+  function renderExamples(site) {
+    const box = document.getElementById("examples"); box.replaceChildren();
+    CLASSES.forEach((c, j) => {
+      const ex = examples.get(`${site}|${j}`);
+      if (!ex || !ex.audio) return;
+      const row = document.createElement("div"); row.className = "example";
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "play"; btn.textContent = "▶"; btn.setAttribute("aria-label", `play a ${c} example`);
+      const what = document.createElement("div"); what.className = "what";
+      const k = document.createElement("span"); k.className = "swatch"; k.style.background = classColor(j);
+      const name = document.createElement("strong"); name.textContent = c;
+      const badge = document.createElement("span"); badge.className = "badge"; badge.textContent = ex.verified ? "verified" : "not verified";
+      badge.title = ex.verified ? "you judged this event correct" : "best-scoring detection, not judged (or not yet)";
+      const info = document.createElement("span"); info.textContent = `${ex.date} ${ex.time} · score ${f2(ex.score)} (gen ${ex.gen})`;
+      what.append(k, name, badge, info);
+      if (!ex.verified && status(site, j) === "not confirmed") {          // e.g. horses at a site where Drumming was judged wrong
+        const warn = document.createElement("span"); warn.className = "caution";
+        warn.textContent = "caution: the detections judged at this site were other sounds";
+        what.append(warn);
+      }
+      const spec = document.createElement("div"); spec.className = "spec";
+      const canvas = document.createElement("canvas"); const head = document.createElement("div"); head.className = "head";
+      spec.append(canvas, head);
+      btn.addEventListener("click", async () => {
+        if (playing && playing.ex === ex && !player.paused) { player.pause(); btn.textContent = "▶"; return; }
+        if (playing) playing.btn.textContent = "▶";
+        const url = exampleUrl(ex);
+        // decode for the spectrogram BEFORE playing (a few ms; decoding while the clip plays can stall)
+        spec.style.display = "block";
+        try { await Promise.race([drawSpectrogram(ex, canvas), new Promise((_, fail) => setTimeout(() => fail(new Error("slow")), 2500))]); }
+        catch (err) { spec.style.display = "none"; }
+        player.src = url; playing = {ex, btn, head};
+        btn.textContent = "❚❚"; btn.setAttribute("aria-label", "pause");
+        player.play().then(() => requestAnimationFrame(tick))
+          .catch(() => { btn.textContent = "▶"; btn.title = "tap again to play"; });
+      });
+      row.append(btn, what, spec); box.append(row);
+    });
+  }
   function renderSite() {
     const card = document.getElementById("site-card"); card.replaceChildren();
     const el = document.getElementById("season"); el.replaceChildren();
+    document.getElementById("examples").replaceChildren();
     if (state.site === null) {
       document.getElementById("site-title").textContent = "Site";
-      const p = document.createElement("p"); p.className = "sub";
-      p.textContent = "Click a bubble on the map, a row of the presence grid, or pick a site above."; el.append(p);
-      return;
+      document.getElementById("season-zoom").replaceChildren();
+      const p = document.createElement("p"); p.className = "sub"; p.textContent = "Tap a bubble on the map, a row of the presence table, or pick a site in the filters.";
+      el.append(p); return;
     }
-    const s = SITES[state.site];
+    const i = state.site, s = SITES[i];
     document.getElementById("site-title").textContent = s.short;
-    const rows = [["Département", s.dept_name], ["Drive · split", `${s.drive} · ${s.split}`],
-                  ["Recorded", `${d3.format(",.0f")(s.hours)} h over ${(bySite.get(state.site) || []).length} evenings`]]
-      .concat(CLASSES.map((c, j) => [c, `${d3.format(",")(s.events[j])} events · ${d3.format(".2f")(rate(state.site, j))}/h · ${STATUS_TEXT[s.status[j]]}`]));
-    rows.forEach(([k, v]) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; card.append(dt, dd); });
+    const nEve = (eveningsBySite.get(i) || []).length;
+    [["Département", s.dept_name], ["Drive · split", `${s.drive} · ${s.split}`], ["Recorded", `${d3.format(",.0f")(s.hours)} h over ${nEve} evenings`]]
+      .concat(CLASSES.map((c, j) => [c, `${plural(siteCounts[i][j], "event")} · ${fRate(rate(i, j))}/h · ${STATUS_SHORT[status(i, j)]}`, STATUS_TEXT[status(i, j)]]))
+      .forEach(([k, v, long]) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v;
+                                   if (long) dd.title = long; card.append(dt, dd); });
+    renderExamples(i);
 
-    const W = 600, rowH = 70, M = {l: 70, r: 10, t: 6, b: 24}, H = M.t + rowH * CLASSES.length + M.b;
-    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
+    const W = widthOf("season", 600), rowH = 70, M = {l: 24, r: 8, t: 6, b: 24}, H = M.t + rowH * CLASSES.length + M.b;
+    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("height", H).attr("role", "img")
       .attr("aria-label", `Events per hour by evening at ${s.short}`);
     svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
     hatchDefs(svg, "hatch-season");
-    svg.append("defs").append("clipPath").attr("id", "season-clip").append("rect")
-      .attr("x", M.l).attr("y", 0).attr("width", W - M.l - M.r).attr("height", H);
+    svg.append("defs").append("clipPath").attr("id", "season-clip").append("rect").attr("x", M.l).attr("width", W - M.l - M.r).attr("height", H);
     const x = d3.scaleUtc().domain([dateExtent[0], d3.utcDay.offset(dateExtent[1], 1)]).range([M.l, W - M.r]);
-    const recs = new Map((bySite.get(state.site) || []).map(d => [d.date, d]));
-    const days = d3.utcDay.range(dateExtent[0], d3.utcDay.offset(dateExtent[1], 1));
-    const yMax = d3.max(CLASSES.map((_, j) => d3.max(recs.values(), d => d.hours ? d.ev[j] / d.hours : 0))) || 1;
+    const recs = new Map((eveningsBySite.get(i) || []).map(d => [d.date, d]));
+    const vals = Array.from(recs.values());
+    const yMax = d3.max(CLASSES.map((_, j) => d3.max(vals, d => d.hours ? evCount(i, d.date, j) / d.hours : 0))) || 1;
     const gaps = [], bars = [];
     CLASSES.forEach((c, j) => {
       const top = M.t + j * rowH, y = d3.scaleLinear().domain([0, yMax]).range([top + rowH - 10, top + 8]);
-      const g = svg.append("g");
-      const plot = g.append("g").attr("clip-path", "url(#season-clip)");
-      gaps.push(plot.selectAll("rect.gap").data(days.filter(d => !recs.has(d3.utcFormat("%Y-%m-%d")(d)))).join("rect")
-        .attr("y", top + 8).attr("height", rowH - 18).attr("fill", "url(#hatch-season)"));
+      const g = svg.append("g"), plot = g.append("g").attr("clip-path", "url(#season-clip)");
+      gaps.push(plot.selectAll("rect.gap").data(days.filter(d => !recs.has(fmtDay(d)))).join("rect").attr("y", top + 8).attr("height", rowH - 18).attr("fill", "url(#hatch-season)"));
       g.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "var(--line)");
-      g.append("text").attr("x", M.l - 8).attr("y", top + rowH / 2).attr("text-anchor", "end").attr("dominant-baseline", "middle")
-        .attr("font-size", 12).style("fill", "var(--ink)").text(c);
-      g.append("text").attr("x", M.l - 8).attr("y", y(yMax) + 4).attr("text-anchor", "end").attr("font-size", 10).text(d3.format(".1f")(yMax));
-      const vals = Array.from(recs.values()).filter(d => d.ev[j] > 0);
-      bars.push(plot.selectAll("rect.bar").data(vals).join("rect").attr("class", "bar")
-        .attr("y", d => y(d.ev[j] / d.hours)).attr("height", d => y(0) - y(d.ev[j] / d.hours)).attr("fill", classColor(j))
-        .on("pointermove", (e, d) => showTip(e, [{label: d.date}, {color: classColor(j), value: d3.format(".2f")(d.ev[j] / d.hours), label: `${c} events / h`},
-                                                 {value: d.ev[j], label: "events"}, {value: d3.format(".1f")(d.hours), label: "hours recorded"}]))
-        .on("pointerleave", hideTip));
+      g.append("text").attr("transform", `translate(13,${top + rowH / 2}) rotate(-90)`).attr("text-anchor", "middle")
+        .attr("font-size", 11).style("fill", "var(--ink)").text(c);
+      const scaleLabel = g.append("text").attr("x", M.l + 3).attr("y", top + 13).attr("font-size", 9.5).style("fill", "var(--ink-3)")
+        .attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3).text(`${d3.format(".1f")(yMax)}/h`);
+      bars.push(hover(plot.selectAll("rect.bar").data(vals.filter(d => evCount(i, d.date, j) > 0)).join("rect").attr("class", "bar")
+        .attr("y", d => y(evCount(i, d.date, j) / d.hours)).attr("height", d => y(0) - y(evCount(i, d.date, j) / d.hours)).attr("fill", classColor(j)),
+        d => [{label: d.date}, {color: classColor(j), value: f2(evCount(i, d.date, j) / d.hours), label: `${c} events / h`},
+              {value: evCount(i, d.date, j), label: "events"}, {value: d3.format(".1f")(d.hours), label: "hours recorded"}]));
+      scaleLabel.raise();
     });
     const axis = svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`);
-    svg.append("text").attr("x", 4).attr("y", 12).attr("font-size", 10).text("events / h");
-    function place(xz) {
-      const dayW = Math.max(1, xz(d3.utcDay.offset(dateExtent[0], 1)) - xz(dateExtent[0]));
+    const place = (t) => {
+      const xz = t.rescaleX(x), dayW = Math.max(1, xz(d3.utcDay.offset(dateExtent[0], 1)) - xz(dateExtent[0]));
       gaps.forEach(sel => sel.attr("x", d => xz(d)).attr("width", dayW));
       bars.forEach(sel => sel.attr("x", d => xz(parseDay(d.date)) + 0.5).attr("width", Math.max(1, dayW - 1)).attr("rx", Math.min(2, dayW / 3)));
-      axis.call(d3.axisBottom(xz).ticks(7).tickFormat(d3.utcFormat("%d %b")).tickSizeOuter(0))
+      axis.call(d3.axisBottom(xz).ticks(Math.max(2, Math.floor((W - M.l - M.r) / 80))).tickFormat(fmtShort).tickSizeOuter(0))
         .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
-    }
-    const seasonZoom = d3.zoom().scaleExtent([1, 40]).extent([[M.l, 0], [W - M.r, H]]).translateExtent([[M.l, 0], [W - M.r, H]])
-      .on("zoom", e => { state.seasonT = e.transform; place(e.transform.rescaleX(x)); });
-    svg.call(seasonZoom).call(seasonZoom.transform, state.seasonT);
+    };
+    xZoom(svg, [[M.l, 0], [W - M.r, H]], 40, () => state.seasonT, t => { state.seasonT = t; }, place, "season-zoom");
   }
 
-  // ---------------------------------------------------------------- presence grid
-  function monthsOf() { return d3.utcMonth.range(d3.utcMonth.floor(dateExtent[0]), d3.utcDay.offset(dateExtent[1], 1)); }
+  // ---------------------------------------------------------------- presence (HTML table; SVG built for export)
+  const monthsAll = d3.utcMonth.range(d3.utcMonth.floor(dateExtent[0]), d3.utcDay.offset(dateExtent[1], 1));
+  function monthly(cls) {
+    const out = new Map();
+    evenings.forEach(d => { const key = `${d.site}|${d.date.slice(0, 7)}`, v = out.get(key) || {hours: 0, ev: 0};
+                            v.hours += d.hours; v.ev += evCount(d.site, d.date, cls); out.set(key, v); });
+    return out;
+  }
+  function presenceModel() {
+    const month = state.presenceMode === "month", cls = state.cls < 0 ? 0 : state.cls;
+    const cols = month ? monthsAll.map(m => ({key: d3.utcFormat("%Y-%m")(m), label: d3.utcFormat("%b")(m)}))
+                       : CLASSES.map((c, j) => ({key: j, label: c}));
+    return {month, cls, cols, by: month ? monthly(cls) : null,
+            groups: d3.groups(siteOrder.filter(inScope), i => SITES[i].dept_name)};
+  }
   function renderPresence() {
     const el = document.getElementById("presence"); el.replaceChildren();
-    const month = state.presenceMode === "month";
-    const cls = state.cls < 0 ? 0 : state.cls;
-    const months = monthsOf();
-    const cols = month ? months.map(m => ({key: d3.utcFormat("%Y-%m")(m), label: d3.utcFormat("%b")(m)}))
-                       : CLASSES.map((c, j) => ({key: j, label: c}));
+    const {month, cls, cols, by, groups} = presenceModel();
     document.getElementById("presence-sub").textContent = month
-      ? `${CLASSES[cls]}: was the class detected at the site that month? Detection, not confirmation (see the status view).`
-      : "Status per site and class, from your blind verdicts (audit + presence check). 'Every detection judged was something else' " +
-        "(e.g. horses heard as Drumming) means the model's detections there were wrong, not that the species is absent.";
-    const rowH = 15, M = {l: 215, t: 26, r: 6, b: 6}, colW = month ? 54 : 74;
-    const groups = d3.groups(siteOrder, i => SITES[i].dept_name);
-    const H = M.t + siteOrder.length * rowH + groups.length * 16 + M.b, W = M.l + cols.length * colW + M.r;
-    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("role", "img")
-      .attr("aria-label", month ? "Detections by site and month" : "Presence status by site and class");
+      ? `${CLASSES[cls]} at score ≥ ${state.thr[CLASSES[cls]]}: detected at the site that month? Detection, not confirmation.`
+      : "Status per site and class from your blind verdicts (audit + presence check). Confirmed = at least one detection judged correct. " +
+        "Judged wrong = every detection judged there was another sound (e.g. horses heard as Drumming): the model was wrong there, which is " +
+        "not proof of absence. Not judged yet. Not checked = Call is not in the presence check. None detected = no event at this threshold. " +
+        "Tap a row to open the site.";
+    const table = document.createElement("table"); table.className = "ptable";
+    const thead = table.createTHead().insertRow();
+    const th0 = document.createElement("th"); th0.className = "site"; th0.textContent = "Site"; thead.append(th0);
+    cols.forEach(c => { const th = document.createElement("th"); th.textContent = c.label; thead.append(th); });
+    const body = table.createTBody();
+    groups.forEach(([dept, idx]) => {
+      const g = body.insertRow(); g.className = "group";
+      const gc = g.insertCell(); gc.className = "site"; gc.textContent = dept; gc.colSpan = 1;
+      cols.forEach(() => g.insertCell());
+      idx.forEach(i => {
+        const tr = body.insertRow(); tr.className = "siterow" + (i === state.site ? " sel" : "");
+        tr.addEventListener("click", () => selectSite(i));
+        const name = tr.insertCell(); name.className = "site"; name.textContent = SITES[i].short; name.title = SITES[i].site;
+        cols.forEach(c => {
+          const td = tr.insertCell();
+          if (month) {
+            const v = by.get(`${i}|${c.key}`), cell = document.createElement("span"); cell.className = "cell";
+            if (!v || !v.hours) { cell.style.background = `repeating-linear-gradient(45deg, var(--surface) 0 3px, var(--hatch) 3px 5px)`; }
+            else if (v.ev) cell.style.background = classColor(cls);
+            else { cell.style.background = "var(--surface-2)"; cell.style.outline = "1px solid var(--line)"; }
+            td.append(cell);
+            hover(d3.select(td).datum(v), vv => [{label: `${SITES[i].short} · ${c.label}`}, {value: vv ? d3.format(".0f")(vv.hours) : "0", label: "hours recorded"},
+                                                 {color: classColor(cls), value: vv ? vv.ev : 0, label: `${CLASSES[cls]} events`}]);
+          } else {
+            const st = status(i, c.key), svg = d3.select(td).append("svg").attr("width", 16).attr("height", 14);
+            statusStyle(svg.append("circle").attr("cx", 8).attr("cy", 7).attr("r", st === "none" ? 2.5 : 5.5), c.key, st);
+            hover(svg, () => [{label: `${SITES[i].short} · ${c.label}`}, {color: classColor(c.key), value: fInt(siteCounts[i][c.key]), label: "events"}, {label: STATUS_TEXT[st]}]);
+          }
+        });
+      });
+    });
+    el.append(table);
+    const leg = document.getElementById("presence-legend"); leg.replaceChildren();
+    if (month) {
+      [["detected", classColor(cls), null], ["recorded, nothing detected", "var(--surface-2)", "var(--line)"], ["not recorded", "hatch", null]].forEach(([t, fill, stroke]) => {
+        const item = document.createElement("span"); item.className = "item";
+        const sw = document.createElement("span"); sw.className = "cell"; sw.style.cssText = "display:inline-block;width:16px;height:10px;border-radius:2px";
+        sw.style.background = fill === "hatch" ? "repeating-linear-gradient(45deg, var(--surface) 0 3px, var(--hatch) 3px 5px)" : fill;
+        if (stroke) sw.style.outline = `1px solid ${stroke}`;
+        item.append(sw, document.createTextNode(t)); leg.append(item);
+      });
+    } else statusLegend(leg, state.cls < 0 ? 0 : state.cls);
+  }
+  function presenceSvg() {                // the table as an SVG, for SVG / PNG export
+    const {month, cls, cols, by, groups} = presenceModel();
+    const rowH = 15, M = {l: 230, t: 26, r: 6, b: 6}, colW = month ? 54 : 74;
+    const nRows = d3.sum(groups, g => g[1].length);
+    const H = M.t + nRows * rowH + groups.length * 16 + M.b, W = M.l + cols.length * colW + M.r;
+    const svg = d3.create("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("height", H);
     svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
-    hatchDefs(svg, "hatch-presence");
-    cols.forEach((c, k) => svg.append("text").attr("x", M.l + k * colW + colW / 2).attr("y", 16).attr("text-anchor", "middle")
-      .attr("font-size", 11).style("fill", "var(--ink)").text(c.label));
-    const monthly = new Map();
-    if (month) evenings.forEach(d => { const key = `${d.site}|${d.date.slice(0, 7)}`; const v = monthly.get(key) || {hours: 0, ev: 0};
-                                       v.hours += d.hours; v.ev += d.ev[cls]; monthly.set(key, v); });
+    hatchDefs(svg, "hatch-presence-x");
+    cols.forEach((c, k) => svg.append("text").attr("x", M.l + k * colW + colW / 2).attr("y", 16).attr("text-anchor", "middle").attr("font-size", 11).style("fill", "var(--ink)").text(c.label));
     let y = M.t;
     groups.forEach(([dept, idx]) => {
-      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(dept);
-      y += 16;
+      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(dept); y += 16;
       idx.forEach(i => {
-        const row = svg.append("g").attr("transform", `translate(0,${y})`).style("cursor", "pointer").on("click", () => selectSite(i));
-        if (i === state.site) row.append("rect").attr("x", 0).attr("width", W).attr("height", rowH).attr("fill", "var(--surface-2)");
-        row.append("text").attr("x", 10).attr("y", rowH - 4).attr("font-size", 11).text(SITES[i].short.slice(0, 36));
+        const row = svg.append("g").attr("transform", `translate(0,${y})`);
+        row.append("text").attr("x", 10).attr("y", rowH - 4).attr("font-size", 11).text(SITES[i].short);
         cols.forEach((c, k) => {
-          const cx = M.l + k * colW + colW / 2, cy = rowH / 2;
+          const cx = M.l + k * colW + colW / 2;
           if (month) {
-            const v = monthly.get(`${i}|${c.key}`);
-            const cell = row.append("rect").attr("x", cx - colW / 2 + 3).attr("y", 2).attr("width", colW - 6).attr("height", rowH - 4).attr("rx", 2);
-            if (!v || v.hours === 0) cell.attr("fill", "url(#hatch-presence)");
-            else if (v.ev > 0) cell.attr("fill", classColor(cls));
-            else cell.attr("fill", "var(--surface-2)").attr("stroke", "var(--line)");
-            cell.on("pointermove", e => showTip(e, [{label: `${SITES[i].short} · ${c.label}`},
-                {value: v ? d3.format(".0f")(v.hours) : "0", label: "hours recorded"}, {color: classColor(cls), value: v ? v.ev : 0, label: `${CLASSES[cls]} events`}]))
-              .on("pointerleave", hideTip);
-          } else {
-            const st = SITES[i].status[c.key];
-            const mark = row.append("circle").attr("cx", cx).attr("cy", cy).attr("r", st === "none" ? 2.5 : 5.5);
-            statusStyle(mark, c.key, st);
-            mark.on("pointermove", e => showTip(e, [{label: `${SITES[i].short} · ${c.label}`}, {color: classColor(c.key), value: d3.format(",")(SITES[i].events[c.key]), label: "events"},
-                                                    {label: STATUS_TEXT[st]}])).on("pointerleave", hideTip);
-          }
+            const v = by.get(`${i}|${c.key}`), cell = row.append("rect").attr("x", cx - colW / 2 + 3).attr("y", 2).attr("width", colW - 6).attr("height", rowH - 4).attr("rx", 2);
+            if (!v || !v.hours) cell.attr("fill", "url(#hatch-presence-x)"); else if (v.ev) cell.attr("fill", classColor(cls)); else cell.attr("fill", "var(--surface-2)").attr("stroke", "var(--line)");
+          } else { const st = status(i, c.key); statusStyle(row.append("circle").attr("cx", cx).attr("cy", rowH / 2).attr("r", st === "none" ? 2.5 : 5.5), c.key, st); }
         });
         y += rowH;
       });
     });
-    const leg = document.getElementById("presence-legend");
-    if (month) {
-      leg.replaceChildren();
-      [["detected", classColor(cls), null], ["recorded, nothing detected", "var(--surface-2)", "var(--line)"], ["not recorded", "url(#hatch-legend)", null]].forEach(([t, fill, stroke]) => {
-        const item = document.createElement("span"); item.className = "item";
-        const s = d3.select(item).append("svg").attr("width", 18).attr("height", 12);
-        hatchDefs(s, "hatch-legend");
-        s.append("rect").attr("x", 1).attr("y", 1).attr("width", 16).attr("height", 10).attr("rx", 2).attr("fill", fill).attr("stroke", stroke);
-        item.append(document.createTextNode(t)); leg.append(item);
-      });
-    } else statusLegend(leg, state.cls < 0 ? 0 : state.cls);
+    return svg.node();
   }
 
   // ---------------------------------------------------------------- time from sunset
   function renderNight() {
     const el = document.getElementById("night"); el.replaceChildren();
     const useSite = state.nightScope === "site" && state.site !== null;
-    document.getElementById("night-title").textContent = `Time from sunset · ${useSite ? SITES[state.site].short : "all sites"}`;
-    const START = meta.schedule_start_min, END = START + 120;        // two one-hour files from sunset
-    const W = 520, rowH = 92, M = {l: 70, r: 10, t: 8, b: 30}, H = M.t + rowH * CLASSES.length + M.b;
-    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Events by minutes from sunset");
+    const scopeName = useSite ? SITES[state.site].short : state.dept === "All" ? "all sites" : state.dept;
+    document.getElementById("night-title").textContent = `Time from sunset · ${scopeName}`;
+    const START = meta.schedule_start_min, END = START + 120;
+    const W = widthOf("night", 520), rowH = 92, M = {l: 24, r: 10, t: 8, b: 30}, H = M.t + rowH * CLASSES.length + M.b;
+    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("height", H).attr("role", "img").attr("aria-label", "Events by minutes from sunset");
     svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
-    svg.append("defs").append("clipPath").attr("id", "night-clip").append("rect")
-      .attr("x", M.l).attr("y", 0).attr("width", W - M.l - M.r).attr("height", H);
+    svg.append("defs").append("clipPath").attr("id", "night-clip").append("rect").attr("x", M.l).attr("width", W - M.l - M.r).attr("height", H);
     const x = d3.scaleLinear().domain([START, END]).range([M.l, W - M.r]);
-    const minutes = CLASSES.map((_, j) => DATA.events.filter(e => e[1] === j && (!useSite || e[0] === state.site)).map(e => e[3]));
+    const minutes = CLASSES.map((_, j) => kept.filter(e => e.cls === j && e.min !== null && (useSite ? e.site === state.site : inScope(e.site))).map(e => e.min));
     const rows = CLASSES.map((c, j) => {
       const top = M.t + j * rowH;
-      svg.append("text").attr("x", M.l - 8).attr("y", top + rowH / 2).attr("text-anchor", "end").attr("dominant-baseline", "middle")
-        .attr("font-size", 12).style("fill", "var(--ink)").text(c);
-      const base = svg.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", top + rowH - 12).attr("y2", top + rowH - 12).attr("stroke", "var(--line)");
-      return {top, base, maxLabel: svg.append("text").attr("x", M.l - 8).attr("text-anchor", "end").attr("font-size", 10),
-              bars: svg.append("g").attr("clip-path", "url(#night-clip)")};
+      svg.append("text").attr("transform", `translate(13,${top + rowH / 2}) rotate(-90)`).attr("text-anchor", "middle")
+        .attr("font-size", 11).style("fill", "var(--ink)").text(c);
+      svg.append("line").attr("x1", M.l).attr("x2", W - M.r).attr("y1", top + rowH - 12).attr("y2", top + rowH - 12).attr("stroke", "var(--line)");
+      const bars = svg.append("g").attr("clip-path", "url(#night-clip)");
+      const maxLabel = svg.append("text").attr("x", M.l + 3).attr("y", top + 14).attr("font-size", 9.5).style("fill", "var(--ink-3)")
+        .attr("paint-order", "stroke").attr("stroke", "var(--surface)").attr("stroke-width", 3);
+      return {top, maxLabel, bars};
     });
     const axis = svg.append("g").attr("transform", `translate(0,${H - M.b + 2})`);
     svg.append("text").attr("x", (M.l + W - M.r) / 2).attr("y", H - 2).attr("text-anchor", "middle").attr("font-size", 10).text("minutes from sunset");
-    function place(transform) {
-      const xz = transform.rescaleX(x), width = transform.k >= 4 ? 1 : transform.k >= 2 ? 2 : 5;
-      const bins = d3.range(START, END, width);
-      const counts = minutes.map(values => {
-        const c = new Array(bins.length).fill(0);
-        values.forEach(v => { if (v >= START && v < END) c[Math.floor((v - START) / width)]++; });
-        return c;
-      });
+    const place = (t) => {
+      const xz = t.rescaleX(x), width = t.k >= 4 ? 1 : t.k >= 2 ? 2 : 5, bins = d3.range(START, END, width);
+      const counts = minutes.map(values => { const c = new Array(bins.length).fill(0);
+        values.forEach(v => { if (v >= START && v < END) c[Math.floor((v - START) / width)]++; }); return c; });
       rows.forEach((row, j) => {
         const yMax = d3.max(counts[j]) || 1, y = d3.scaleLinear().domain([0, yMax]).range([row.top + rowH - 12, row.top + 10]);
-        row.maxLabel.attr("y", y(yMax) + 4).text(yMax);
-        row.bars.selectAll("rect").data(bins).join("rect")
+        row.maxLabel.text(`${yMax} events`);
+        hover(row.bars.selectAll("rect").data(bins).join("rect")
           .attr("x", b => xz(b) + 0.5).attr("width", b => Math.max(0.5, xz(b + width) - xz(b) - 1)).attr("y", (b, k) => y(counts[j][k]))
-          .attr("height", (b, k) => y(0) - y(counts[j][k])).attr("rx", 1.5).attr("fill", classColor(j))
-          .on("pointermove", (e, b) => showTip(e, [{label: `${d3.format(".0f")(b)} to ${d3.format(".0f")(b + width)} min from sunset`},
-                                                   {color: classColor(j), value: counts[j][bins.indexOf(b)], label: `${CLASSES[j]} events`}]))
-          .on("pointerleave", hideTip);
+          .attr("height", (b, k) => y(0) - y(counts[j][k])).attr("rx", 1.5).attr("fill", classColor(j)),
+          b => [{label: `${b} to ${b + width} min from sunset`}, {color: classColor(j), value: counts[j][bins.indexOf(b)], label: `${CLASSES[j]} events`}]);
       });
-      axis.call(d3.axisBottom(xz).ticks(8).tickSizeOuter(0))
+      axis.call(d3.axisBottom(xz).ticks(Math.max(3, Math.floor((W - M.l - M.r) / 60))).tickSizeOuter(0))
         .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
       el._counts = {bins, counts};
-    }
-    const nightZoom = d3.zoom().scaleExtent([1, 12]).extent([[M.l, 0], [W - M.r, H]]).translateExtent([[M.l, 0], [W - M.r, H]])
-      .on("zoom", e => { state.nightT = e.transform; place(e.transform); });
-    svg.call(nightZoom).call(nightZoom.transform, state.nightT);
+    };
+    xZoom(svg, [[M.l, 0], [W - M.r, H]], 12, () => state.nightT, t => { state.nightT = t; }, place, "night-zoom");
   }
 
-  // ---------------------------------------------------------------- weekly heatmap
-  function renderHeat() {
-    const el = document.getElementById("heat"); el.replaceChildren();
-    const cls = state.cls;
-    document.getElementById("heat-title").textContent = `Weekly activity, all sites · ${className(cls)}`;
-    const cellW = 22, rowH = 14, M = {l: 215, t: 34, r: 8, b: 8};
-    const groups = d3.groups(siteOrder, i => SITES[i].dept_name);
-    const W = M.l + weeks.length * cellW + M.r, H = M.t + siteOrder.length * rowH + groups.length * 16 + M.b;
-    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("role", "img").attr("aria-label", "Events per hour by site and week");
+  // ---------------------------------------------------------------- season overview (whole dataset)
+  function overviewModel() {
+    const cls = state.cls, sites = d3.range(SITES.length).filter(inScope), scope = new Set(sites);
+    const hoursW = new Map(), sitesW = new Map(), evW = new Map();
+    evenings.forEach(d => { if (!scope.has(d.site)) return; const w = +weekOf(d.date);
+      hoursW.set(w, (hoursW.get(w) || 0) + d.hours); if (!sitesW.has(w)) sitesW.set(w, new Set()); sitesW.get(w).add(d.site); });
+    kept.forEach(e => { if (!scope.has(e.site) || (cls >= 0 && e.cls !== cls)) return; const w = +weekOf(e.date); evW.set(w, (evW.get(w) || 0) + 1); });
+    const perSite = sites.map(i => {
+      const recs = (eveningsBySite.get(i) || []).map(d => d.date).sort();
+      const dets = kept.filter(e => e.site === i && (cls < 0 || e.cls === cls)).map(e => e.date).sort();
+      if (!recs.length || !dets.length) return null;
+      const r0 = parseDay(recs[0]), r1 = parseDay(recs[recs.length - 1]), f = parseDay(dets[0]), l = parseDay(dets[dets.length - 1]);
+      return {i, r0, r1, first: f, last: l, n: dets.length, openFirst: (f - r0) / 864e5 <= 3, openLast: (r1 - l) / 864e5 <= 3};
+    }).filter(Boolean).sort((a, b) => d3.ascending(a.first, b.first) || d3.ascending(a.last, b.last));
+    return {cls, hoursW, sitesW, evW, perSite};
+  }
+  function renderOverview() {
+    const el = document.getElementById("overview"); el.replaceChildren();
+    const {cls, hoursW, sitesW, evW, perSite} = overviewModel();
+    const scopeName = state.dept === "All" ? "all sites" : state.dept;
+    document.getElementById("overview-title").textContent = `Season overview · ${className(cls)} · ${scopeName}`;
+    // phone: site names above each bar, so the dates get the full width; wide screens: names on the left
+    const small = narrow(), W = widthOf("overview", 900), M = {l: small ? 30 : 200, r: 12};
+    const aH = 110, eH = 40, rowH = small ? 26 : 14;
+    const topA = 24, topE = topA + aH + 34, axisY = topE + eH + 2, top3 = axisY + 46;
+    const H = top3 + perSite.length * rowH + 30;
+    const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("height", H).attr("role", "img")
+      .attr("aria-label", "Weekly activity pooled over sites, recording effort, and first and last detection per site");
     svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--surface)");
-    hatchDefs(svg, "hatch-heat");
-    const cells = new Map();
-    evenings.forEach(d => { const key = `${d.site}|${+weekOf(d.date)}`; const v = cells.get(key) || {hours: 0, ev: 0};
-      v.hours += d.hours; v.ev += cls < 0 ? d3.sum(d.ev) : d.ev[cls]; cells.set(key, v); });
-    const vmax = d3.max(cells.values(), v => v.hours ? v.ev / v.hours : 0) || 1;
+    const x = d3.scaleUtc().domain([weeks[0], d3.utcDay.offset(dateExtent[1], 1)]).range([M.l, W - M.r]);
+    const plotW = W - M.l - M.r, nTicks = Math.max(2, Math.floor(plotW / 80));
+    const weekW = Math.max(2, x(d3.utcDay.offset(weeks[0], 7)) - x(weeks[0]));
+    const color = classColor(cls);
+    const title = (y, text) => svg.append("text").attr("x", small ? 4 : M.l).attr("y", y).attr("font-size", 12).attr("font-weight", 600)
+      .style("fill", "var(--ink)").text(text);
+    const dateAxis = (y) => svg.append("g").attr("transform", `translate(0,${y})`)
+      .call(d3.axisBottom(x).ticks(nTicks).tickFormat(fmtShort).tickSizeOuter(0))
+      .call(g => g.selectAll("line,path").attr("stroke", "var(--line)")).call(g => g.selectAll("text").attr("font-size", 10));
+    // (a) pooled weekly rate
+    const rates = weeks.map(w => ({w, hours: hoursW.get(+w) || 0, ev: evW.get(+w) || 0})).map(d => ({...d, rate: d.hours ? d.ev / d.hours : 0}));
+    const yA = d3.scaleLinear().domain([0, d3.max(rates, d => d.rate) || 1]).nice().range([topA + aH, topA + 6]);
+    title(topA - 8, `${className(cls)}: events per hour recorded, all sites pooled`);
+    svg.append("g").attr("transform", `translate(${M.l},0)`).call(d3.axisLeft(yA).ticks(4).tickSize(-plotW))
+      .call(g => g.select(".domain").remove()).call(g => g.selectAll("line").attr("stroke", "var(--line)").attr("stroke-opacity", 0.6))
+      .call(g => g.selectAll("text").attr("font-size", 10));
+    hover(svg.append("g").selectAll("rect").data(rates.filter(d => d.ev > 0)).join("rect")
+      .attr("x", d => x(d.w) + 1).attr("width", Math.max(1, weekW - 2)).attr("y", d => yA(d.rate)).attr("height", d => yA(0) - yA(d.rate)).attr("rx", 2).attr("fill", color),
+      d => [{label: `week of ${fmtShort(d.w)}`}, {color, value: f2(d.rate), label: `${className(cls)} events / h`}, {value: fInt(d.ev), label: "events"},
+            {value: d3.format(",.0f")(d.hours), label: "hours recorded"}]);
+    // (b) recording effort, its own small chart (never a second y-axis on the first one)
+    const effort = weeks.map(w => ({w, n: (sitesW.get(+w) || new Set()).size})), nMax = d3.max(effort, d => d.n) || 1;
+    const yE = d3.scaleLinear().domain([0, nMax]).range([topE + eH, topE + 4]);
+    title(topE - 8, `Sites recording (up to ${nMax})`);
+    hover(svg.append("g").selectAll("rect").data(effort).join("rect").attr("x", d => x(d.w) + 1).attr("width", Math.max(1, weekW - 2))
+      .attr("y", d => yE(d.n)).attr("height", d => yE(0) - yE(d.n)).attr("rx", 2).attr("fill", "var(--effort)"),
+      d => [{label: `week of ${fmtShort(d.w)}`}, {value: d.n, label: "sites recording"}]);
+    dateAxis(axisY);
+    // (c) first / last detection per site
+    title(top3 - 14, `First and last detection, ${perSite.length} sites`);
+    const bottom = top3 + perSite.length * rowH;
+    svg.append("g").selectAll("line").data(x.ticks(nTicks)).join("line")
+      .attr("x1", d => x(d)).attr("x2", d => x(d)).attr("y1", top3 - 4).attr("y2", bottom)
+      .attr("stroke", "var(--line)").attr("stroke-dasharray", "2 3");
+    perSite.forEach((d, k) => {
+      const yBar = small ? top3 + k * rowH + 18 : top3 + k * rowH + rowH / 2, g = svg.append("g");
+      const name = g.append("text").attr("font-size", 10.5).style("fill", d.i === state.site ? "var(--ink)" : null)
+        .attr("font-weight", d.i === state.site ? 700 : null).text(SITES[d.i].short);
+      if (small) name.attr("x", M.l).attr("y", top3 + k * rowH + 8);
+      else name.attr("x", M.l - 8).attr("y", yBar + 4).attr("text-anchor", "end");
+      g.append("line").attr("x1", x(d.r0)).attr("x2", x(d3.utcDay.offset(d.r1, 1))).attr("y1", yBar).attr("y2", yBar)
+        .attr("stroke", "var(--effort)").attr("stroke-width", 4).attr("stroke-linecap", "round");
+      g.append("line").attr("x1", x(d.first)).attr("x2", x(d.last)).attr("y1", yBar).attr("y2", yBar).attr("stroke", color).attr("stroke-width", 1.5);
+      [[d.first, d.openFirst], [d.last, d.openLast]].forEach(([day, open]) =>
+        g.append("circle").attr("cx", x(day)).attr("cy", yBar).attr("r", 4).attr("fill", open ? "var(--surface)" : color).attr("stroke", color).attr("stroke-width", 1.5));
+      hover(g.style("cursor", "pointer").on("click", () => selectSite(d.i)), () => [{label: `${SITES[d.i].short} · ${SITES[d.i].dept_name}`},
+        {label: `recorded ${fmtShort(d.r0)} – ${fmtShort(d.r1)}`}, {color, label: `first ${fmtShort(d.first)}${d.openFirst ? " (near start of recording)" : ""}`},
+        {color, label: `last ${fmtShort(d.last)}${d.openLast ? " (near end of recording)" : ""}`}, {value: fInt(d.n), label: "events"}]);
+    });
+    dateAxis(bottom + 4);
+    // summary: one short line, the detail by département folded
+    el._rows = perSite;
+    const sum = document.getElementById("overview-summary"), depts = document.getElementById("overview-depts");
+    depts.replaceChildren();
+    if (!perSite.length) { sum.textContent = "No detection at these thresholds."; return; }
+    const med = (arr) => new Date(d3.median(arr, d => +d));
+    sum.textContent = `Earliest ${fmtShort(d3.min(perSite, d => d.first))} · latest ${fmtShort(d3.max(perSite, d => d.last))} · ` +
+      `median first ${fmtShort(med(perSite.map(d => d.first)))} · median last ${fmtShort(med(perSite.map(d => d.last)))}`;
+    d3.groups(perSite, d => SITES[d.i].dept_name).sort((a, b) => d3.ascending(a[0], b[0])).forEach(([dept, rows]) => {
+      const line = document.createElement("span");
+      line.textContent = `${dept}: median first ${fmtShort(med(rows.map(r => r.first)))}, last ${fmtShort(med(rows.map(r => r.last)))} (${plural(rows.length, "site")})`;
+      depts.append(line);
+    });
+  }
+
+  // ---------------------------------------------------------------- weekly heatmap (fixed labels + scrolling cells)
+  function renderHeat() {
+    const LW = narrow() ? 132 : 210, maxChars = Math.floor((LW - 14) / 5.7);
+    const fit = (name) => name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
+    const el = document.getElementById("heat"); el.replaceChildren();
+    const cls = state.cls, scopeName = state.dept === "All" ? "all sites" : state.dept;
+    document.getElementById("heat-title").textContent = `Weekly activity by site · ${className(cls)} · ${scopeName}`;
+    const cellW = 22, rowH = 14, top = 34, groups = d3.groups(siteOrder.filter(inScope), i => SITES[i].dept_name);
+    const H = top + d3.sum(groups, g => g[1].length) * rowH + groups.length * 16 + 8, CW = weeks.length * cellW + 8;
+    const labels = d3.select(el).append("div").attr("class", "labels").append("svg").attr("viewBox", `0 0 ${LW} ${H}`).attr("width", LW).attr("height", H);
+    const cells = d3.select(el).append("div").attr("class", "cells").append("svg").attr("viewBox", `0 0 ${CW} ${H}`).attr("width", CW).attr("height", H)
+      .attr("role", "img").attr("aria-label", "Events per hour by site and week");
+    [labels, cells].forEach(s => s.append("rect").attr("width", "100%").attr("height", H).attr("fill", "var(--surface)"));
+    hatchDefs(cells, "hatch-heat");
+    const box = new Map();
+    evenings.forEach(d => { const key = `${d.site}|${+weekOf(d.date)}`, v = box.get(key) || {hours: 0, ev: 0};
+      v.hours += d.hours; v.ev += evCount(d.site, d.date, cls); box.set(key, v); });
+    const vmax = d3.max(box.values(), v => v.hours ? v.ev / v.hours : 0) || 1;
     const ramp = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"];
     const color = d3.scaleSequentialSqrt(d3.interpolateRgbBasis(ramp)).domain([0, vmax]);
-    weeks.forEach((w, k) => { if (k % 2 === 0) svg.append("text").attr("x", M.l + k * cellW + 1).attr("y", M.t - 10).attr("font-size", 10).text(d3.utcFormat("%d %b")(w)); });
-    let y = M.t;
+    weeks.forEach((w, k) => { if (k % 2 === 0) cells.append("text").attr("x", k * cellW + 1).attr("y", top - 10).attr("font-size", 10).text(fmtShort(w)); });
+    let y = top;
     groups.forEach(([dept, idx]) => {
-      svg.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(dept);
-      y += 16;
+      labels.append("text").attr("x", 4).attr("y", y + 11).attr("font-size", 11).attr("font-weight", 650).style("fill", "var(--ink)").text(dept); y += 16;
       idx.forEach(i => {
-        const row = svg.append("g").attr("transform", `translate(0,${y})`).style("cursor", "pointer").on("click", () => selectSite(i));
-        row.append("text").attr("x", 10).attr("y", rowH - 3).attr("font-size", 10.5)
-          .style("fill", i === state.site ? "var(--ink)" : null).attr("font-weight", i === state.site ? 700 : null).text(SITES[i].short.slice(0, 36));
+        labels.append("text").attr("x", 10).attr("y", y + rowH - 3).attr("font-size", 10.5).style("cursor", "pointer")
+          .style("fill", i === state.site ? "var(--ink)" : null).attr("font-weight", i === state.site ? 700 : null).text(fit(SITES[i].short))
+          .on("click", () => selectSite(i)).append("title").text(SITES[i].short);
+        const row = cells.append("g").attr("transform", `translate(0,${y})`).style("cursor", "pointer").on("click", () => selectSite(i));
         weeks.forEach((w, k) => {
-          const v = cells.get(`${i}|${+w}`);
-          const r = row.append("rect").attr("x", M.l + k * cellW + 1).attr("y", 1).attr("width", cellW - 2).attr("height", rowH - 2).attr("rx", 2);
-          if (!v || !v.hours) r.attr("fill", "url(#hatch-heat)");
-          else r.attr("fill", v.ev ? color(v.ev / v.hours) : "var(--surface-2)");
-          r.on("pointermove", e => showTip(e, [{label: `${SITES[i].short} · week of ${d3.utcFormat("%d %b")(w)}`},
-              {value: v && v.hours ? d3.format(".2f")(v.ev / v.hours) : "–", label: `${className(cls)} events / h`},
-              {value: v ? v.ev : 0, label: "events"}, {value: v ? d3.format(".1f")(v.hours) : 0, label: "hours recorded"}])).on("pointerleave", hideTip);
+          const v = box.get(`${i}|${+w}`);
+          const r = row.append("rect").attr("x", k * cellW + 1).attr("y", 1).attr("width", cellW - 2).attr("height", rowH - 2).attr("rx", 2);
+          if (!v || !v.hours) r.attr("fill", "url(#hatch-heat)"); else r.attr("fill", v.ev ? color(v.ev / v.hours) : "var(--surface-2)");
+          hover(r, () => [{label: `${SITES[i].short} · week of ${fmtShort(w)}`}, {value: v && v.hours ? f2(v.ev / v.hours) : "–", label: `${className(cls)} events / h`},
+                          {value: v ? v.ev : 0, label: "events"}, {value: v ? d3.format(".1f")(v.hours) : 0, label: "hours recorded"}]);
         });
         y += rowH;
       });
@@ -640,29 +1045,28 @@ const DEPTS = /*__DEPTS__*/;
     const grad = ls.append("defs").append("linearGradient").attr("id", "heat-grad");
     d3.range(0, 1.01, 0.1).forEach(t => grad.append("stop").attr("offset", t).attr("stop-color", color(t * t * vmax)));
     ls.append("rect").attr("x", 6).attr("y", 2).attr("width", 200).attr("height", 10).attr("rx", 2).attr("fill", "url(#heat-grad)");
-    [0, vmax / 4, vmax].forEach(v => ls.append("text").attr("x", 6 + 200 * Math.sqrt(v / vmax)).attr("y", 26).attr("font-size", 10)
-      .attr("text-anchor", "middle").text(d3.format(".1f")(v)));
+    [0, vmax / 4, vmax].forEach(v => ls.append("text").attr("x", 6 + 200 * Math.sqrt(v / vmax)).attr("y", 26).attr("font-size", 10).attr("text-anchor", "middle").text(d3.format(".1f")(v)));
     item.append(document.createTextNode("events / h (square-root scale)")); leg.append(item);
-    const z = document.createElement("span"); z.className = "item";
-    const zs = d3.select(z).append("svg").attr("width", 16).attr("height", 12);
-    zs.append("rect").attr("x", 1).attr("y", 1).attr("width", 14).attr("height", 10).attr("rx", 2).attr("fill", "var(--surface-2)");
-    z.append(document.createTextNode("recorded, no events")); leg.append(z);
+  }
+  function heatSvg() {                    // labels + cells side by side, for export
+    const [a, b] = document.querySelectorAll("#heat svg");
+    const wa = +a.getAttribute("width"), wb = +b.getAttribute("width"), h = +a.getAttribute("height");
+    const svg = d3.create("svg").attr("viewBox", `0 0 ${wa + wb} ${h}`).attr("width", wa + wb).attr("height", h);
+    const ga = svg.append("g"); Array.from(a.childNodes).forEach(n => ga.node().append(n.cloneNode(true)));
+    const gb = svg.append("g").attr("transform", `translate(${wa},0)`); Array.from(b.childNodes).forEach(n => gb.node().append(n.cloneNode(true)));
+    return svg.node();
   }
 
   // ---------------------------------------------------------------- export (SVG / PNG / CSV)
-  const VARS = ["--bg", "--surface", "--surface-2", "--line", "--ink", "--ink-2", "--ink-3", "--land", "--dept", "--c0", "--c1", "--c2", "--call-all", "--hatch", "--accent"];
-  const asDataUrl = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob);
-  });
+  const VARS = ["--bg", "--surface", "--surface-2", "--line", "--ink", "--ink-2", "--ink-3", "--land", "--dept", "--c0", "--c1", "--c2", "--call-all", "--hatch", "--accent", "--effort"];
+  const asDataUrl = (blob) => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(blob); });
   async function standalone(svgEl) {
     const clone = svgEl.cloneNode(true);
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    // base-map tiles: embedded as data, so the file stands alone (fetched again from IGN)
-    await Promise.all(Array.from(clone.querySelectorAll("image")).map(async img => {
+    await Promise.all(Array.from(clone.querySelectorAll("image")).map(async img => {   // base-map tiles, embedded
       const href = img.getAttribute("href");
       if (!href || href.startsWith("data:")) return;
-      try { img.setAttribute("href", await asDataUrl(await (await fetch(href)).blob())); img.removeAttribute("crossorigin"); }
-      catch (err) { img.remove(); }
+      try { img.setAttribute("href", await asDataUrl(await (await fetch(href)).blob())); img.removeAttribute("crossorigin"); } catch (err) { img.remove(); }
     }));
     let text = new XMLSerializer().serializeToString(clone);
     VARS.forEach(v => { text = text.split(`var(${v})`).join(css(v)); });
@@ -675,48 +1079,54 @@ const DEPTS = /*__DEPTS__*/;
   }
   async function exportSvg(svgEl, name) { download(name + ".svg", new Blob([await standalone(svgEl)], {type: "image/svg+xml"})); }
   async function exportPng(svgEl, name) {
-    const vb = svgEl.viewBox.baseVal, w = vb.width * 2, h = vb.height * 2;
-    const text = await standalone(svgEl);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+    const vb = svgEl.viewBox.baseVal, w = vb.width * 2, h = vb.height * 2, text = await standalone(svgEl), img = new Image();
+    img.onload = () => { const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext("2d"); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(b => download(name + ".png", b), "image/png");
-    };
+      canvas.toBlob(b => download(name + ".png", b), "image/png"); };
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(text);
   }
   function csvText(header, rows) {
     const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     return [header.map(q).join(",")].concat(rows.map(r => r.map(q).join(","))).join("\n") + "\n";
   }
+  const thrNote = () => CLASSES.map(c => `${c}>=${state.thr[c]}`).join(" ");
   const tables = {
     map: () => [["site", "departement", "split", "lat", "lon", "hours"].concat(CLASSES.flatMap(c => [c + "_events", c + "_per_h", c + "_status"])),
-                SITES.map((s, i) => [s.site, s.dept_name, s.split, s.lat, s.lon, s.hours].concat(CLASSES.flatMap((c, j) => [s.events[j], d3.format(".4f")(rate(i, j)), s.status[j]])))],
-    season: () => state.site === null ? [["date"], []] : [["date", "hours"].concat(CLASSES),
-                (bySite.get(state.site) || []).map(d => [d.date, d.hours].concat(d.ev))],
-    presence: () => [["site", "departement"].concat(CLASSES.map(c => c + "_status")), siteOrder.map(i => [SITES[i].site, SITES[i].dept_name].concat(SITES[i].status))],
+                SITES.map((s, i) => [s.site, s.dept_name, s.split, s.lat, s.lon, s.hours].concat(CLASSES.flatMap((c, j) => [siteCounts[i][j], d3.format(".4f")(rate(i, j)), status(i, j)])))],
+    season: () => state.site === null ? [["date"], []] : [["date", "hours"].concat(CLASSES), (eveningsBySite.get(state.site) || []).map(d => [d.date, d.hours].concat(CLASSES.map((_, j) => evCount(state.site, d.date, j))))],
+    presence: () => [["site", "departement"].concat(CLASSES.map(c => c + "_status")), siteOrder.filter(inScope).map(i => [SITES[i].site, SITES[i].dept_name].concat(CLASSES.map((_, j) => status(i, j))))],
     night: () => { const n = document.getElementById("night")._counts; return [["bin_start_min"].concat(CLASSES), n.bins.map((b, k) => [b].concat(n.counts.map(c => c[k])))]; },
-    heat: () => { const rows = []; siteOrder.forEach(i => weeks.forEach(w => {
-                  const v = (bySite.get(i) || []).filter(d => +weekOf(d.date) === +w);
-                  if (v.length) rows.push([SITES[i].site, d3.utcFormat("%Y-%m-%d")(w), d3.sum(v, d => d.hours).toFixed(2)].concat(CLASSES.map((_, j) => d3.sum(v, d => d.ev[j])))); }));
+    overview: () => [["site", "departement", "recording_first", "recording_last", "first_detection", "last_detection", "events", "first_near_start", "last_near_end"],
+                     (document.getElementById("overview")._rows || []).map(d => [SITES[d.i].site, SITES[d.i].dept_name, fmtDay(d.r0), fmtDay(d.r1), fmtDay(d.first), fmtDay(d.last), d.n, d.openFirst, d.openLast])],
+    heat: () => { const rows = []; siteOrder.filter(inScope).forEach(i => weeks.forEach(w => {
+                  const v = (eveningsBySite.get(i) || []).filter(d => +weekOf(d.date) === +w);
+                  if (v.length) rows.push([SITES[i].site, fmtDay(w), d3.sum(v, d => d.hours).toFixed(2)].concat(CLASSES.map((_, j) => d3.sum(v, d => evCount(i, d.date, j))))); }));
                   return [["site", "week_start", "hours"].concat(CLASSES), rows]; }
   };
-  const panelSvg = {map: "#map svg", season: "#season svg", presence: "#presence svg", night: "#night svg", heat: "#heat svg"};
+  const panelSvg = {map: () => document.querySelector("#map svg"), season: () => document.querySelector("#season svg"), presence: presenceSvg,
+                    night: () => document.querySelector("#night svg"), overview: () => document.querySelector("#overview svg"), heat: heatSvg};
   document.querySelectorAll(".tools[data-panel]").forEach(box => {
     const panel = box.dataset.panel;
-    [["SVG", () => exportSvg(document.querySelector(panelSvg[panel]), `snipe_${panel}`)],
-     ["PNG", () => exportPng(document.querySelector(panelSvg[panel]), `snipe_${panel}`)],
-     ["CSV", () => { const [h, r] = tables[panel](); download(`snipe_${panel}.csv`, new Blob([csvText(h, r)], {type: "text/csv"})); }]]
+    const menu = document.createElement("details"); menu.className = "export";
+    const summary = document.createElement("summary"); summary.textContent = "Export"; menu.append(summary);
+    const list = document.createElement("div"); list.className = "menu";
+    [["SVG image (vector)", () => exportSvg(panelSvg[panel](), `snipe_${panel}`)], ["PNG image", () => exportPng(panelSvg[panel](), `snipe_${panel}`)],
+     ["CSV table", () => { const [h, r] = tables[panel](); download(`snipe_${panel}.csv`, new Blob([`# thresholds: ${thrNote()}\n` + csvText(h, r)], {type: "text/csv"})); }]]
       .forEach(([label, fn]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = label;
-        b.addEventListener("click", () => { if (document.querySelector(panelSvg[panel]) || label === "CSV") fn(); }); box.append(b); });
+        b.addEventListener("click", () => { menu.open = false; const node = label.startsWith("CSV") ? true : panelSvg[panel](); if (node) fn(); }); list.append(b); });
+    if (panel === "map") { const w = document.createElement("span"); w.className = "warn"; w.textContent = "Map exports hold the positions: keep them private."; list.append(w); }
+    menu.append(list); box.append(menu);
   });
+  document.addEventListener("click", (e) => document.querySelectorAll("details.export[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
 
   // ---------------------------------------------------------------- go
-  function renderAll() { renderMarks(); renderSite(); renderPresence(); renderNight(); renderHeat(); }
-  drawMap();
-  renderAll();
-  zoomToDept();
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+  function renderAll() { renderMarks(); renderSite(); renderPresence(); renderNight(); renderOverview(); renderHeat(); }
+  recompute(); renderThresholds(); renderKpis();
+  drawMap(); renderAll(); zoomToDept();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderKpis(); renderAll(); });
+  let resizeTimer = null, lastW = window.innerWidth;
+  window.addEventListener("resize", () => { if (Math.abs(window.innerWidth - lastW) < 40) return; lastW = window.innerWidth;
+    clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { renderSite(); renderNight(); renderOverview(); }, 250); });
 })();
 </script>
 </body>
